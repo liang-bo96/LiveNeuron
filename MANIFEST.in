@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include example.py
+recursive-include src *.py
+recursive-include src/eelbrain_plotly_viz/data *
+recursive-include tests *.py
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
+global-exclude .git* 

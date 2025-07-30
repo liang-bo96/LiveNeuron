@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eelbrain-plotly-viz"
+version = "1.0.0"
+description = "Interactive 2D brain visualization using Plotly and Dash"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Eelbrain Team", email = "eelbrain@example.com"}
+]
+maintainers = [
+    {name = "Eelbrain Team", email = "eelbrain@example.com"}
+]
+keywords = [
+    "neuroscience",
+    "brain", 
+    "visualization",
+    "plotly",
+    "dash",
+    "interactive",
+    "2D",
+    "projection"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+        "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "dash>=2.0.0",
+    "plotly>=5.0.0", 
+    "numpy>=1.20.0",
+    "matplotlib>=3.3.0",
+    "scipy>=1.7.0",
+]
+
+[project.optional-dependencies]
+eelbrain = ["eelbrain"]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "black",
+    "flake8", 
+    "mypy",
+    "build",
+    "twine",
+]
+all = ["eelbrain"]
+
+[project.urls]
+Homepage = "https://github.com/liang-bo96/eelbrain-plotly-viz"
+Documentation = "https://github.com/liang-bo96/eelbrain-plotly-viz#readme"
+Repository = "https://github.com/liang-bo96/eelbrain-plotly-viz.git"
+"Bug Tracker" = "https://github.com/liang-bo96/eelbrain-plotly-viz/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["eelbrain_plotly_viz*"]
+
+[tool.setuptools.package-data]
+eelbrain_plotly_viz = ["data/*.npy", "data/*.json"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*" 
