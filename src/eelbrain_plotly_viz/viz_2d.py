@@ -1,24 +1,11 @@
-"""
-Interactive 2D brain visualization using Plotly and Dash.
-
-This module provides a web-based interface for visualizing brain activity data
-with interactive controls for time navigation and source selection.
-
-Supports both Eelbrain NDVar format and standalone numpy arrays.
-
-PERFORMANCE OPTIMIZATION: This module uses optimized batch arrow rendering
-that is 453x faster than individual annotation methods, while maintaining
-identical visual results and full functionality.
-"""
-
 import base64
 import io
 import random
 from typing import Optional, Union, List, Dict, Any
-import warnings
 
 import dash
 from dash import dcc, html, Input, Output, State
+
 
 # Check if we're running in a Jupyter environment
 def _is_jupyter_environment():
@@ -34,47 +21,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 
-# Optional eelbrain imports
-try:
-    from eelbrain import set_parc, NDVar, datasets
-    EELBRAIN_AVAILABLE = True
-except ImportError:
-    EELBRAIN_AVAILABLE = False
-    NDVar = None
-    warnings.warn(
-        "Eelbrain not available. Using numpy-only mode. "
-        "Install eelbrain for full functionality: pip install eelbrain"
-    )
-
-from .sample_data import create_sample_brain_data
+from eelbrain import set_parc, NDVar, datasets
 
 
-class BrainPlotly2DViz:
+class EelbrainPlotly2DViz:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
-    Based on plot.GlassBrain concept, provides interactive 2D projections of brain
+    Based on :class:`plot.GlassBrain`, provides interactive 2D projections of brain
     volume data with butterfly plot and arrow visualization for vector data.
-
-    Supports both Eelbrain NDVar format and standalone numpy arrays.
 
     Parameters
     ----------
     y
-        Data to plot. Can be:
-        - Eelbrain NDVar with dimensions ([case,] time, source[, space])
-        - numpy array with shape (n_sources, n_times) for scalar data
-        - numpy array with shape (n_sources, n_times, 3) for vector data
-        - Dict with keys: 'data', 'coords', 'times', 'has_vector_data'
-        If None, uses synthetic sample data for demonstration.
-    coords
-        Source coordinates as numpy array with shape (n_sources, 3).
-        Only used when y is a numpy array. Ignored if y is NDVar or dict.
-    times
-        Time values as numpy array with shape (n_times,).
-        Only used when y is a numpy array. Ignored if y is NDVar or dict.
+        Data to plot ([case,] time, source[, space]).
+        If ``y`` has a case dimension, the mean is plotted.
+        If ``y`` has a space dimension, the norm is plotted.
+        If None, uses MNE sample data for demonstration.
     region
         Brain region to load using aparc+aseg parcellation.
-        If None, loads all regions. Only used when y is None and eelbrain is available.
+        If None, loads all regions. Only used when y is None.
     cmap
         Plotly colorscale for heatmaps. Can be:
         - Built-in colorscale name (e.g., 'Hot', 'Viridis', 'YlOrRd')
@@ -86,216 +51,521 @@ class BrainPlotly2DViz:
         If False, butterfly plot shows individual source traces, mean, and max.
         Default is False.
     arrow_threshold
-        Threshold for arrow display. Can be:
-        - float: Display arrows where vector magnitude > threshold
-        - 'auto': Automatically determine threshold
-        - 'all': Display all arrows
-        Default is 'auto'.
-
-    PERFORMANCE OPTIMIZATION: Arrow rendering is optimized using batch
-    techniques that provide 453x speedup over individual annotations.
+        Threshold for displaying arrows in brain projections. Only arrows with
+        magnitude greater than this value will be displayed. If None, all arrows
+        are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
+        Default is None.
 
     Notes
     -----
-    This visualization creates interactive 2D projections (axial, sagittal, coronal)
-    of brain volume data. For vector data, arrows indicate direction and magnitude.
-    The butterfly plot shows time courses of activity.
+    Expected input format follows the same pattern as :class:`plot.GlassBrain`:
 
-    Examples
-    --------
-    # With sample data
-    viz = BrainPlotly2DViz()
-    viz.run()
-
-    # With numpy arrays
-    data = np.random.rand(100, 50, 3)  # (sources, times, xyz)
-    coords = np.random.rand(100, 3)     # (sources, xyz)
-    times = np.linspace(0, 1, 50)       # (times,)
-    viz = BrainPlotly2DViz(y=data, coords=coords, times=times)
-
-    # With data dictionary
-    data_dict = {
-        'data': np.random.rand(100, 50, 3),
-        'coords': np.random.rand(100, 3),
-        'times': np.linspace(0, 1, 50),
-        'has_vector_data': True
-    }
-    viz = BrainPlotly2DViz(y=data_dict)
-
-    # With Eelbrain NDVar (if available)
-    if EELBRAIN_AVAILABLE:
-        from eelbrain import datasets
-        data_ds = datasets.get_mne_sample(src='vol', ori='vector')
-        viz = BrainPlotly2DViz(y=data_ds['src'])
+    - For vector data: NDVar with dimensions ([case,] time, source, space)
+    - For scalar data: NDVar with dimensions ([case,] time, source)
+    - If case dimension present: mean across cases is plotted
+    - If space dimension present: norm across space is plotted for butterfly plot
     """
 
     def __init__(
-        self,
-        y: Optional[Union[np.ndarray, Dict[str, Any], 'NDVar']] = None,
-        coords: Optional[np.ndarray] = None,
-        times: Optional[np.ndarray] = None,
-        region: Optional[str] = None,
-        cmap: Union[str, List] = 'Hot',
-        show_max_only: bool = False,
-        arrow_threshold: Union[float, str] = 'auto'
+            self,
+            y: Optional[NDVar] = None,
+            region: Optional[str] = None,
+            cmap: Union[str, List] = 'Hot',
+            show_max_only: bool = False,
+            arrow_threshold: Optional[Union[float, str]] = None
     ):
-        """Initialize 2D brain visualization with optimized performance."""
-        self.cmap = cmap
-        self.show_max_only = show_max_only
-        self.arrow_threshold = arrow_threshold
-        
-        # Data attributes
-        self.glass_brain_data = None
-        self.source_coords = None
-        self.time_values = None
-        self.has_vector_data = False
-        self.source_space = None
-        
-        # Load data based on input type
+        """Initialize the visualization app and load data."""
+        # Use regular Dash with modern Jupyter integration
+        self.app: dash.Dash = dash.Dash(__name__)
+
+        # Initialize data attributes
+        self.glass_brain_data: Optional[np.ndarray] = None  # (n_sources, 3, n_times)
+        self.butterfly_data: Optional[np.ndarray] = None    # (n_sources, n_times)
+        self.source_coords: Optional[np.ndarray] = None     # (n_sources, 3)
+        self.time_values: Optional[np.ndarray] = None       # (n_times,)
+        self.region_of_brain: Optional[str] = region  # Region of brain to visualize
+        self.cmap: Union[str, List] = cmap  # Colorscale for heatmaps
+        self.show_max_only: bool = show_max_only  # Control butterfly plot display mode
+        self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold  # Threshold for displaying arrows
+        self.is_jupyter_mode: bool = False  # Track if running in Jupyter mode
+
+        # Load data
         if y is not None:
-            if isinstance(y, dict):
-                self._load_dict_data(y)
-            elif isinstance(y, np.ndarray):
-                self._load_numpy_data(y, coords, times)
-            elif EELBRAIN_AVAILABLE and isinstance(y, NDVar):
-                self._load_ndvar_data(y)
-            else:
-                raise ValueError(f"Unsupported data type: {type(y)}")
+            self._load_ndvar_data(y)
         else:
-            self._load_sample_data(region)
+            self._load_source_data(region)
 
-    def _load_sample_data(self, region: Optional[str] = None) -> None:
-        """Load sample data for demonstration."""
-        if EELBRAIN_AVAILABLE and region is not None:
-            # Use eelbrain sample data if available
+        # Setup app
+        self._setup_layout()
+        self._setup_callbacks()
+
+    def _load_source_data(self, region: Optional[str] = None) -> None:
+        """Load MNE sample data and prepare for 2D brain visualization.
+
+        Parameters
+        ----------
+        region
+            Brain region to load using aparc+aseg parcellation.
+            If None, loads all regions.
+        """
+        # Load MNE sample data
+        data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+
+        # Set parcellation if region is specified
+        if region is not None:
             try:
-                data_ds = datasets.get_mne_sample(src='vol', ori='vector')
-                
-                if region is not None:
-                    # Set the parcellation to the requested region
-                    data_ds['src'] = set_parc(data_ds['src'], region)
-                
-                # Take mean over cases for simplicity
-                src_ndvar = data_ds['src'].mean('case')
-                
-                # Extract data in required format
-                self.glass_brain_data = src_ndvar.get_data(('source', 'space', 'time'))
-                self.source_coords = src_ndvar.source.coordinates
-                self.time_values = src_ndvar.time.times
-                self.has_vector_data = True
-                self.source_space = src_ndvar.source
-                return
+                data_ds['src'] = set_parc(data_ds['src'], region)
+                self.region_of_brain = region
             except Exception as e:
-                warnings.warn(f"Could not load eelbrain sample data: {e}. Using synthetic data.")
-        
-        # Use synthetic sample data
-        sample_data = create_sample_brain_data(
-            n_sources=200,
-            n_times=50,
-            has_vector_data=True,
-            random_seed=42
-        )
-        self._load_dict_data(sample_data)
-
-    def _load_dict_data(self, data_dict: Dict[str, Any]) -> None:
-        """Load data from dictionary format."""
-        required_keys = ['data', 'coords', 'times', 'has_vector_data']
-        for key in required_keys:
-            if key not in data_dict:
-                raise ValueError(f"Missing required key '{key}' in data dictionary")
-        
-        data = data_dict['data']
-        self.source_coords = data_dict['coords']
-        self.time_values = data_dict['times']
-        self.has_vector_data = data_dict['has_vector_data']
-        
-        if self.has_vector_data:
-            # Convert from (n_sources, n_times, 3) to (n_sources, 3, n_times)
-            if data.ndim == 3 and data.shape[-1] == 3:
-                self.glass_brain_data = data.transpose(0, 2, 1)
-            else:
-                raise ValueError("Vector data must have shape (n_sources, n_times, 3)")
+                print(f"Failed to apply parcellation {region}: {e}")
+                print("Using full brain data instead")
+                self.region_of_brain = 'Full Brain'
         else:
-            # Convert from (n_sources, n_times) to (n_sources, 1, n_times)
-            if data.ndim == 2:
-                self.glass_brain_data = data[:, np.newaxis, :]
-            else:
-                raise ValueError("Scalar data must have shape (n_sources, n_times)")
+            self.region_of_brain = 'Full Brain'
 
-    def _load_numpy_data(
-        self, 
-        data: np.ndarray, 
-        coords: Optional[np.ndarray], 
-        times: Optional[np.ndarray]
-    ) -> None:
-        """Load data from numpy arrays."""
-        if coords is None:
-            raise ValueError("coords parameter is required when y is a numpy array")
-        if times is None:
-            raise ValueError("times parameter is required when y is a numpy array")
-        
-        self.source_coords = coords
-        self.time_values = times
-        
-        if data.ndim == 3 and data.shape[-1] == 3:
-            # Vector data: (n_sources, n_times, 3) -> (n_sources, 3, n_times)
-            self.glass_brain_data = data.transpose(0, 2, 1)
-            self.has_vector_data = True
-        elif data.ndim == 2:
-            # Scalar data: (n_sources, n_times) -> (n_sources, 1, n_times)
-            self.glass_brain_data = data[:, np.newaxis, :]
-            self.has_vector_data = False
+        # Average over trials/cases
+        src_ndvar = data_ds['src'].mean('case')
+
+        # Extract coordinates and data
+        self.glass_brain_data = src_ndvar.get_data(('source', 'space', 'time'))
+        self.source_coords = src_ndvar.source.coordinates  # (n_sources, 3)
+        self.time_values = src_ndvar.time.times
+
+        # Store source space info
+        self.source_space: Any = src_ndvar.source
+        if hasattr(self.source_space, 'parc'):
+            self.parcellation: Any = self.source_space.parc
         else:
-            raise ValueError(
-                "Data must have shape (n_sources, n_times) for scalar data "
-                "or (n_sources, n_times, 3) for vector data"
-            )
+            self.parcellation: Optional[Any] = None
 
-    def _load_ndvar_data(self, y: 'NDVar') -> None:
-        """Load data from Eelbrain NDVar directly."""
-        if not EELBRAIN_AVAILABLE:
-            raise ValueError("Eelbrain not available. Cannot load NDVar data.")
-        
-        # Handle case dimension if present
-        if 'case' in y.dims:
+        # Compute norm for butterfly plot
+        self.butterfly_data = np.linalg.norm(self.glass_brain_data, axis=1)
+
+    def _load_ndvar_data(self, y: NDVar) -> None:
+        """Load data from NDVar directly.
+
+        Parameters
+        ----------
+        y
+            Data with dimensions ([case,] time, source[, space]).
+        """
+        if y.has_case:
             y = y.mean('case')
-        
-        # Determine if we have vector data based on dimensions
-        if 'space' in y.dims:
-            self.has_vector_data = True
-            self.glass_brain_data = y.get_data(('source', 'space', 'time'))
-        else:
-            self.has_vector_data = False
-            data = y.get_data(('source', 'time'))
-            self.glass_brain_data = data[:, np.newaxis, :]  # Add space dimension
-        
-        self.source_coords = y.source.coordinates
+
+        # Extract source dimension info
+        source = y.get_dim('source')
+        self.source_coords = source.coordinates
         self.time_values = y.time.times
-        self.source_space = y.source
 
-    # Rest of the methods are identical to the original viz_2D.py
-    # (I'll include the core methods here, but they're the same as before)
-    
-    def _create_plotly_brain_projection(self, time_idx: int, view_name: str) -> go.Figure:
-        """Create interactive 2D brain projection using optimized batch arrow rendering."""
-        if self.glass_brain_data is None:
-            return go.Figure()
-
-        # Get active data for the current time point
-        active_data = self.glass_brain_data[:, :, time_idx]
-        active_coords = self.source_coords
-        has_vector_data = self.has_vector_data
-
-        if has_vector_data:
-            # For vector data, compute magnitude for coloring
-            active_magnitudes = np.linalg.norm(active_data, axis=1)
-            active_vectors = active_data
+        # Store source space info
+        self.source_space: Any = source
+        if hasattr(self.source_space, 'parc'):
+            self.parcellation: Any = self.source_space.parc
+            self.region_of_brain = str(self.parcellation)
         else:
-            # For scalar data, use the values directly
-            active_magnitudes = np.abs(active_data[:, 0])
+            self.parcellation: Optional[Any] = None
+            self.region_of_brain = 'Full Brain'
+
+        # Handle space dimension (vector data)
+        if y.has_dim('space'):
+            # Extract 3D vector data
+            self.glass_brain_data = y.get_data(('source', 'space', 'time'))  # (n_sources, 3, n_times)
+            # Compute norm for butterfly plot
+            self.butterfly_data = np.linalg.norm(self.glass_brain_data, axis=1)
+        else:
+            # Scalar data - no space dimension
+            self.glass_brain_data = y.get_data(('source', 'time'))  # (n_sources, n_times)
+            self.butterfly_data = self.glass_brain_data.copy()
+            # Expand to 3D for consistency (assuming scalar represents magnitude)
+            self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]  # (n_sources, 1, n_times)
+
+    def _setup_layout(self) -> None:
+        """Setup the Dash app layout."""
+        # Create initial figures
+        initial_butterfly = self.create_butterfly_plot(0)
+        initial_brain_plots = self.create_2d_brain_projections_plotly(0)
+
+        # Define styles based on mode
+        if self.is_jupyter_mode:
+            # Jupyter-specific styles
+            butterfly_style = {'width': '100%', 'margin-bottom': '10px'}
+            butterfly_graph_style = {'height': '300px'}  # Reduced height for Jupyter
+            brain_height = '250px'  # Reduced height for brain views
+            brain_width = '30%'  # Slightly smaller width
+            brain_margin = '1.5%'  # Larger margin for better spacing
+            container_padding = '2px'  # Minimal padding for Jupyter
+        else:
+            # Browser-specific styles
+            butterfly_style = {'width': '100%', 'margin-bottom': '20px'}
+            butterfly_graph_style = {'height': '400px'}  # Standard height
+            brain_height = '450px'  # Standard height for brain views
+            brain_width = '32%'  # Standard width
+            brain_margin = '0.5%'  # Standard margin
+            container_padding = '5px'  # Standard padding
+
+        self.app.layout = html.Div([
+            html.H1("Eelbrain Plotly 2D Brain Visualization",
+                    style={'textAlign': 'center', 'margin': '10px 0'}),
+
+            # Hidden stores for state management
+            dcc.Store(id='selected-time-idx', data=0),
+            dcc.Store(id='selected-source-idx', data=None),
+
+            # Main content - arranged vertically
+            html.Div([
+                # Top: Butterfly plot
+                html.Div([
+                    dcc.Graph(id='butterfly-plot', figure=initial_butterfly, style=butterfly_graph_style)
+                ], style=butterfly_style),
+
+                # Bottom: 2D Brain projections using Plotly
+                html.Div([
+                    # Three brain view plots
+                    html.Div([
+                        html.Div([
+                            dcc.Graph(id='brain-axial-plot', figure=initial_brain_plots['axial'],
+                                      style={'height': brain_height})
+                        ], style={'width': brain_width, 'display': 'inline-block', 'margin': brain_margin}),
+
+                        html.Div([
+                            dcc.Graph(id='brain-sagittal-plot', figure=initial_brain_plots['sagittal'],
+                                      style={'height': brain_height})
+                        ], style={'width': brain_width, 'display': 'inline-block', 'margin': brain_margin}),
+
+                        html.Div([
+                            dcc.Graph(id='brain-coronal-plot', figure=initial_brain_plots['coronal'],
+                                      style={'height': brain_height})
+                        ], style={'width': brain_width, 'display': 'inline-block', 'margin': brain_margin}),
+                    ], style={'textAlign': 'center'}),
+
+                    # Status indicator
+                    html.Div(id='update-status',
+                             children="Click on butterfly plot to update brain views",
+                             style={'textAlign': 'center', 'padding': '10px', 'fontStyle': 'italic', 'color': '#666'})
+                ], style={'width': '100%'}),
+            ]),
+
+            # Info panel
+            html.Div(id='info-panel', style={'clear': 'both', 'padding': '10px', 'textAlign': 'center'})
+        ], style={'width': '100%', 'height': '100%', 'padding': container_padding})
+
+    def _setup_callbacks(self) -> None:
+        """Setup all Dash callbacks."""
+
+        @self.app.callback(
+            Output('butterfly-plot', 'figure'),
+            Input('selected-time-idx', 'data')
+        )
+        def update_butterfly(time_idx: int) -> go.Figure:
+            if time_idx is None:
+                time_idx = 0
+            return self.create_butterfly_plot(time_idx)
+
+        @self.app.callback(
+            [Output('brain-axial-plot', 'figure'),
+             Output('brain-sagittal-plot', 'figure'),
+             Output('brain-coronal-plot', 'figure')],
+            Input('selected-time-idx', 'data'),
+            Input('selected-source-idx', 'data')
+        )
+        def update_brain_projections(time_idx: int, source_idx: int) -> tuple[go.Figure, go.Figure, go.Figure]:
+            if time_idx is None:
+                time_idx = 0
+
+            try:
+                brain_plots = self.create_2d_brain_projections_plotly(time_idx, source_idx)
+                return brain_plots['axial'], brain_plots['sagittal'], brain_plots['coronal']
+            except Exception:
+                # Return empty plots on error
+                empty_fig = go.Figure()
+                empty_fig.add_annotation(text="Error loading brain data",
+                                         xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+                return empty_fig, empty_fig, empty_fig
+
+        @self.app.callback(
+            Output('selected-time-idx', 'data'),
+            Output('selected-source-idx', 'data'),
+            Input('butterfly-plot', 'clickData'),
+            State('selected-time-idx', 'data')
+        )
+        def handle_butterfly_click(click_data: Dict[str, Any], current_time_idx: int) -> tuple[
+            int | Any, int | None | Any]:
+            if not click_data or self.time_values is None:
+                return dash.no_update, dash.no_update
+
+            try:
+                point = click_data['points'][0]
+
+                # Get clicked time
+                clicked_time = point['x']
+                time_idx = np.argmin(np.abs(self.time_values - clicked_time))
+
+                # Get clicked source - for background clicks this will be None
+                source_idx = point.get('customdata', None)
+
+                return time_idx, source_idx
+            except (KeyError, IndexError, TypeError):
+                # If click data is malformed, just return no update
+                return dash.no_update, dash.no_update
+
+        @self.app.callback(
+            Output('update-status', 'children'),
+            Output('update-status', 'style'),
+            Input('selected-time-idx', 'data')
+        )
+        def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
+            if time_idx is not None and self.time_values is not None and 0 <= time_idx < len(self.time_values):
+                time_val = self.time_values[time_idx]
+                status_text = f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
+                status_style = {
+                    'textAlign': 'center',
+                    'padding': '10px',
+                    'fontStyle': 'italic',
+                    'color': '#2E8B57',
+                    'backgroundColor': '#F0FFF0'
+                }
+            else:
+                status_text = "Click on butterfly plot to update brain views"
+                status_style = {'textAlign': 'center', 'padding': '10px', 'fontStyle': 'italic', 'color': '#666'}
+
+            return status_text, status_style
+
+        @self.app.callback(
+            Output('info-panel', 'children'),
+            Input('selected-time-idx', 'data'),
+            Input('selected-source-idx', 'data')
+        )
+        def update_info(time_idx: int, source_idx: int) -> html.P:
+            info = []
+
+            if self.time_values is not None and time_idx is not None and 0 <= time_idx < len(self.time_values):
+                info.append(f"Time: {self.time_values[time_idx]:.3f} s (index {time_idx})")
+
+            if source_idx is not None and self.source_coords is not None and 0 <= source_idx < len(self.source_coords):
+                coord = self.source_coords[source_idx]
+                info.append(f"Selected source: {source_idx}")
+                info.append(f"Coordinates: ({coord[0]:.3f}, {coord[1]:.3f}, {coord[2]:.3f}) m")
+
+            result = html.P(' | '.join(info)) if info else html.P("Click on the plots to interact")
+            return result
+
+    def create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
+        """Create butterfly plot figure."""
+        fig = go.Figure()
+
+        if self.butterfly_data is None or self.time_values is None:
+            fig.add_annotation(text="No data loaded", xref="paper", yref="paper",
+                               x=0.5, y=0.5, showarrow=False)
+            return fig
+
+        n_sources, n_times = self.butterfly_data.shape
+
+        # Auto-scale data for visibility
+        data_to_plot = self.butterfly_data.copy()
+        scale_factor = 1.0
+        unit_suffix = ""
+
+        max_abs_val = np.max(np.abs(data_to_plot))
+        if max_abs_val < 1e-10:
+            scale_factor = 1e12
+            unit_suffix = " (pA)"
+        elif max_abs_val < 1e-6:
+            scale_factor = 1e9
+            unit_suffix = " (nA)"
+        elif max_abs_val < 1e-3:
+            scale_factor = 1e6
+            unit_suffix = " (µA)"
+
+        data_to_plot = data_to_plot * scale_factor
+
+        # Calculate y-axis range for layout and clickable background
+        y_min, y_max = data_to_plot.min(), data_to_plot.max()
+        y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
+
+        # Add invisible clickable markers FIRST so they're behind other traces
+        # Create a dense grid of invisible markers to capture clicks anywhere
+        n_rows = 5  # Number of rows of markers to cover the plot vertically
+        y_positions = np.linspace(y_min - y_margin/2, y_max + y_margin/2, n_rows)
+
+        # Create markers at multiple vertical positions
+        x_grid = np.tile(self.time_values, n_rows)
+        y_grid = np.repeat(y_positions, len(self.time_values))
+
+        fig.add_trace(go.Scatter(
+            x=x_grid,
+            y=y_grid,
+            mode='markers',
+            marker=dict(
+                size=35,  # Large invisible markers
+                color='rgba(0,0,0,0.001)',  # Nearly transparent (but not completely)
+                line=dict(width=0)
+            ),
+            showlegend=False,
+            hovertemplate='Time: %{x:.3f}s<extra></extra>',  # Show time on hover
+            name='clickable_background'
+        ))
+
+        # Add individual source traces only if show_max_only is False
+        if not self.show_max_only:
+            # Plot subset of traces for performance
+            max_traces = 20
+            step = max(1, n_sources // max_traces)
+            indices_to_plot = list(range(0, n_sources, step))
+
+            # Add individual traces
+            for idx, i in enumerate(indices_to_plot[:10]):
+                trace_data = data_to_plot[i, :]
+
+                fig.add_trace(go.Scatter(
+                    x=self.time_values,
+                    y=trace_data,
+                    mode='lines',
+                    name=f'Source {i}',
+                    customdata=[i] * n_times,
+                    showlegend=(idx < 3),
+                    opacity=0.6,
+                    line=dict(width=1)
+                ))
+
+        # Add mean trace (always shown)
+        mean_activity = np.mean(data_to_plot, axis=0)
+        fig.add_trace(go.Scatter(
+            x=self.time_values,
+            y=mean_activity,
+            mode='lines',
+            name='Mean Activity',
+            line=dict(color='red', width=3),
+            showlegend=True
+        ))
+
+        # Add max trace (always shown)
+        max_activity = np.max(data_to_plot, axis=0)
+        fig.add_trace(go.Scatter(
+            x=self.time_values,
+            y=max_activity,
+            mode='lines',
+            name='Max Activity',
+            line=dict(color='darkblue', width=3),
+            showlegend=True
+        ))
+
+        # Add vertical line for selected time
+        if 0 <= selected_time_idx < len(self.time_values):
+            selected_time = self.time_values[selected_time_idx]
+            fig.add_vline(x=selected_time, line_width=2, line_dash="dash", line_color="blue")
+
+        # Update title based on display mode
+        if self.show_max_only:
+            title_text = f"Source Activity Time Series - Mean & Max Only ({n_sources} sources)"
+        else:
+            title_text = f"Source Activity Time Series (showing subset of {n_sources} sources)"
+
+        # Adjust layout based on mode
+        if self.is_jupyter_mode:
+            height = 300
+            margin = dict(l=40, r=40, t=60, b=40)  # Reduced margins for Jupyter
+        else:
+            height = 500
+            margin = dict(l=40, r=40, t=60, b=40)  # Standard margins
+
+        fig.update_layout(
+            title=title_text,
+            xaxis_title="Time (s)",
+            yaxis_title=f"Activity{unit_suffix}",
+            yaxis=dict(range=[y_min - y_margin, y_max + y_margin]),
+            hovermode='closest',
+            height=height,
+            margin=margin,
+            showlegend=True,
+            # Enable clicking on the plot area
+            clickmode='event+select'
+        )
+
+        return fig
+
+    def create_2d_brain_projections_plotly(self, time_idx: int = 0, source_idx: Optional[int] = None) -> Dict[str, go.Figure]:
+        """Create 2D brain projections using Plotly scatter plots."""
+        if self.glass_brain_data is None or self.source_coords is None or self.time_values is None:
+            placeholder_fig = go.Figure()
+            placeholder_fig.add_annotation(text="No brain data", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+            return {
+                'axial': placeholder_fig,
+                'sagittal': placeholder_fig,
+                'coronal': placeholder_fig
+            }
+
+        try:
+            # Get time slice of data
+            if time_idx >= len(self.time_values):
+                time_idx = 0
+
+            time_value = self.time_values[time_idx]
+
+            # Get activity at this time point
+            if self.glass_brain_data.ndim == 3:  # (n_sources, 3, n_times)
+                time_activity = self.glass_brain_data[:, :, time_idx]  # (n_sources, 3)
+                activity_magnitude = np.linalg.norm(time_activity, axis=1)  # (n_sources,)
+            else:  # (n_sources, n_times)
+                activity_magnitude = self.glass_brain_data[:, time_idx]
+
+            # Calculate global min/max for consistent colorbar across all views
+            global_min = np.min(activity_magnitude)
+            global_max = np.max(activity_magnitude)
+
+            # Create brain projections
+            brain_plots = {}
+            views = ['axial', 'sagittal', 'coronal']
+
+            for i, view_name in enumerate(views):
+                try:
+                    # Only show colorbar on the last view (coronal)
+                    show_colorbar = (view_name == 'coronal')
+                    brain_fig = self._create_plotly_brain_projection(
+                        view_name, self.source_coords, activity_magnitude, time_value, source_idx,
+                        show_colorbar=show_colorbar, zmin=global_min, zmax=global_max
+                    )
+                    brain_plots[view_name] = brain_fig
+                except Exception:
+                    brain_plots[view_name] = go.Figure()
+                    brain_plots[view_name].add_annotation(text=f"Error: {view_name}", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+
+            return brain_plots
+
+        except Exception:
+            placeholder_fig = go.Figure()
+            placeholder_fig.add_annotation(text="No brain data", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+            return {
+                'axial': placeholder_fig,
+                'sagittal': placeholder_fig,
+                'coronal': placeholder_fig
+            }
+
+    def _create_plotly_brain_projection(self, view_name: str, coords: np.ndarray, activity: np.ndarray,
+                                        time_value: float, selected_source: Optional[int] = None,
+                                        show_colorbar: bool = True, zmin: float = None,
+                                        zmax: float = None) -> go.Figure:
+        """Create a Plotly plot for a specific brain view with vector arrows."""
+        # Show all data without filtering
+        active_coords = coords
+        active_activity = activity
+        active_indices = np.arange(len(coords))
+
+        # Create Plotly figure
+        fig = go.Figure()
+
+        # Get time index for vector components
+        time_idx = np.argmin(np.abs(self.time_values - time_value))
+
+        # Get vector components for active sources
+        if self.glass_brain_data is not None and len(active_indices) > 0:
+            active_vectors = self.glass_brain_data[active_indices, :, time_idx]  # (n_active, 3) or (n_active, 1)
+        else:
             active_vectors = None
 
-        # Select coordinate mapping based on view
+        # Check if we have vector data (3D) or scalar data (1D)
+        has_vector_data = active_vectors is not None and active_vectors.shape[1] == 3
+
+        # Project to 2D based on view
         if view_name == 'axial':  # Z view (X vs Y)
             x_coords = active_coords[:, 0]
             y_coords = active_coords[:, 1]
@@ -327,89 +597,161 @@ class BrainPlotly2DViz:
             x_spacing = np.diff(unique_x).min() / 2 if len(unique_x) > 1 else 0.001
             y_spacing = np.diff(unique_y).min() / 2 if len(unique_y) > 1 else 0.001
 
-            x_edges = np.concatenate([
-                [unique_x[0] - x_spacing],
-                (unique_x[:-1] + unique_x[1:]) / 2,
-                [unique_x[-1] + x_spacing]
-            ])
-            y_edges = np.concatenate([
-                [unique_y[0] - y_spacing],
-                (unique_y[:-1] + unique_y[1:]) / 2,
-                [unique_y[-1] + y_spacing]
-            ])
+            # Create grid boundaries: small intervals around each data point
+            x_edges = []
+            for i, x_val in enumerate(unique_x):
+                if i == 0:
+                    x_edges.append(x_val - x_spacing)
+                x_edges.append(x_val + x_spacing)
 
-            # Create meshgrid for interpolation
-            X_grid, Y_grid = np.meshgrid(
-                np.linspace(x_edges[0], x_edges[-1], len(x_edges) * 2),
-                np.linspace(y_edges[0], y_edges[-1], len(y_edges) * 2)
-            )
+            y_edges = []
+            for i, y_val in enumerate(unique_y):
+                if i == 0:
+                    y_edges.append(y_val - y_spacing)
+                y_edges.append(y_val + y_spacing)
 
-            # Interpolate magnitudes to grid
-            from scipy.interpolate import griddata
-            Z_grid = griddata(
-                (x_coords, y_coords), active_magnitudes,
-                (X_grid, Y_grid), method='linear', fill_value=0
-            )
+            x_edges = np.array(x_edges)
+            y_edges = np.array(y_edges)
 
-            # Determine colorscale range
-            zmin, zmax = 0, np.max(active_magnitudes) if len(active_magnitudes) > 0 else 1
+            # Create 2D histogram - now each data point falls into its own grid cell
+            H, x_edges_used, y_edges_used = np.histogram2d(x_coords, y_coords,
+                                                           bins=[x_edges, y_edges],
+                                                           weights=active_activity)
 
-            # Create the heatmap
-            fig = go.Figure(go.Heatmap(
-                x=X_grid[0, :],
-                y=Y_grid[:, 0],
-                z=Z_grid,
+            # Create count histogram to compute average weights per bin
+            H_count, _, _ = np.histogram2d(x_coords, y_coords,
+                                           bins=[x_edges, y_edges])
+
+            # Compute average activity per bin (avoid division by zero)
+            # This prevents multiple sources in the same grid cell from summing up
+            H_avg = np.divide(H, H_count, out=np.zeros_like(H), where=H_count != 0)
+
+            # Use grid center points for display
+            x_centers = (x_edges_used[:-1] + x_edges_used[1:]) / 2
+            y_centers = (y_edges_used[:-1] + y_edges_used[1:]) / 2
+
+            # Set zero values to NaN to make them transparent in heatmap
+            H_display = H_avg.copy()  # Use averaged data instead of summed data
+            H_display[H_display == 0] = np.nan
+
+            # Add heatmap trace
+            fig.add_trace(go.Heatmap(
+                x=x_centers,
+                y=y_centers,
+                z=H_display.T,  # Transpose to match Plotly orientation
                 colorscale=self.cmap,
+                colorbar=dict(title="") if show_colorbar else None,
+                showscale=show_colorbar,
                 zmin=zmin,
                 zmax=zmax,
                 hovertemplate='Activity: %{z:.2e}<extra></extra>'
             ))
 
-            # Add arrows using optimized batch method if we have vector data
-            if has_vector_data and self.arrow_threshold != 'none':
-                # Determine which arrows to show
-                arrow_mask = self._get_arrow_mask(active_magnitudes)
-                
-                if np.any(arrow_mask):
-                    arrow_scale = self._calculate_arrow_scale(u_vectors[arrow_mask], v_vectors[arrow_mask])
-                    self._create_batch_arrows(
-                        fig,
-                        x_coords[arrow_mask],
-                        y_coords[arrow_mask], 
-                        u_vectors[arrow_mask],
-                        v_vectors[arrow_mask],
-                        arrow_scale
-                    )
+            # Update layout to have white background
+            fig.update_layout(
+                plot_bgcolor='white',
+                paper_bgcolor='white'
+            )
 
-            # Add selected source marker if exists
-            if hasattr(self, 'selected_source_idx') and self.selected_source_idx is not None:
-                if 0 <= self.selected_source_idx < len(x_coords):
+            # Add vector arrows if we have vector data (not scalar data)
+            if has_vector_data:
+                arrow_scale = 0.025  # Scale arrows for visibility - increased for better visibility
+
+                # Calculate arrow magnitudes for filtering
+                arrow_magnitudes = np.linalg.norm(active_vectors, axis=1)
+
+                # Determine threshold for showing arrows
+                if self.arrow_threshold is None:
+                    # Show all arrows
+                    show_arrow_mask = np.ones(len(active_vectors), dtype=bool)
+                elif self.arrow_threshold == 'auto':
+                    # Use 10% of maximum magnitude as threshold
+                    threshold_value = 0.1 * np.max(arrow_magnitudes)
+                    show_arrow_mask = arrow_magnitudes > threshold_value
+                else:
+                    # Use specified threshold
+                    threshold_value = float(self.arrow_threshold)
+                    show_arrow_mask = arrow_magnitudes > threshold_value
+
+                # Group sources by position and select the one with maximum magnitude for each position
+                position_to_max_idx = {}
+
+                # Remove performance limit, check all source points
+                for i in range(len(active_coords)):
+                    # Only consider arrows that meet the threshold criteria
+                    if not show_arrow_mask[i]:
+                        continue
+
+                    # Create position key (rounded to avoid floating point precision issues)
+                    pos_key = (round(x_coords[i], 6), round(y_coords[i], 6))
+
+                    # If this position hasn't been seen, or current arrow has larger magnitude
+                    if (pos_key not in position_to_max_idx or
+                            arrow_magnitudes[i] > arrow_magnitudes[position_to_max_idx[pos_key]]):
+                        position_to_max_idx[pos_key] = i
+
+                # OPTIMIZED BATCH ARROW RENDERING
+                if position_to_max_idx:
+                    # Extract arrow data for selected sources
+                    selected_indices = list(position_to_max_idx.values())
+                    arrow_x = x_coords[selected_indices]
+                    arrow_y = y_coords[selected_indices]
+                    arrow_u = u_vectors[selected_indices]
+                    arrow_v = v_vectors[selected_indices]
+
+                    # Create all arrows as 2 traces instead of 179+ individual annotations
+                    self._create_batch_arrows(fig, arrow_x, arrow_y, arrow_u, arrow_v, arrow_scale)
+
+            # Highlight selected source if provided
+            if selected_source is not None and selected_source in active_indices:
+                selected_pos = np.where(active_indices == selected_source)[0]
+                if len(selected_pos) > 0:
+                    pos = selected_pos[0]
                     fig.add_trace(go.Scatter(
-                        x=[x_coords[self.selected_source_idx]],
-                        y=[y_coords[self.selected_source_idx]],
+                        x=[x_coords[pos]],
+                        y=[y_coords[pos]],
                         mode='markers',
-                        marker=dict(
-                            size=15,
-                            color='red',
-                            symbol='cross',
-                            line=dict(width=2, color='white')
-                        ),
+                        marker=dict(size=12, color='cyan', symbol='circle-open', line=dict(width=3)),
                         name='Selected Source',
                         showlegend=False,
                         hovertemplate='SELECTED SOURCE<extra></extra>'
                     ))
 
-        else:
-            fig = go.Figure()
-            height = 300
-            margin = dict(l=20, r=20, t=20, b=20)
+                    # Highlight selected source arrow if vectors available
+                    if has_vector_data:
+                        # Check if the selected source arrow meets the threshold
+                        selected_arrow_magnitude = np.linalg.norm(active_vectors[pos])
+                        show_selected_arrow = True
 
-        if len(active_coords) > 0:
-            height = 450
-            margin = dict(l=40, r=40, t=40, b=40)
+                        if self.arrow_threshold is not None:
+                            if self.arrow_threshold == 'auto':
+                                threshold_value = 0.1 * np.max(np.linalg.norm(active_vectors, axis=1))
+                            else:
+                                threshold_value = float(self.arrow_threshold)
+                            show_selected_arrow = selected_arrow_magnitude > threshold_value
+
+                        if show_selected_arrow:
+                            x_start = x_coords[pos]
+                            y_start = y_coords[pos]
+                            x_end = x_start + u_vectors[pos] * arrow_scale
+                            y_end = y_start + v_vectors[pos] * arrow_scale
+
+                            # Add highlighted arrow for selected source (optimized)
+                            self._create_batch_arrows(fig, np.array([x_start]), np.array([y_start]),
+                                                      np.array([u_vectors[pos]]), np.array([v_vectors[pos]]),
+                                                      arrow_scale, color='cyan', width=2, size=1.0)
+        else:
+            # Add annotation if no active sources
+            fig.add_annotation(text=f"No active sources for {view_name} view",
+                               xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+
+        # Update layout based on mode
+        if self.is_jupyter_mode:
+            height = 250
+            margin = dict(l=30, r=30, t=30, b=30)  # Reduced margins for Jupyter
         else:
             height = 450
-            margin = dict(l=40, r=40, t=40, b=40)
+            margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
 
         fig.update_layout(
             title=title,
@@ -423,323 +765,293 @@ class BrainPlotly2DViz:
 
         return fig
 
-    def _get_arrow_mask(self, magnitudes: np.ndarray) -> np.ndarray:
-        """Determine which arrows to display based on threshold."""
-        if self.arrow_threshold == 'all':
-            return np.ones(len(magnitudes), dtype=bool)
-        elif self.arrow_threshold == 'auto':
-            # Show top 30% of arrows
-            threshold = np.percentile(magnitudes, 70)
-            return magnitudes > threshold
-        elif isinstance(self.arrow_threshold, (int, float)):
-            return magnitudes > self.arrow_threshold
-        else:
-            return np.zeros(len(magnitudes), dtype=bool)
+    def _create_batch_arrows(self, fig: go.Figure, x_coords: np.ndarray, y_coords: np.ndarray,
+                             u_vectors: np.ndarray, v_vectors: np.ndarray, arrow_scale: float,
+                             color: str = 'black', width: int = 1, size: float = 0.8) -> None:
+        """Create all arrows using batch method."""
 
-    def _calculate_arrow_scale(self, u_vectors: np.ndarray, v_vectors: np.ndarray) -> float:
-        """Calculate appropriate arrow scaling factor."""
-        max_magnitude = np.max(np.sqrt(u_vectors**2 + v_vectors**2))
-        return 0.01 / max_magnitude if max_magnitude > 0 else 1.0
+        if len(x_coords) == 0:
+            return
 
-    def _create_batch_arrows(
-        self, 
-        fig: go.Figure, 
-        x_coords: np.ndarray, 
-        y_coords: np.ndarray,
-        u_vectors: np.ndarray, 
-        v_vectors: np.ndarray, 
-        arrow_scale: float,
-        color: str = 'black', 
-        width: int = 1, 
-        size: float = 0.8
-    ) -> None:
-        """
-        Create arrows using optimized batch method with lines and markers.
-        
-        This method is 453x faster than individual annotations.
-        """
-        # Calculate arrow endpoints
+        # Calculate all endpoints at once (vectorized)
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
-        
-        # Create line segments for arrow shafts
+
+        # Create all arrow lines as a single trace
+        # Use None to separate individual line segments
         x_lines = []
         y_lines = []
-        
         for i in range(len(x_coords)):
             x_lines.extend([x_coords[i], x_ends[i], None])
             y_lines.extend([y_coords[i], y_ends[i], None])
-        
-        # Add arrow shafts as a single trace
+
+        # Add all arrow lines as single trace (instead of 179+ individual annotations)
         fig.add_trace(go.Scatter(
             x=x_lines,
             y=y_lines,
             mode='lines',
             line=dict(color=color, width=width),
+            opacity=0.6,
             showlegend=False,
-            hoverinfo='skip'
+            hoverinfo='skip',
+            name='arrow_lines'
         ))
-        
-        # Calculate arrowhead angles
+
+        # Calculate arrow angles for proper arrowhead rotation
         angles = np.degrees(np.arctan2(v_vectors, u_vectors))
-        
-        # Add arrowheads as markers
+        magnitudes = np.sqrt(u_vectors ** 2 + v_vectors ** 2)
+
+        # Add all arrowheads as single trace (instead of 179+ individual annotations)
         fig.add_trace(go.Scatter(
             x=x_ends,
             y=y_ends,
             mode='markers',
             marker=dict(
                 symbol='triangle-right',
-                size=size * 8,
+                size=6 * size,  # Scale the marker size
                 color=color,
-                angle=angles,
-                line=dict(width=0)
+                opacity=0.8,
+                angle=angles  # Rotate markers to match vector direction
             ),
             showlegend=False,
             hovertemplate='Vector magnitude: %{customdata:.3f}<extra></extra>',
-            customdata=np.sqrt(u_vectors**2 + v_vectors**2)
+            customdata=magnitudes,
+            name='arrow_heads'
         ))
 
-    def create_2d_brain_projections_plotly(self, time_idx: int = 0) -> Dict[str, go.Figure]:
-        """Create 2D brain projections for all views."""
-        views = ['axial', 'sagittal', 'coronal']
-        projections = {}
-        
-        for view in views:
-            projections[view] = self._create_plotly_brain_projection(time_idx, view)
-            
-        return projections
+    def _fig_to_base64(self, fig: plt.Figure) -> str:
+        """Convert matplotlib figure to base64 string for Dash display."""
+        try:
+            # Save figure to bytes buffer
+            img_buffer = io.BytesIO()
+            fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=100, facecolor='white')
+            img_buffer.seek(0)
 
-    def create_butterfly_plot(self) -> go.Figure:
-        """Create butterfly plot showing time series of brain activity."""
-        if self.glass_brain_data is None:
-            return go.Figure()
+            # Convert to base64 string
+            img_base64 = base64.b64encode(img_buffer.read()).decode('utf-8')
+            img_buffer.close()
 
-        fig = go.Figure()
-        
-        if self.has_vector_data:
-            # For vector data, plot magnitude time series
-            magnitudes = np.linalg.norm(self.glass_brain_data, axis=1)
-        else:
-            # For scalar data, plot absolute values
-            magnitudes = np.abs(self.glass_brain_data[:, 0, :])
+            return f"data:image/png;base64,{img_base64}"
 
-        if not self.show_max_only:
-            # Plot individual source traces (with transparency)
-            for i in range(min(50, magnitudes.shape[0])):  # Limit to 50 traces for performance
-                fig.add_trace(go.Scatter(
-                    x=self.time_values,
-                    y=magnitudes[i, :],
-                    mode='lines',
-                    line=dict(color='lightblue', width=0.5),
-                    opacity=0.3,
-                    showlegend=False,
-                    hovertemplate=f'Source {i}<br>Time: %{{x:.3f}}s<br>Activity: %{{y:.2e}}<extra></extra>'
-                ))
+        except Exception:
+            return self._create_placeholder_image("Conversion Error")
 
-        # Plot mean trace
-        mean_trace = np.mean(magnitudes, axis=0)
-        fig.add_trace(go.Scatter(
-            x=self.time_values,
-            y=mean_trace,
-            mode='lines',
-            line=dict(color='blue', width=2),
-            name='Mean',
-            hovertemplate='Mean<br>Time: %{x:.3f}s<br>Activity: %{y:.2e}<extra></extra>'
-        ))
+    def _create_placeholder_image(self, text: str = "No Data") -> str:
+        """Create a placeholder image when brain plotting fails."""
 
-        # Plot max trace
-        max_trace = np.max(magnitudes, axis=0)
-        fig.add_trace(go.Scatter(
-            x=self.time_values,
-            y=max_trace,
-            mode='lines',
-            line=dict(color='red', width=2),
-            name='Max',
-            hovertemplate='Max<br>Time: %{x:.3f}s<br>Activity: %{y:.2e}<extra></extra>'
-        ))
+        # Create a simple matplotlib figure
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.text(0.5, 0.5, text, ha='center', va='center', fontsize=16,
+                transform=ax.transAxes)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
 
-        fig.update_layout(
-            title="Butterfly Plot - Brain Activity Time Series",
-            xaxis_title="Time (s)",
-            yaxis_title="Activity Magnitude",
-            height=300,
-            margin=dict(l=50, r=20, t=40, b=50)
-        )
+        # Convert to base64
+        img_base64 = self._fig_to_base64(fig)
+        plt.close(fig)
 
-        return fig
+        return img_base64
 
-    def run(self, port: int = 8050, debug: bool = False, host: str = '127.0.0.1') -> None:
-        """Run the interactive Dash application."""
-        # Initialize Dash app
-        app = dash.Dash(__name__)
-        
-        # Define app layout
-        app.layout = html.Div([
-            html.H1("Interactive 2D Brain Visualization", 
-                   style={'textAlign': 'center', 'marginBottom': 30}),
-            
-            # Time slider
-            html.Div([
-                html.Label("Time Point:", style={'fontWeight': 'bold'}),
-                dcc.Slider(
-                    id='time-slider',
-                    min=0,
-                    max=len(self.time_values) - 1,
-                    step=1,
-                    value=len(self.time_values) // 2,
-                    marks={i: f'{self.time_values[i]:.3f}s' 
-                          for i in range(0, len(self.time_values), max(1, len(self.time_values) // 10))},
-                    tooltip={"placement": "bottom", "always_visible": True}
-                )
-            ], style={'margin': '20px'}),
-            
-            # Brain projections
-            html.Div([
-                html.H3("Brain Projections", style={'textAlign': 'center'}),
-                html.Div([
-                    html.Div([
-                        html.H4("Axial View", style={'textAlign': 'center'}),
-                        dcc.Graph(id='axial-projection')
-                    ], className='four columns'),
-                    html.Div([
-                        html.H4("Sagittal View", style={'textAlign': 'center'}),
-                        dcc.Graph(id='sagittal-projection')
-                    ], className='four columns'),
-                    html.Div([
-                        html.H4("Coronal View", style={'textAlign': 'center'}),
-                        dcc.Graph(id='coronal-projection')
-                    ], className='four columns'),
-                ], className='row')
-            ]),
-            
-            # Butterfly plot
-            html.Div([
-                html.H3("Butterfly Plot", style={'textAlign': 'center'}),
-                dcc.Graph(id='butterfly-plot')
-            ], style={'marginTop': 30}),
-            
-            # Hidden div to store selected data
-            html.Div(id='selected-time-idx', style={'display': 'none'}),
-            html.Div(id='status-display', style={'textAlign': 'center', 'marginTop': 20})
-        ])
+    def run(self, port: Optional[int] = None, debug: bool = True, mode: str = 'external',
+            width: int = 1200, height: int = 900) -> None:
+        """Run the Dash app with Jupyter integration support.
 
-        # Callbacks
-        @app.callback(
-            [Output('axial-projection', 'figure'),
-             Output('sagittal-projection', 'figure'),
-             Output('coronal-projection', 'figure'),
-             Output('selected-time-idx', 'children')],
-            [Input('time-slider', 'value')]
-        )
-        def update_brain_projections(time_idx: int | None) -> tuple[go.Figure, go.Figure, go.Figure, int]:
-            if time_idx is None:
-                time_idx = 0
-            
-            projections = self.create_2d_brain_projections_plotly(time_idx)
-            return (
-                projections['axial'],
-                projections['sagittal'], 
-                projections['coronal'],
-                time_idx
+        Parameters
+        ----------
+        port
+            Port number for the server. If None, uses random port.
+        debug
+            Enable debug mode. Default is True.
+        mode
+            Display mode. Options:
+            - 'external': Open in separate browser window (default)
+            - 'inline': Embed directly in Jupyter notebook (modern Dash)
+            - 'jupyterlab': Open in JupyterLab tab (modern Dash)
+        width
+            Display width in pixels for Jupyter integration. Default is 1200.
+        height
+            Display height in pixels for Jupyter integration. Default is 900.
+        """
+        if port is None:
+            port = random.randint(8001, 9001)
+
+        if JUPYTER_AVAILABLE and mode in ['inline', 'jupyterlab']:
+            print(f"\nStarting 2D Brain Visualization with modern Dash Jupyter integration...")
+            print(f"Mode: {mode}, Size: {width}x{height}px")
+
+            # Use modern Dash Jupyter integration
+            self.app.run(
+                debug=debug,
+                port=port,
+                mode=mode,
+                width=width,
+                height=height
             )
+        else:
+            print(f"\nStarting 2D Brain Visualization Dash app on port {port}...")
+            print(f"Open http://127.0.0.1:{port}/ in your browser")
+            if not JUPYTER_AVAILABLE and mode != 'external':
+                print("Note: Jupyter environment not detected, using external browser mode")
+            print()
 
-        @app.callback(
-            Output('butterfly-plot', 'figure'),
-            [Input('selected-time-idx', 'children')]
-        )
-        def update_butterfly(time_idx: int | None) -> go.Figure:
-            butterfly_fig = self.create_butterfly_plot()
-            
-            # Add vertical line for current time
-            if time_idx is not None and 0 <= time_idx < len(self.time_values):
-                current_time = self.time_values[time_idx]
-                butterfly_fig.add_vline(
-                    x=current_time,
-                    line_dash="dash",
-                    line_color="green",
-                    annotation_text=f"t={current_time:.3f}s"
-                )
-            
-            return butterfly_fig
+            self.app.run(debug=debug, port=port)
 
-        @app.callback(
-            Output('status-display', 'children'),
-            [Input('selected-time-idx', 'children')]
-        )
-        def update_status(time_idx: int | None) -> str:
-            if time_idx is not None and 0 <= time_idx < len(self.time_values):
-                current_time = self.time_values[time_idx]
-                return f"Current time: {current_time:.3f}s (index: {time_idx})"
-            return "Ready"
+    def show_in_jupyter(self, width: int = 1200, height: int = 900, debug: bool = False) -> None:
+        """Convenience method to display the visualization inline in Jupyter notebooks.
 
-        # Run the app
-        print(f"Starting brain visualization at http://{host}:{port}")
-        print("Press Ctrl+C to stop the server")
-        app.run_server(debug=debug, host=host, port=port)
+        Parameters
+        ----------
+        width
+            Display width in pixels. Default is 1200.
+        height
+            Display height in pixels. Default is 900.
+        debug
+            Enable debug mode. Default is False for cleaner output.
 
-    def show_in_jupyter(self, time_idx: int = 0, width: int = 1200, height: int = 800) -> None:
-        """Display visualization in Jupyter notebook."""
+        Examples
+        --------
+        Basic usage in Jupyter:
+        >>> viz = EelbrainPlotly2DViz()
+        >>> viz.show_in_jupyter()
+
+        Custom sizing:
+        >>> viz.show_in_jupyter(width=1400, height=1000)
+        """
         if not JUPYTER_AVAILABLE:
-            print("Jupyter environment not detected. Use run() method instead.")
+            print("Warning: Jupyter environment not detected.")
+            print("Falling back to external browser mode...")
+            self.run(debug=debug)
             return
 
-        from IPython.display import display, HTML
-        import plotly.offline as pyo
+        # Set Jupyter mode and rebuild layout with Jupyter-specific styles
+        self.is_jupyter_mode = True
+        self._setup_layout()  # Rebuild layout with Jupyter styles
 
-        # Create projections
-        projections = self.create_2d_brain_projections_plotly(time_idx)
-        butterfly = self.create_butterfly_plot()
+        self.run(mode='inline', width=width, height=height, debug=debug)
 
-        print(f"📊 Brain Visualization at time {self.time_values[time_idx]:.3f}s")
-        
-        # Display butterfly plot
-        print("\n🦋 Butterfly Plot:")
-        display(butterfly)
-        
-        # Display brain projections
-        print(f"\n🧠 Brain Projections:")
-        for view_name, fig in projections.items():
-            print(f"\n{view_name.title()} View:")
-            display(fig)
+    def export_images(self, output_dir: str = "./images", time_idx: Optional[int] = None, format: str = "png") -> Dict[str, Any]:
+        """Export current plots as image files.
 
-    def export_images(
-        self, 
-        output_dir: str = "./brain_viz_export",
-        time_idx: int = 0,
-        format: str = "png",
-        width: int = 800,
-        height: int = 600
-    ) -> Dict[str, str]:
-        """Export visualization as static images."""
+        Parameters
+        ----------
+        output_dir
+            Directory to save image files. Default is "./images".
+        time_idx
+            Time index to export. If None, uses 0.
+        format
+            Image format ('png', 'jpg', 'svg', 'pdf'). Default is 'png'.
+
+        Returns
+        -------
+        dict
+            Dictionary with exported file paths and status.
+        """
         import os
         from datetime import datetime
-        
-        # Create output directory
+
+        # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-        
-        # Generate timestamp
+
+        # Use provided time_idx or default to 0
+        if time_idx is None:
+            time_idx = 0
+
+        # Timestamp for unique filenames
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Export projections
-        projections = self.create_2d_brain_projections_plotly(time_idx)
+
         exported_files = {}
-        
-        for view_name, fig in projections.items():
-            filename = f"{view_name}_view_{timestamp}.{format}"
-            filepath = os.path.join(output_dir, filename)
-            fig.write_image(filepath, width=width, height=height)
-            exported_files[view_name] = filepath
-        
-        # Export butterfly plot
-        butterfly = self.create_butterfly_plot()
-        butterfly_filename = f"butterfly_plot_{timestamp}.{format}"
-        butterfly_filepath = os.path.join(output_dir, butterfly_filename)
-        butterfly.write_image(butterfly_filepath, width=width, height=height)
-        exported_files['butterfly_plot'] = butterfly_filepath
-        
-        print(f"✓ Successfully exported {len(exported_files)} image files to {output_dir}")
-        for plot_type, filepath in exported_files.items():
-            print(f"  - {plot_type}: {filepath}")
-        
-        return exported_files 
+
+        try:
+            # Export butterfly plot
+            butterfly_fig = self.create_butterfly_plot(time_idx)
+            butterfly_path = os.path.join(output_dir, f"butterfly_plot_{timestamp}.{format}")
+            butterfly_fig.write_image(butterfly_path, width=1200, height=600)
+            exported_files['butterfly_plot'] = butterfly_path
+
+            # Export brain projections
+            brain_plots = self.create_2d_brain_projections_plotly(time_idx)
+
+            for view_name, fig in brain_plots.items():
+                brain_path = os.path.join(output_dir, f"{view_name}_view_{timestamp}.{format}")
+                fig.write_image(brain_path, width=800, height=600)
+                exported_files[f'{view_name}_view'] = brain_path
+
+            print(f"✓ Successfully exported {len(exported_files)} image files to {output_dir}")
+            for file_type, path in exported_files.items():
+                print(f"  - {file_type}: {path}")
+
+            return {"status": "success", "files": exported_files}
+
+        except Exception as e:
+            error_msg = f"Image export failed: {str(e)}"
+            print(f"✗ {error_msg}")
+            return {"status": "error", "message": error_msg, "files": exported_files}
+
+
+# Run the app when script is executed directly
+if __name__ == '__main__':
+    try:
+        # Example cmap options:
+        # cmap = 'Hot'           # Black → Red → Yellow → White
+        # cmap = 'YlOrRd'        # Yellow → Orange → Red
+        # cmap = 'Viridis'       # Purple → Blue → Green → Yellow
+
+        # Custom cmap example
+        cmap = [
+            [0, 'rgba(255,255,0,0.5)'],    # Yellow with 50% transparency
+            [0.5, 'rgba(255,165,0,0.8)'],  # Orange with 80% transparency
+            [1, 'rgba(255,0,0,1.0)']       # Red with full opacity
+        ]
+
+        # Butterfly plot display options:
+        # show_max_only=False: Shows individual source traces + mean + max (default)
+        # show_max_only=True:  Shows only mean + max traces (cleaner view)
+
+        # Arrow threshold options:
+        # arrow_threshold=None: Show all arrows (default)
+        # arrow_threshold='auto': Show arrows with magnitude > 10% of max
+        # arrow_threshold=0.01: Show arrows with magnitude > 0.01 (custom threshold)
+
+        # Method 1: Pass data directly using y parameter (same as plot.GlassBrain)
+        # from eelbrain import datasets
+        #
+        # # Load your data - NDVar with dimensions ([case,] time, source[, space])
+        # data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+        # y = data_ds['src']  # NDVar with dimensions (case, time, source, space)
+        #
+        # # Create visualization with your data
+        # viz_2d = EelbrainPlotly2DViz(
+        #     y=y,  # Pass NDVar directly - same format as plot.GlassBrain
+        #     cmap=cmap,
+        #     show_max_only=False,
+        #     arrow_threshold='auto'  # Only show significant arrows
+        # )
+
+        # Method 2: Use default MNE sample data with region filtering
+        viz_2d = EelbrainPlotly2DViz(
+            region='aparc+aseg',
+            cmap=cmap,
+            show_max_only=False,
+            arrow_threshold=None  # Show all arrows
+        )
+
+        # Example: Export plot images
+        # Uncomment the lines below to export images before running the app:
+        # result = viz_2d.export_images(
+        #     output_dir="./brain_images",
+        #     time_idx=10,  # Export plots for time index 10
+        #     format="png"  # Can be 'png', 'jpg', 'svg', 'pdf'
+        # )
+        # print("Export result:", result)
+
+        # For Jupyter notebooks, use:
+        # viz_2d.show_in_jupyter(width=1200, height=900)
+
+        # For regular Python scripts or external browser:
+        viz_2d.run()
+
+    except Exception as e:
+        print(f"Error starting 2D visualization app: {e}")
+        import traceback
+        traceback.print_exc()

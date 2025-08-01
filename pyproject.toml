@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eelbrain-plotly-viz"
+name = "LiveNeuron"
 version = "1.0.0"
-description = "Interactive 2D brain visualization using Plotly and Dash"
+description = "LiveNeuron: Interactive 2D brain visualization using Plotly and Dash"
 readme = "README.md"
 license = "MIT"
 authors = [
-    {name = "Eelbrain Team", email = "eelbrain@example.com"}
+    {name = "LiveNeuron Team", email = "liveneuron@example.com"}
 ]
 maintainers = [
-    {name = "Eelbrain Team", email = "eelbrain@example.com"}
+    {name = "LiveNeuron Team", email = "liveneuron@example.com"}
 ]
 keywords = [
     "neuroscience",
@@ -22,7 +22,8 @@ keywords = [
     "dash",
     "interactive",
     "2D",
-    "projection"
+    "projection",
+    "liveneuron"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -60,10 +61,10 @@ dev = [
 all = ["eelbrain"]
 
 [project.urls]
-Homepage = "https://github.com/liang-bo96/eelbrain-plotly-viz"
-Documentation = "https://github.com/liang-bo96/eelbrain-plotly-viz#readme"
-Repository = "https://github.com/liang-bo96/eelbrain-plotly-viz.git"
-"Bug Tracker" = "https://github.com/liang-bo96/eelbrain-plotly-viz/issues"
+Homepage = "https://github.com/liang-bo96/LiveNeuron"
+Documentation = "https://github.com/liang-bo96/LiveNeuron#readme"
+Repository = "https://github.com/liang-bo96/LiveNeuron.git"
+"Bug Tracker" = "https://github.com/liang-bo96/LiveNeuron/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

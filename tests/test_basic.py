@@ -9,7 +9,8 @@ import numpy as np
 def test_package_import():
     """Test that the package can be imported."""
     import eelbrain_plotly_viz
-    assert hasattr(eelbrain_plotly_viz, 'BrainPlotly2DViz')
+    assert hasattr(eelbrain_plotly_viz, 'EelbrainPlotly2DViz')
+    assert hasattr(eelbrain_plotly_viz, 'BrainPlotly2DViz')  # Alias
     assert hasattr(eelbrain_plotly_viz, 'create_sample_brain_data')
 
 
@@ -54,52 +55,59 @@ def test_scalar_data_creation():
 
 
 def test_viz_creation_with_sample_data():
-    """Test creating visualization with sample data."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
+    """Test creating visualization with default sample data."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
     
     # This should work without errors
+    viz = EelbrainPlotly2DViz()
+    
+    assert viz.glass_brain_data is not None
+    assert viz.source_coords is not None
+    assert viz.time_values is not None
+    assert hasattr(viz, 'region_of_brain')
+    assert hasattr(viz, 'cmap')
+    assert hasattr(viz, 'show_max_only')
+    assert hasattr(viz, 'arrow_threshold')
+
+
+def test_viz_creation_with_options():
+    """Test creating visualization with different options."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    
+    # Test with different parameters
+    viz = EelbrainPlotly2DViz(
+        y=None,
+        region=None,
+        cmap='Viridis',
+        show_max_only=True,
+        arrow_threshold='auto'
+    )
+    
+    assert viz.glass_brain_data is not None
+    assert viz.source_coords is not None
+    assert viz.time_values is not None
+    assert viz.cmap == 'Viridis'
+    assert viz.show_max_only is True
+    assert viz.arrow_threshold == 'auto'
+
+
+def test_alias_import():
+    """Test that the BrainPlotly2DViz alias works."""
+    from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+    
+    # The alias should be the same as the original class
+    assert BrainPlotly2DViz is EelbrainPlotly2DViz
+    
+    # Should be able to create instance with alias
     viz = BrainPlotly2DViz()
-    
     assert viz.glass_brain_data is not None
-    assert viz.source_coords is not None
-    assert viz.time_values is not None
-    assert hasattr(viz, 'has_vector_data')
-
-
-def test_viz_creation_with_numpy_data():
-    """Test creating visualization with numpy arrays."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
-    
-    # Create test data
-    data = np.random.rand(20, 10, 3)  # Vector data
-    coords = np.random.rand(20, 3) * 0.1 - 0.05
-    times = np.linspace(0, 1, 10)
-    
-    viz = BrainPlotly2DViz(y=data, coords=coords, times=times)
-    
-    assert viz.glass_brain_data is not None
-    assert viz.source_coords is not None
-    assert viz.time_values is not None
-    assert viz.has_vector_data is True
-
-
-def test_viz_creation_with_dict_data():
-    """Test creating visualization with dictionary data."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz, create_sample_brain_data
-    
-    data_dict = create_sample_brain_data(n_sources=25, n_times=12)
-    viz = BrainPlotly2DViz(y=data_dict)
-    
-    assert viz.glass_brain_data is not None
-    assert viz.source_coords is not None
-    assert viz.time_values is not None
 
 
 def test_brain_projections():
     """Test brain projection creation."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
     
-    viz = BrainPlotly2DViz()
+    viz = EelbrainPlotly2DViz()
     projections = viz.create_2d_brain_projections_plotly(time_idx=5)
     
     assert isinstance(projections, dict)
@@ -115,9 +123,9 @@ def test_brain_projections():
 
 def test_butterfly_plot():
     """Test butterfly plot creation."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
     
-    viz = BrainPlotly2DViz()
+    viz = EelbrainPlotly2DViz()
     butterfly_fig = viz.create_butterfly_plot()
     
     assert hasattr(butterfly_fig, 'data')
@@ -125,22 +133,89 @@ def test_butterfly_plot():
     assert len(butterfly_fig.data) > 0  # Should have at least mean and max traces
 
 
-def test_error_handling():
-    """Test error handling for invalid inputs."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
+def test_custom_colormap():
+    """Test custom colormap functionality."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
     
-    # Test missing coords parameter
-    with pytest.raises(ValueError, match="coords parameter is required"):
-        data = np.random.rand(10, 5, 3)
-        BrainPlotly2DViz(y=data)
+    # Test custom colormap
+    custom_cmap = [
+        [0, 'yellow'],
+        [0.5, 'orange'],
+        [1, 'red']
+    ]
     
-    # Test missing times parameter
-    with pytest.raises(ValueError, match="times parameter is required"):
-        data = np.random.rand(10, 5, 3)
-        coords = np.random.rand(10, 3)
-        BrainPlotly2DViz(y=data, coords=coords)
+    viz = EelbrainPlotly2DViz(cmap=custom_cmap)
+    assert viz.cmap == custom_cmap
+
+
+def test_different_arrow_thresholds():
+    """Test different arrow threshold settings."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
     
-    # Test invalid data dictionary
-    with pytest.raises(ValueError, match="Missing required key"):
-        invalid_dict = {'data': np.random.rand(10, 5)}  # Missing required keys
-        BrainPlotly2DViz(y=invalid_dict) 
+    # Test None threshold
+    viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
+    assert viz1.arrow_threshold is None
+    
+    # Test auto threshold
+    viz2 = EelbrainPlotly2DViz(arrow_threshold='auto')
+    assert viz2.arrow_threshold == 'auto'
+    
+    # Test numeric threshold
+    viz3 = EelbrainPlotly2DViz(arrow_threshold=0.5)
+    assert viz3.arrow_threshold == 0.5
+
+
+def test_show_max_only_option():
+    """Test show_max_only parameter."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    
+    # Test with show_max_only=True
+    viz1 = EelbrainPlotly2DViz(show_max_only=True)
+    butterfly_fig1 = viz1.create_butterfly_plot()
+    
+    # Test with show_max_only=False
+    viz2 = EelbrainPlotly2DViz(show_max_only=False)
+    butterfly_fig2 = viz2.create_butterfly_plot()
+    
+    # Both should create valid figures
+    assert hasattr(butterfly_fig1, 'data')
+    assert hasattr(butterfly_fig2, 'data')
+    
+    # The number of traces might be different
+    # (show_max_only=True should have fewer traces)
+    assert len(butterfly_fig1.data) > 0
+    assert len(butterfly_fig2.data) > 0
+
+
+@pytest.mark.skipif(True, reason="eelbrain dependency not always available")
+def test_eelbrain_integration():
+    """Test integration with eelbrain (if available)."""
+    try:
+        from eelbrain import datasets
+        from eelbrain_plotly_viz import EelbrainPlotly2DViz
+        
+        # Load eelbrain data
+        data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+        y = data_ds['src']
+        
+        # Create visualization with eelbrain data
+        viz = EelbrainPlotly2DViz(y=y)
+        
+        assert viz.glass_brain_data is not None
+        assert viz.source_coords is not None
+        assert viz.time_values is not None
+        
+    except ImportError:
+        pytest.skip("eelbrain not available")
+
+
+def test_app_creation():
+    """Test that the Dash app is created properly."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    
+    viz = EelbrainPlotly2DViz()
+    
+    # Check that the app exists and has the expected attributes
+    assert hasattr(viz, 'app')
+    assert hasattr(viz.app, 'layout')
+    assert hasattr(viz.app, 'callback_map') 

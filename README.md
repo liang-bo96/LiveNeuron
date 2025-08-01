@@ -1,4 +1,4 @@
-# Eelbrain Plotly Visualization
+# LiveNeuron
 
 Interactive 2D brain visualization using Plotly and Dash. A standalone Python package for creating web-based brain activity visualizations with performance-optimized arrow rendering.
 
@@ -19,20 +19,20 @@ Interactive 2D brain visualization using Plotly and Dash. A standalone Python pa
 
 ```bash
 # Basic installation
-pip install git+https://github.com/liang-bo96/eelbrain-plotly-viz.git
+pip install git+https://github.com/liang-bo96/LiveNeuron.git
 
 # With optional Eelbrain support
-pip install "git+https://github.com/liang-bo96/eelbrain-plotly-viz.git[eelbrain]"
+pip install "git+https://github.com/liang-bo96/LiveNeuron.git[eelbrain]"
 
 # Development installation
-pip install "git+https://github.com/liang-bo96/eelbrain-plotly-viz.git[dev]"
+pip install "git+https://github.com/liang-bo96/LiveNeuron.git[dev]"
 ```
 
 ### Local Development
 
 ```bash
-git clone https://github.com/liang-bo96/eelbrain-plotly-viz.git
-cd eelbrain-plotly-viz
+git clone https://github.com/liang-bo96/LiveNeuron.git
+cd LiveNeuron
 pip install -e .
 ```
 
@@ -41,35 +41,61 @@ pip install -e .
 ### Basic Usage with Sample Data
 
 ```python
-from eelbrain_plotly_viz import BrainPlotly2DViz
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
 # Create visualization with sample data
-viz = BrainPlotly2DViz()
+viz = EelbrainPlotly2DViz()
 
 # Run interactive dashboard
 viz.run()  # Opens at http://127.0.0.1:8050
 ```
 
-### Using Your Own Numpy Data
+### Using Built-in MNE Sample Data with Custom Options
 
 ```python
-import numpy as np
-from eelbrain_plotly_viz import BrainPlotly2DViz
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-# Your brain data
-data = np.random.rand(100, 50, 3)  # (sources, times, xyz) for vector data
-coords = np.random.rand(100, 3)     # (sources, xyz) coordinates  
-times = np.linspace(0, 1, 50)       # time values
+# Create visualization with custom options
+viz = EelbrainPlotly2DViz(
+    y=None,                    # Use built-in sample data
+    region=None,               # Use full brain (or specify 'aparc+aseg' for parcellation)
+    cmap='Viridis',           # Custom colormap
+    show_max_only=True,       # Show only mean and max in butterfly plot
+    arrow_threshold='auto'     # Show only significant arrows
+)
 
-# Create visualization
-viz = BrainPlotly2DViz(y=data, coords=coords, times=times)
 viz.run()
 ```
 
-### Using Data Dictionary Format
+### Using Eelbrain NDVar Data
 
 ```python
-from eelbrain_plotly_viz import BrainPlotly2DViz, create_sample_brain_data
+from eelbrain import datasets
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+# Load Eelbrain data
+data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+y = data_ds['src']  # NDVar format
+
+# Visualize
+viz = EelbrainPlotly2DViz(y=y)
+viz.run()
+```
+
+### Jupyter Notebook Usage
+
+```python
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+# Create and display in notebook
+viz = EelbrainPlotly2DViz()
+viz.show_in_jupyter(width=1200, height=900)  # Interactive display in notebook
+```
+
+### Using Sample Data Generator
+
+```python
+from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
 
 # Create sample data
 data_dict = create_sample_brain_data(
@@ -78,33 +104,9 @@ data_dict = create_sample_brain_data(
     has_vector_data=True
 )
 
-# Visualize
-viz = BrainPlotly2DViz(y=data_dict)
-viz.run()
-```
-
-### Jupyter Notebook Usage
-
-```python
-from eelbrain_plotly_viz import BrainPlotly2DViz
-
-# Create and display in notebook
-viz = BrainPlotly2DViz()
-viz.show_in_jupyter(time_idx=25)  # Show specific time point
-```
-
-### With Eelbrain NDVar (if installed)
-
-```python
-from eelbrain import datasets
-from eelbrain_plotly_viz import BrainPlotly2DViz
-
-# Load Eelbrain data
-data_ds = datasets.get_mne_sample(src='vol', ori='vector')
-y = data_ds['src']  # NDVar format
-
-# Visualize
-viz = BrainPlotly2DViz(y=y)
+# Note: Direct dictionary input not supported in current implementation
+# Use built-in sample data or Eelbrain NDVar instead
+viz = EelbrainPlotly2DViz()  # Uses built-in MNE sample data
 viz.run()
 ```
 
@@ -113,11 +115,19 @@ viz.run()
 ### Custom Visualization Options
 
 ```python
-viz = BrainPlotly2DViz(
-    y=your_data,
-    cmap='Viridis',           # Custom colormap
-    show_max_only=True,       # Show only mean and max in butterfly plot
-    arrow_threshold=0.5       # Control arrow display threshold
+# Custom colormap (list format)
+custom_cmap = [
+    [0, 'rgba(255,255,0,0.5)'],    # Yellow with 50% transparency
+    [0.5, 'rgba(255,165,0,0.8)'],  # Orange with 80% transparency
+    [1, 'rgba(255,0,0,1.0)']       # Red with full opacity
+]
+
+viz = EelbrainPlotly2DViz(
+    y=None,                       # Use built-in data
+    region='aparc+aseg',         # Apply parcellation
+    cmap=custom_cmap,            # Custom colormap
+    show_max_only=False,         # Show individual traces in butterfly plot
+    arrow_threshold=0.1          # Custom arrow threshold
 )
 ```
 
@@ -125,47 +135,44 @@ viz = BrainPlotly2DViz(
 
 ```python
 # Export all views as PNG images
-exported_files = viz.export_images(
+result = viz.export_images(
     output_dir="./my_brain_plots",
     time_idx=30,
-    format="png",
-    width=1200,
-    height=800
+    format="png"
 )
+
+if result["status"] == "success":
+    print("Exported files:")
+    for plot_type, filepath in result["files"].items():
+        print(f"  {plot_type}: {filepath}")
 ```
 
 ### Custom Server Configuration
 
 ```python
-# Run on custom host/port
-viz.run(
-    host='0.0.0.0',  # Allow external connections
-    port=8888,       # Custom port
-    debug=True       # Enable debug mode
-)
+# Run on custom port with different modes
+viz.run(port=8888, debug=True)                    # External browser
+viz.run(mode='inline', width=1200, height=900)    # Jupyter inline
+viz.run(mode='jupyterlab', width=1400, height=1000)  # JupyterLab tab
 ```
 
 ## Data Formats
 
 ### Vector Data
 For data with direction and magnitude (e.g., current dipoles):
-- **Numpy**: `(n_sources, n_times, 3)` - 3D vectors over time
-- **Eelbrain**: NDVar with dimensions `(time, source, space)`
+- **Eelbrain**: NDVar with dimensions `([case,] time, source, space)`
+- **MNE Sample**: Built-in volumetric source data with 3D vectors
 
 ### Scalar Data  
 For data with magnitude only (e.g., power, activation):
-- **Numpy**: `(n_sources, n_times)` - scalar values over time
-- **Eelbrain**: NDVar with dimensions `(time, source)`
+- **Eelbrain**: NDVar with dimensions `([case,] time, source)`
 
-### Dictionary Format
-```python
-data_dict = {
-    'data': np.array,           # Brain activity data
-    'coords': np.array,         # Source coordinates (n_sources, 3) 
-    'times': np.array,          # Time values (n_times,)
-    'has_vector_data': bool     # Whether data is vector or scalar
-}
-```
+### Built-in Sample Data
+LiveNeuron includes MNE sample data for immediate testing:
+- Volumetric source space with 1589 sources
+- Vector data (3D current dipoles)
+- 76 time points from -100ms to 400ms
+- Optional brain region filtering via parcellation
 
 ## Performance Features
 
@@ -174,6 +181,7 @@ data_dict = {
 - Batch rendering using single Plotly traces
 - Handles thousands of arrows smoothly
 - Maintains full visual quality
+- Automatic arrow filtering based on magnitude thresholds
 
 ### Memory Efficiency
 - Efficient data handling for large datasets
@@ -186,19 +194,21 @@ data_dict = {
 - **Axial view**: Top-down brain slice (X vs Y)
 - **Sagittal view**: Side brain slice (Y vs Z)  
 - **Coronal view**: Front brain slice (X vs Z)
-- Interactive heatmaps with arrow overlays
+- Interactive heatmaps with directional arrow overlays
+- Consistent colormaps across all views
 
 ### Butterfly Plot
 - Time series of brain activity magnitude
-- Individual source traces (optional)
+- Individual source traces (optional, controlled by `show_max_only`)
 - Mean and maximum activity traces
-- Time marker synchronization
+- Clickable time navigation
+- Auto-scaled units for optimal visibility
 
 ### Interactive Controls
-- Time slider for navigation
-- Clickable brain regions
-- Real-time updates
-- Synchronized views
+- Click on butterfly plot to navigate time
+- Click on brain sources for detailed information
+- Real-time synchronized updates across all views
+- Status indicators for current time and selected sources
 
 ## Requirements
 
@@ -207,10 +217,10 @@ data_dict = {
 - `plotly >= 5.0.0` - Interactive plotting
 - `numpy >= 1.20.0` - Numerical computing
 - `matplotlib >= 3.3.0` - Additional plotting support
+- `scipy >= 1.7.0` - Scientific computing
 
 ### Optional Dependencies
-- `eelbrain` - For NDVar data support
-- `scipy` - For advanced interpolation (auto-installed with numpy)
+- `eelbrain` - For NDVar data support and advanced parcellation
 - `kaleido` - For image export (auto-installed with plotly)
 
 ## Examples
@@ -220,46 +230,45 @@ data_dict = {
 ```python
 #!/usr/bin/env python3
 """
-Complete example of brain visualization usage.
+Complete example of LiveNeuron brain visualization usage.
 """
 
-import numpy as np
-from eelbrain_plotly_viz import BrainPlotly2DViz, create_sample_brain_data
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
 def main():
-    print("🧠 Creating Brain Visualization...")
+    print("🧠 Creating LiveNeuron Brain Visualization...")
     
-    # Method 1: Use built-in sample data
-    print("\n1. Using sample data:")
-    viz1 = BrainPlotly2DViz()
+    # Method 1: Use built-in sample data with default settings
+    print("\n1. Basic visualization with sample data:")
+    viz1 = EelbrainPlotly2DViz()
     
-    # Method 2: Create custom data
-    print("\n2. Using custom data:")
-    data_dict = create_sample_brain_data(
-        n_sources=150,
-        n_times=75,
-        has_vector_data=True,
-        random_seed=123
-    )
-    viz2 = BrainPlotly2DViz(y=data_dict, cmap='Plasma')
-    
-    # Method 3: Numpy arrays directly
-    print("\n3. Using numpy arrays:")
-    data = np.random.rand(100, 40, 3)
-    coords = np.random.rand(100, 3) * 0.1 - 0.05  # Center around origin
-    times = np.linspace(0, 0.8, 40)
-    
-    viz3 = BrainPlotly2DViz(
-        y=data,
-        coords=coords, 
-        times=times,
+    # Method 2: Custom visualization options
+    print("\n2. Custom visualization with Hot colormap:")
+    viz2 = EelbrainPlotly2DViz(
+        y=None,
+        region=None,
         cmap='Hot',
+        show_max_only=True,
         arrow_threshold='auto'
+    )
+    
+    # Method 3: With brain region filtering
+    print("\n3. With parcellation (aparc+aseg):")
+    viz3 = EelbrainPlotly2DViz(
+        y=None,
+        region='aparc+aseg',
+        cmap='Viridis',
+        show_max_only=False,
+        arrow_threshold=0.1
     )
     
     # Export images
     print("\n📷 Exporting images...")
-    viz3.export_images(output_dir="./example_output", time_idx=20)
+    result = viz3.export_images(
+        output_dir="./example_output", 
+        time_idx=20,
+        format="png"
+    )
     
     # Run interactive visualization
     print("\n🌐 Starting interactive visualization...")
@@ -272,27 +281,25 @@ if __name__ == "__main__":
 
 ## API Reference
 
-### BrainPlotly2DViz Class
+### EelbrainPlotly2DViz Class
 
 #### Constructor
 ```python
-BrainPlotly2DViz(
-    y=None,                    # Data input
-    coords=None,               # Source coordinates
-    times=None,                # Time values
-    region=None,               # Brain region (Eelbrain only)
-    cmap='Hot',                # Colormap
-    show_max_only=False,       # Butterfly plot mode
-    arrow_threshold='auto'     # Arrow display threshold
+EelbrainPlotly2DViz(
+    y=None,                    # Data input (NDVar or None for sample data)
+    region=None,               # Brain region ('aparc+aseg' or None for full brain)
+    cmap='Hot',                # Colormap (string or custom list)
+    show_max_only=False,       # Butterfly plot mode (True: mean+max only)
+    arrow_threshold=None       # Arrow display threshold (None, 'auto', or float)
 )
 ```
 
 #### Methods
-- `run(port=8050, debug=False, host='127.0.0.1')` - Start interactive app
-- `show_in_jupyter(time_idx=0)` - Display in Jupyter notebook
-- `export_images(output_dir, time_idx=0, format='png')` - Export static images
-- `create_2d_brain_projections_plotly(time_idx)` - Get projection figures
-- `create_butterfly_plot()` - Get butterfly plot figure
+- `run(port=None, debug=True, mode='external')` - Start interactive app
+- `show_in_jupyter(width=1200, height=900, debug=False)` - Display in Jupyter
+- `export_images(output_dir, time_idx=None, format='png')` - Export static images
+- `create_2d_brain_projections_plotly(time_idx, source_idx=None)` - Get projection figures
+- `create_butterfly_plot(selected_time_idx=0)` - Get butterfly plot figure
 
 ### Sample Data Functions
 
@@ -325,27 +332,29 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you use this package in your research, please cite:
 
 ```bibtex
-@software{eelbrain_plotly_viz,
-  title={Eelbrain Plotly Visualization: Interactive 2D Brain Visualization},
-  author={Eelbrain Team},
+@software{liveneuron,
+  title={LiveNeuron: Interactive 2D Brain Visualization},
+  author={LiveNeuron Team},
   year={2024},
-  url={https://github.com/liang-bo96/eelbrain-plotly-viz}
+  url={https://github.com/liang-bo96/LiveNeuron}
 }
 ```
 
 ## Support
 
 - 📖 **Documentation**: See this README and docstrings
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/liang-bo96/eelbrain-plotly-viz/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/liang-bo96/eelbrain-plotly-viz/discussions)
-- 📧 **Email**: eelbrain@example.com
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/liang-bo96/LiveNeuron/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/liang-bo96/LiveNeuron/discussions)
+- 📧 **Email**: liveneuron@example.com
 
 ## Changelog
 
 ### v1.0.0 (2024)
 - Initial release
-- Interactive 2D brain projections
+- Interactive 2D brain projections with axial, sagittal, and coronal views
 - Optimized arrow rendering (453x speedup)
-- Support for multiple data formats
-- Jupyter notebook integration
-- Image export capabilities 
+- Support for Eelbrain NDVar and built-in MNE sample data
+- Jupyter notebook integration with modern Dash support
+- Image export capabilities
+- Customizable colormaps and arrow thresholds
+- Real-time interactive controls 
