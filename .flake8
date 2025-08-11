@@ -1,0 +1,36 @@
+[flake8]
+max-line-length = 88
+max-complexity = 15
+ignore = 
+    # E203: whitespace before ':'
+    E203,
+    # W503: line break before binary operator
+    W503,
+    # E501: line too long (handled by black)
+    E501,
+    # W291: trailing whitespace (to be fixed gradually)
+    W291,
+    # W292: no newline at end of file
+    W292,
+    # W293: blank line contains whitespace  
+    W293,
+    # E128: continuation line under-indented
+    E128,
+    # C901: function is too complex (will address separately)
+    C901
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    *.egg-info,
+    .github,
+    # Exclude the backup file for now
+    src/eelbrain_plotly_viz/viz_2d_back.py
+per-file-ignores =
+    # Ignore unused imports in __init__.py files
+    __init__.py:F401,
+    # Ignore some issues in sample_data.py (for backward compatibility)
+    src/eelbrain_plotly_viz/sample_data.py:F401

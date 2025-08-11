@@ -1,5 +1,10 @@
 # LiveNeuron
 
+[![Tests](https://github.com/liang-bo96/LiveNeuron/actions/workflows/test.yml/badge.svg)](https://github.com/liang-bo96/LiveNeuron/actions/workflows/test.yml)
+[![Lint](https://github.com/liang-bo96/LiveNeuron/actions/workflows/lint.yml/badge.svg)](https://github.com/liang-bo96/LiveNeuron/actions/workflows/lint.yml)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Interactive 2D brain visualization using Plotly and Dash. A standalone Python package for creating web-based brain activity visualizations with performance-optimized arrow rendering.
 
 ## Features
@@ -322,6 +327,35 @@ We welcome contributions! Please see our contributing guidelines for details.
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+### Running Tests
+
+Our project uses pytest for testing with GitHub Actions for continuous integration.
+
+#### Quick test run:
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run fast tests (skips slow performance tests)
+pytest -m "not slow"
+
+# Run all tests
+pytest
+
+# Run tests with coverage
+pytest --cov=src --cov-report=term-missing
+```
+
+#### Test types:
+- **Basic tests**: Core functionality (`test_basic.py`)
+- **Integration tests**: End-to-end workflows (`test_integration.py`)  
+- **Performance tests**: Memory usage and speed (`test_performance.py`)
+
+#### CI/CD:
+- Tests run automatically on push/PR for Python 3.8-3.11
+- Code quality checks with flake8 and black
+- Coverage reporting with codecov
 
 ## License
 

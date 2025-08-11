@@ -3,7 +3,6 @@ Basic tests for eelbrain_plotly_viz package.
 """
 
 import pytest
-import numpy as np
 
 
 def test_package_import():
