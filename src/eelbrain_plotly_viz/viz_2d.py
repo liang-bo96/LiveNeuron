@@ -69,12 +69,12 @@ class EelbrainPlotly2DViz:
     """
 
     def __init__(
-            self,
-            y: Optional[NDVar] = None,
-            region: Optional[str] = None,
-            cmap: Union[str, List] = "Hot",
-            show_max_only: bool = False,
-            arrow_threshold: Optional[Union[float, str]] = None,
+        self,
+        y: Optional[NDVar] = None,
+        region: Optional[str] = None,
+        cmap: Union[str, List] = "Hot",
+        show_max_only: bool = False,
+        arrow_threshold: Optional[Union[float, str]] = None,
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -335,7 +335,7 @@ class EelbrainPlotly2DViz:
             Input("selected-source-idx", "data"),
         )
         def update_brain_projections(
-                time_idx: int, source_idx: int
+            time_idx: int, source_idx: int
         ) -> tuple[go.Figure, go.Figure, go.Figure]:
             if time_idx is None:
                 time_idx = 0
@@ -369,7 +369,7 @@ class EelbrainPlotly2DViz:
             State("selected-time-idx", "data"),
         )
         def handle_butterfly_click(
-                click_data: Dict[str, Any], current_time_idx: int
+            click_data: Dict[str, Any], current_time_idx: int
         ) -> tuple[int | Any, int | None | Any]:
             if not click_data or self.time_values is None:
                 return dash.no_update, dash.no_update
@@ -396,12 +396,14 @@ class EelbrainPlotly2DViz:
         )
         def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
             if (
-                    time_idx is not None
-                    and self.time_values is not None
-                    and 0 <= time_idx < len(self.time_values)
+                time_idx is not None
+                and self.time_values is not None
+                and 0 <= time_idx < len(self.time_values)
             ):
                 time_val = self.time_values[time_idx]
-                status_text = f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
+                status_text = (
+                    f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
+                )
                 status_style = {
                     "textAlign": "center",
                     "padding": "10px",
@@ -429,18 +431,18 @@ class EelbrainPlotly2DViz:
             info = []
 
             if (
-                    self.time_values is not None
-                    and time_idx is not None
-                    and 0 <= time_idx < len(self.time_values)
+                self.time_values is not None
+                and time_idx is not None
+                and 0 <= time_idx < len(self.time_values)
             ):
                 info.append(
                     f"Time: {self.time_values[time_idx]:.3f} s (index {time_idx})"
                 )
 
             if (
-                    source_idx is not None
-                    and self.source_coords is not None
-                    and 0 <= source_idx < len(self.source_coords)
+                source_idx is not None
+                and self.source_coords is not None
+                and 0 <= source_idx < len(self.source_coords)
             ):
                 coord = self.source_coords[source_idx]
                 info.append(f"Selected source: {source_idx}")
@@ -610,13 +612,13 @@ class EelbrainPlotly2DViz:
         return fig
 
     def create_2d_brain_projections_plotly(
-            self, time_idx: int = 0, source_idx: Optional[int] = None
+        self, time_idx: int = 0, source_idx: Optional[int] = None
     ) -> Dict[str, go.Figure]:
         """Create 2D brain projections using Plotly scatter plots."""
         if (
-                self.glass_brain_data is None
-                or self.source_coords is None
-                or self.time_values is None
+            self.glass_brain_data is None
+            or self.source_coords is None
+            or self.time_values is None
         ):
             placeholder_fig = go.Figure()
             placeholder_fig.add_annotation(
@@ -702,15 +704,15 @@ class EelbrainPlotly2DViz:
             }
 
     def _create_plotly_brain_projection(
-            self,
-            view_name: str,
-            coords: np.ndarray,
-            activity: np.ndarray,
-            time_value: float,
-            selected_source: Optional[int] = None,
-            show_colorbar: bool = True,
-            zmin: float = None,
-            zmax: float = None,
+        self,
+        view_name: str,
+        coords: np.ndarray,
+        activity: np.ndarray,
+        time_value: float,
+        selected_source: Optional[int] = None,
+        show_colorbar: bool = True,
+        zmin: float = None,
+        zmax: float = None,
     ) -> go.Figure:
         """Create a Plotly plot for a specific brain view with vector arrows."""
         # Show all data without filtering
@@ -857,9 +859,9 @@ class EelbrainPlotly2DViz:
                     # If this position hasn't been seen, or current arrow has larger
                     # magnitude
                     if (
-                            pos_key not in position_to_max_idx
-                            or arrow_magnitudes[i]
-                            > arrow_magnitudes[position_to_max_idx[pos_key]]
+                        pos_key not in position_to_max_idx
+                        or arrow_magnitudes[i]
+                        > arrow_magnitudes[position_to_max_idx[pos_key]]
                     ):
                         position_to_max_idx[pos_key] = i
 
@@ -965,16 +967,16 @@ class EelbrainPlotly2DViz:
         return fig
 
     def _create_batch_arrows(
-            self,
-            fig: go.Figure,
-            x_coords: np.ndarray,
-            y_coords: np.ndarray,
-            u_vectors: np.ndarray,
-            v_vectors: np.ndarray,
-            arrow_scale: float,
-            color: str = "black",
-            width: int = 1,
-            size: float = 0.8,
+        self,
+        fig: go.Figure,
+        x_coords: np.ndarray,
+        y_coords: np.ndarray,
+        u_vectors: np.ndarray,
+        v_vectors: np.ndarray,
+        arrow_scale: float,
+        color: str = "black",
+        width: int = 1,
+        size: float = 0.8,
     ) -> None:
         """Create all arrows using batch method."""
 
@@ -1009,7 +1011,7 @@ class EelbrainPlotly2DViz:
 
         # Calculate arrow angles for proper arrowhead rotation
         angles = np.degrees(np.arctan2(v_vectors, u_vectors))
-        magnitudes = np.sqrt(u_vectors ** 2 + v_vectors ** 2)
+        magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
 
         # Add all arrowheads as single trace (instead of 179+ individual annotations)
         fig.add_trace(
@@ -1079,12 +1081,12 @@ class EelbrainPlotly2DViz:
         return img_base64
 
     def run(
-            self,
-            port: Optional[int] = None,
-            debug: bool = True,
-            mode: str = "external",
-            width: int = 1200,
-            height: int = 900,
+        self,
+        port: Optional[int] = None,
+        debug: bool = True,
+        mode: str = "external",
+        width: int = 1200,
+        height: int = 900,
     ) -> None:
         """Run the Dash app with Jupyter integration support.
 
@@ -1127,7 +1129,7 @@ class EelbrainPlotly2DViz:
             self.app.run(debug=debug, port=port)
 
     def show_in_jupyter(
-            self, width: int = 1200, height: int = 900, debug: bool = False
+        self, width: int = 1200, height: int = 900, debug: bool = False
     ) -> None:
         """Convenience method to display the visualization inline in Jupyter notebooks.
 
@@ -1162,10 +1164,10 @@ class EelbrainPlotly2DViz:
         self.run(mode="inline", width=width, height=height, debug=debug)
 
     def export_images(
-            self,
-            output_dir: str = "./images",
-            time_idx: Optional[int] = None,
-            format: str = "png",
+        self,
+        output_dir: str = "./images",
+        time_idx: Optional[int] = None,
+        format: str = "png",
     ) -> Dict[str, Any]:
         """Export current plots as image files.
 
@@ -1218,7 +1220,8 @@ class EelbrainPlotly2DViz:
                 exported_files[f"{view_name}_view"] = brain_path
 
             print(
-                f"✓ Successfully exported {len(exported_files)} image files to {output_dir}")
+                f"✓ Successfully exported {len(exported_files)} image files to {output_dir}"
+            )
             for file_type, path in exported_files.items():
                 print(f"  - {file_type}: {path}")
 

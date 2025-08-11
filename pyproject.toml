@@ -59,6 +59,7 @@ dev = [
     "build",
     "twine",
     "psutil",  # For memory testing
+    "pre-commit",  # Code quality hooks
 ]
 all = ["eelbrain"]
 

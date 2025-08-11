@@ -8,7 +8,7 @@ Supports Eelbrain NDVar data format with built-in MNE sample data.
 __version__ = "1.0.0"
 __author__ = "LiveNeuron Team"
 
-from .viz_2D import EelbrainPlotly2DViz
+from .viz_2d import EelbrainPlotly2DViz
 from .sample_data import create_sample_brain_data
 
 # Create alias for backward compatibility
@@ -18,4 +18,4 @@ __all__ = [
     "EelbrainPlotly2DViz",
     "BrainPlotly2DViz",  # Alias for compatibility
     "create_sample_brain_data",
-] 
+]
