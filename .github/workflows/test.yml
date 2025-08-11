@@ -39,6 +39,10 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
+        # Install build dependencies for eelbrain and other packages
+        pip install numpy>=1.20.0 scipy>=1.7.0 matplotlib>=3.3.0
+        # Try to install eelbrain first (prefer pre-built wheels)
+        pip install --prefer-binary eelbrain || pip install eelbrain
         # Install package with dev dependencies
         pip install -e ".[dev]"
 
