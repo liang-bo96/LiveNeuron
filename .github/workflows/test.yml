@@ -39,11 +39,10 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        # Install scientific stack first to help with eelbrain build
-        pip install wheel setuptools
-        pip install numpy scipy matplotlib plotly dash
-        # Install eelbrain separately with retries
-        pip install eelbrain --verbose || pip install eelbrain --no-build-isolation
+        # Install scientific stack first 
+        pip install wheel setuptools numpy scipy matplotlib plotly dash
+        # Install eelbrain separately 
+        pip install eelbrain --no-build-isolation || pip install eelbrain
         # Install our package with dev dependencies
         pip install -e ".[dev]"
 
