@@ -52,7 +52,7 @@ from eelbrain_plotly_viz import EelbrainPlotly2DViz
 viz = EelbrainPlotly2DViz()
 
 # Run interactive dashboard
-viz.run()  # Opens at http://127.0.0.1:8050
+viz.run()  # The port is random, check the console output for the URL.
 ```
 
 ### Using Built-in MNE Sample Data with Custom Options
@@ -277,7 +277,7 @@ def main():
     
     # Run interactive visualization
     print("\n🌐 Starting interactive visualization...")
-    print("Visit http://127.0.0.1:8050 in your browser")
+    print("The server will start on a random port. Check the console for the exact URL to use.")
     viz3.run()
 
 if __name__ == "__main__":
