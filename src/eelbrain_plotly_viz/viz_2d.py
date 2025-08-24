@@ -75,6 +75,7 @@ class EelbrainPlotly2DViz:
         cmap: Union[str, List] = "Hot",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
+        realtime: bool = False,
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -91,6 +92,9 @@ class EelbrainPlotly2DViz:
         # Threshold for displaying arrows
         self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold
         self.is_jupyter_mode: bool = False  # Track if running in Jupyter mode
+        self.realtime_mode_default = (
+            ["realtime"] if realtime else []
+        )  # Default state for real-time mode
 
         # Load data
         if y is not None:
@@ -215,6 +219,13 @@ class EelbrainPlotly2DViz:
             [
                 html.H1(
                     "Eelbrain Plotly 2D Brain Visualization",
+                    style={"textAlign": "center", "margin": "10px 0"},
+                ),
+                # Real-time mode switch
+                dcc.Checklist(
+                    id="realtime-mode-switch",
+                    options=[{"label": "Real-time Update on Hover", "value": "realtime"}],
+                    value=self.realtime_mode_default,
                     style={"textAlign": "center", "margin": "10px 0"},
                 ),
                 # Hidden stores for state management
@@ -365,29 +376,58 @@ class EelbrainPlotly2DViz:
         @self.app.callback(
             Output("selected-time-idx", "data"),
             Output("selected-source-idx", "data"),
+            Output("realtime-mode-switch", "value"),
             Input("butterfly-plot", "clickData"),
-            State("selected-time-idx", "data"),
+            Input("butterfly-plot", "hoverData"),
+            State("realtime-mode-switch", "value"),
         )
-        def handle_butterfly_click(
-            click_data: Dict[str, Any], current_time_idx: int
-        ) -> tuple[int | Any, int | None | Any]:
-            if not click_data or self.time_values is None:
-                return dash.no_update, dash.no_update
+        def handle_butterfly_interaction(
+            click_data: Optional[Dict[str, Any]],
+            hover_data: Optional[Dict[str, Any]],
+            realtime_value: List[str],
+        ) -> tuple[Any, Any, Any]:
+            """Handle user interaction with butterfly plot."""
+            ctx = dash.callback_context
+            if not ctx.triggered or self.time_values is None:
+                return dash.no_update, dash.no_update, dash.no_update
 
-            try:
-                point = click_data["points"][0]
+            triggered_id = ctx.triggered[0]["prop_id"]
+            is_realtime = realtime_value and "realtime" in realtime_value
 
-                # Get clicked time
-                clicked_time = point["x"]
-                time_idx = np.argmin(np.abs(self.time_values - clicked_time))
+            # Handle hover events in real-time mode
+            if "hoverData" in triggered_id and is_realtime:
+                if not hover_data:
+                    return dash.no_update, dash.no_update, dash.no_update
 
-                # Get clicked source - for background clicks this will be None
-                source_idx = point.get("customdata", None)
+                try:
+                    point = hover_data["points"][0]
+                    hover_time = point["x"]
+                    time_idx = np.argmin(np.abs(self.time_values - hover_time))
+                    # Do not update source index on hover to avoid frantic updates
+                    return time_idx, dash.no_update, dash.no_update
+                except (KeyError, IndexError, TypeError):
+                    return dash.no_update, dash.no_update, dash.no_update
 
-                return time_idx, source_idx
-            except (KeyError, IndexError, TypeError):
-                # If click data is malformed, just return no update
-                return dash.no_update, dash.no_update
+            # Handle click events
+            if "clickData" in triggered_id:
+                if not click_data:
+                    return dash.no_update, dash.no_update, dash.no_update
+
+                try:
+                    point = click_data["points"][0]
+                    clicked_time = point["x"]
+                    time_idx = np.argmin(np.abs(self.time_values - clicked_time))
+                    source_idx = point.get("customdata", None)
+
+                    # If in real-time mode, a click will select the time and disable
+                    # real-time mode for focused inspection
+                    new_realtime_value = [] if is_realtime else dash.no_update
+
+                    return time_idx, source_idx, new_realtime_value
+                except (KeyError, IndexError, TypeError):
+                    return dash.no_update, dash.no_update, dash.no_update
+
+            return dash.no_update, dash.no_update, dash.no_update
 
         @self.app.callback(
             Output("update-status", "children"),
