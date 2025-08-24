@@ -188,130 +188,116 @@ class EelbrainPlotly2DViz:
             self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]
 
     def _setup_layout(self) -> None:
-        """Setup the Dash app layout."""
+        """Setup the Dash app layout with horizontal arrangement."""
         # Create initial figures
         initial_butterfly = self.create_butterfly_plot(0)
         initial_brain_plots = self.create_2d_brain_projections_plotly(0)
 
-        # Define styles based on mode
+        # Define styles for horizontal layout
         if self.is_jupyter_mode:
             # Jupyter-specific styles
-            butterfly_style = {"width": "100%", "margin-bottom": "10px"}
-            butterfly_graph_style = {"height": "300px"}  # Reduced height for Jupyter
-            brain_height = "250px"  # Reduced height for brain views
-            brain_width = "30%"  # Slightly smaller width
-            brain_margin = "1.5%"  # Larger margin for better spacing
-            container_padding = "2px"  # Minimal padding for Jupyter
+            butterfly_width = "35%"  # Wider butterfly plot
+            brain_width = "20%"      # Smaller brain views
+            plot_height = "300px"    # Shorter height
+            margin = "0.3%"
+            container_padding = "5px"
         else:
             # Browser-specific styles
-            butterfly_style = {"width": "100%", "margin-bottom": "20px"}
-            butterfly_graph_style = {"height": "400px"}  # Standard height
-            brain_height = "450px"  # Standard height for brain views
-            brain_width = "32%"  # Standard width
-            brain_margin = "0.5%"  # Standard margin
-            container_padding = "5px"  # Standard padding
+            butterfly_width = "35%"  # Wider butterfly plot
+            brain_width = "20%"      # Smaller brain views
+            plot_height = "350px"    # Shorter height
+            margin = "0.3%"
+            container_padding = "10px"
 
         self.app.layout = html.Div(
             [
                 html.H1(
-                    "Eelbrain Plotly 2D Brain Visualization",
+                    "Eelbrain Plotly 2D Brain Visualization - Horizontal Layout",
                     style={"textAlign": "center", "margin": "10px 0"},
                 ),
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
                 dcc.Store(id="selected-source-idx", data=None),
-                # Main content - arranged vertically
+                
+                # Main content - arranged horizontally
                 html.Div(
                     [
-                        # Top: Butterfly plot
+                        # Left: Butterfly plot (compact)
                         html.Div(
                             [
                                 dcc.Graph(
                                     id="butterfly-plot",
                                     figure=initial_butterfly,
-                                    style=butterfly_graph_style,
+                                    style={"height": plot_height}
                                 )
                             ],
-                            style=butterfly_style,
+                            style={
+                                "width": butterfly_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": margin,
+                                "padding": "0px",
+                            },
                         ),
-                        # Bottom: 2D Brain projections using Plotly
+                        
+                        # Right: Brain projections (all at same level)
                         html.Div(
                             [
-                                # Three brain view plots
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-axial-plot",
-                                                    figure=initial_brain_plots["axial"],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-sagittal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "sagittal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-coronal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "coronal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                    ],
-                                    style={"textAlign": "center"},
-                                ),
-                                # Status indicator
-                                html.Div(
-                                    id="update-status",
-                                    children="Click on butterfly plot to update brain views",
-                                    style={
-                                        "textAlign": "center",
-                                        "padding": "10px",
-                                        "fontStyle": "italic",
-                                        "color": "#666",
-                                    },
-                                ),
+                                dcc.Graph(
+                                    id="brain-axial-plot",
+                                    figure=initial_brain_plots["axial"],
+                                    style={"height": plot_height}
+                                )
                             ],
-                            style={"width": "100%"},
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": margin,
+                                "padding": "0px",
+                            },
                         ),
-                    ]
+                        
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="brain-sagittal-plot",
+                                    figure=initial_brain_plots["sagittal"],
+                                    style={"height": plot_height}
+                                )
+                            ],
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": margin,
+                                "padding": "0px",
+                            },
+                        ),
+                        
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="brain-coronal-plot",
+                                    figure=initial_brain_plots["coronal"],
+                                    style={"height": plot_height}
+                                )
+                            ],
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": margin,
+                                "padding": "0px",
+                            },
+                        ),
+                    ],
+                    style={"width": "100%", "textAlign": "center"}
                 ),
-                # Info panel
-                html.Div(
-                    id="info-panel",
-                    style={"clear": "both", "padding": "10px", "textAlign": "center"},
-                ),
+                
+
             ],
-            style={"width": "100%", "height": "100%", "padding": container_padding},
+            style={"width": "100%", "padding": container_padding, "fontFamily": "Arial, sans-serif"},
         )
 
     def _setup_callbacks(self) -> None:
@@ -389,73 +375,7 @@ class EelbrainPlotly2DViz:
                 # If click data is malformed, just return no update
                 return dash.no_update, dash.no_update
 
-        @self.app.callback(
-            Output("update-status", "children"),
-            Output("update-status", "style"),
-            Input("selected-time-idx", "data"),
-        )
-        def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
-            if (
-                time_idx is not None
-                and self.time_values is not None
-                and 0 <= time_idx < len(self.time_values)
-            ):
-                time_val = self.time_values[time_idx]
-                status_text = (
-                    f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
-                )
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "10px",
-                    "fontStyle": "italic",
-                    "color": "#2E8B57",
-                    "backgroundColor": "#F0FFF0",
-                }
-            else:
-                status_text = "Click on butterfly plot to update brain views"
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "10px",
-                    "fontStyle": "italic",
-                    "color": "#666",
-                }
 
-            return status_text, status_style
-
-        @self.app.callback(
-            Output("info-panel", "children"),
-            Input("selected-time-idx", "data"),
-            Input("selected-source-idx", "data"),
-        )
-        def update_info(time_idx: int, source_idx: int) -> html.P:
-            info = []
-
-            if (
-                self.time_values is not None
-                and time_idx is not None
-                and 0 <= time_idx < len(self.time_values)
-            ):
-                info.append(
-                    f"Time: {self.time_values[time_idx]:.3f} s (index {time_idx})"
-                )
-
-            if (
-                source_idx is not None
-                and self.source_coords is not None
-                and 0 <= source_idx < len(self.source_coords)
-            ):
-                coord = self.source_coords[source_idx]
-                info.append(f"Selected source: {source_idx}")
-                info.append(
-                    f"Coordinates: ({coord[0]:.3f}, {coord[1]:.3f}, {coord[2]:.3f}) m"
-                )
-
-            result = (
-                html.P(" | ".join(info))
-                if info
-                else html.P("Click on the plots to interact")
-            )
-            return result
 
     def create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
         """Create butterfly plot figure."""
@@ -604,7 +524,7 @@ class EelbrainPlotly2DViz:
             hovermode="closest",
             height=height,
             margin=margin,
-            showlegend=True,
+            showlegend=False,  # Remove legend to save space
             # Enable clicking on the plot area
             clickmode="event+select",
         )
