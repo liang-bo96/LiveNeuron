@@ -197,15 +197,15 @@ class EelbrainPlotly2DViz:
         if self.is_jupyter_mode:
             # Jupyter-specific styles
             butterfly_width = "35%"  # Wider butterfly plot
-            brain_width = "20%"      # Smaller brain views
-            plot_height = "300px"    # Shorter height
+            brain_width = "20%"  # Smaller brain views
+            plot_height = "300px"  # Shorter height
             margin = "0.3%"
             container_padding = "5px"
         else:
             # Browser-specific styles
             butterfly_width = "35%"  # Wider butterfly plot
-            brain_width = "20%"      # Smaller brain views
-            plot_height = "350px"    # Shorter height
+            brain_width = "20%"  # Smaller brain views
+            plot_height = "350px"  # Shorter height
             margin = "0.3%"
             container_padding = "10px"
 
@@ -218,7 +218,6 @@ class EelbrainPlotly2DViz:
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
                 dcc.Store(id="selected-source-idx", data=None),
-                
                 # Main content - arranged horizontally
                 html.Div(
                     [
@@ -228,7 +227,7 @@ class EelbrainPlotly2DViz:
                                 dcc.Graph(
                                     id="butterfly-plot",
                                     figure=initial_butterfly,
-                                    style={"height": plot_height}
+                                    style={"height": plot_height},
                                 )
                             ],
                             style={
@@ -239,14 +238,13 @@ class EelbrainPlotly2DViz:
                                 "padding": "0px",
                             },
                         ),
-                        
                         # Right: Brain projections (all at same level)
                         html.Div(
                             [
                                 dcc.Graph(
                                     id="brain-axial-plot",
                                     figure=initial_brain_plots["axial"],
-                                    style={"height": plot_height}
+                                    style={"height": plot_height},
                                 )
                             ],
                             style={
@@ -257,13 +255,12 @@ class EelbrainPlotly2DViz:
                                 "padding": "0px",
                             },
                         ),
-                        
                         html.Div(
                             [
                                 dcc.Graph(
                                     id="brain-sagittal-plot",
                                     figure=initial_brain_plots["sagittal"],
-                                    style={"height": plot_height}
+                                    style={"height": plot_height},
                                 )
                             ],
                             style={
@@ -274,13 +271,12 @@ class EelbrainPlotly2DViz:
                                 "padding": "0px",
                             },
                         ),
-                        
                         html.Div(
                             [
                                 dcc.Graph(
                                     id="brain-coronal-plot",
                                     figure=initial_brain_plots["coronal"],
-                                    style={"height": plot_height}
+                                    style={"height": plot_height},
                                 )
                             ],
                             style={
@@ -292,12 +288,14 @@ class EelbrainPlotly2DViz:
                             },
                         ),
                     ],
-                    style={"width": "100%", "textAlign": "center"}
+                    style={"width": "100%", "textAlign": "center"},
                 ),
-                
-
             ],
-            style={"width": "100%", "padding": container_padding, "fontFamily": "Arial, sans-serif"},
+            style={
+                "width": "100%",
+                "padding": container_padding,
+                "fontFamily": "Arial, sans-serif",
+            },
         )
 
     def _setup_callbacks(self) -> None:
@@ -374,8 +372,6 @@ class EelbrainPlotly2DViz:
             except (KeyError, IndexError, TypeError):
                 # If click data is malformed, just return no update
                 return dash.no_update, dash.no_update
-
-
 
     def create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
         """Create butterfly plot figure."""
