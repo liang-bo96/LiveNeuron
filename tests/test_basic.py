@@ -7,7 +7,7 @@ import pytest
 
 def test_package_import():
     """Test that the package can be imported."""
-    import eelbrain_plotly_viz
+    import src.eelbrain_plotly_viz as eelbrain_plotly_viz
 
     assert hasattr(eelbrain_plotly_viz, "EelbrainPlotly2DViz")
     assert hasattr(eelbrain_plotly_viz, "BrainPlotly2DViz")  # Alias
@@ -16,7 +16,7 @@ def test_package_import():
 
 def test_sample_data_creation():
     """Test sample data creation."""
-    from eelbrain_plotly_viz import create_sample_brain_data
+    from src.eelbrain_plotly_viz.sample_data import create_sample_brain_data
 
     # Test vector data
     data_dict = create_sample_brain_data(
@@ -35,7 +35,7 @@ def test_sample_data_creation():
 
 def test_scalar_data_creation():
     """Test scalar data creation."""
-    from eelbrain_plotly_viz import create_sample_brain_data
+    from src.eelbrain_plotly_viz.sample_data import create_sample_brain_data
 
     # Test scalar data
     data_dict = create_sample_brain_data(
@@ -50,7 +50,7 @@ def test_scalar_data_creation():
 
 def test_viz_creation_with_sample_data():
     """Test creating visualization with default sample data."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # This should work without errors
     viz = EelbrainPlotly2DViz()
@@ -66,7 +66,7 @@ def test_viz_creation_with_sample_data():
 
 def test_viz_creation_with_options():
     """Test creating visualization with different options."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test with different parameters
     viz = EelbrainPlotly2DViz(
@@ -83,7 +83,7 @@ def test_viz_creation_with_options():
 
 def test_alias_import():
     """Test that the BrainPlotly2DViz alias works."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
 
     # The alias should be the same as the original class
     assert BrainPlotly2DViz is EelbrainPlotly2DViz
@@ -95,7 +95,7 @@ def test_alias_import():
 
 def test_brain_projections():
     """Test brain projection creation."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     viz = EelbrainPlotly2DViz()
     projections = viz.create_2d_brain_projections_plotly(time_idx=5)
@@ -113,7 +113,7 @@ def test_brain_projections():
 
 def test_butterfly_plot():
     """Test butterfly plot creation."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     viz = EelbrainPlotly2DViz()
     butterfly_fig = viz.create_butterfly_plot()
@@ -125,7 +125,7 @@ def test_butterfly_plot():
 
 def test_custom_colormap():
     """Test custom colormap functionality."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test custom colormap
     custom_cmap = [[0, "yellow"], [0.5, "orange"], [1, "red"]]
@@ -136,7 +136,7 @@ def test_custom_colormap():
 
 def test_different_arrow_thresholds():
     """Test different arrow threshold settings."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test None threshold
     viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
@@ -153,7 +153,7 @@ def test_different_arrow_thresholds():
 
 def test_show_max_only_option():
     """Test show_max_only parameter."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test with show_max_only=True
     viz1 = EelbrainPlotly2DViz(show_max_only=True)
@@ -178,7 +178,7 @@ def test_eelbrain_integration():
     """Test integration with eelbrain (if available)."""
     try:
         from eelbrain import datasets
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz
+        from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
         # Load eelbrain data
         data_ds = datasets.get_mne_sample(src="vol", ori="vector")
@@ -197,7 +197,7 @@ def test_eelbrain_integration():
 
 def test_app_creation():
     """Test that the Dash app is created properly."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     viz = EelbrainPlotly2DViz()
 
