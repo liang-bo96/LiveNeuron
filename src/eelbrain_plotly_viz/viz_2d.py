@@ -224,7 +224,9 @@ class EelbrainPlotly2DViz:
                 # Real-time mode switch
                 dcc.Checklist(
                     id="realtime-mode-switch",
-                    options=[{"label": "Real-time Update on Hover", "value": "realtime"}],
+                    options=[
+                        {"label": "Real-time Update on Hover", "value": "realtime"}
+                    ],
                     value=self.realtime_mode_default,
                     style={"textAlign": "center", "margin": "10px 0"},
                 ),
