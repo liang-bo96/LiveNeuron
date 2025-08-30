@@ -4,7 +4,7 @@ Integration tests for eelbrain_plotly_viz package.
 
 import pytest
 import tempfile
-from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
 
 def test_export_functionality():
