@@ -5,8 +5,8 @@ Performance and stress tests for eelbrain_plotly_viz package.
 import pytest
 import time
 import numpy as np
-from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
-from src.eelbrain_plotly_viz.sample_data import create_sample_brain_data
+from eelbrain_plotly_viz import EelbrainPlotly2DViz
+from eelbrain_plotly_viz.sample_data import create_sample_brain_data
 
 
 def test_large_dataset_performance():
