@@ -1,0 +1,527 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multicol}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{setspace}
+
+% 设置页眉页脚
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textsc{LiveNeuron Usability Test}}
+\fancyhead[R]{\textsc{Questionnaire}}
+\fancyfoot[C]{\thepage}
+
+% 自定义颜色
+\definecolor{primaryblue}{RGB}{41, 128, 185}
+\definecolor{lightgray}{RGB}{236, 240, 241}
+\definecolor{darkgray}{RGB}{52, 73, 94}
+
+% 标题格式
+\titleformat{\section}{\Large\bfseries\color{primaryblue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{darkgray}}{}{0em}{}
+
+% 自定义复选框命令
+\newcommand{\checkbox}{\tikz{\draw[thick] (0,0) rectangle (0.3,0.3);}}
+\newcommand{\textline}[1]{\underline{\hspace{#1}}}
+
+% 评分量表命令
+\newcommand{\likertscale}[1]{
+    \begin{center}
+    \begin{tabular}{c|c|c|c|c}
+    \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} \\
+    #1 & & & & \\
+    \end{tabular}
+    \end{center}
+}
+
+% 十分制评分量表
+\newcommand{\tenscale}{
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+    \hline
+    \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} & \textbf{7} & \textbf{8} & \textbf{9} & \textbf{10} \\
+    \hline
+    & & & & & & & & & \\
+    \hline
+    \end{tabular}
+    \vspace{0.2cm}
+    
+    {\small (Unlikely) \hfill (Very Likely)}
+    \end{center}
+}
+
+\begin{document}
+
+% 标题页
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries\color{primaryblue} LiveNeuron}
+    
+    \vspace{0.5cm}
+    {\Large\color{darkgray} Usability Test Questionnaire}
+    
+    \vspace{2cm}
+    
+    \begin{tcolorbox}[colback=lightgray!50,colframe=primaryblue,boxrule=2pt,arc=4pt]
+        \centering
+        \large
+        \textbf{Interactive 2D Brain Visualization Tool}\\
+        \vspace{0.5cm}
+        Python Package for EEG/MEG Data Analysis
+    \end{tcolorbox}
+    
+    \vspace{3cm}
+    
+    \begin{center}
+        \includegraphics[width=0.6\textwidth]{example_output/axial_view_20250801_102845.png}
+    \end{center}
+    
+    \vspace{2cm}
+    
+    {\large Research Study Questionnaire}\\
+    \vspace{0.5cm}
+    {\normalsize McMaster University}\\
+    {\normalsize \today}
+    
+\end{titlepage}
+
+\newpage
+
+% 介绍页
+\section*{Introduction}
+
+\begin{tcolorbox}[colback=primaryblue!10,colframe=primaryblue,boxrule=1pt,arc=2pt]
+    \textbf{Thank you for participating in the LiveNeuron usability test!}
+    
+    LiveNeuron is a Python tool designed for interactive 2D visualization of EEG/MEG brain data. Your feedback is crucial for improving the user experience and making this tool more accessible to the neuroscience research community.
+\end{tcolorbox}
+
+\vspace{1cm}
+
+\subsection*{About This Questionnaire}
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Duration:} Approximately 15-20 minutes
+    \item \textbf{Confidentiality:} All responses will be kept confidential and used for research purposes only
+    \item \textbf{Voluntary:} Your participation is voluntary and you may withdraw at any time
+    \item \textbf{Purpose:} To evaluate the usability and effectiveness of the LiveNeuron visualization tool
+\end{itemize}
+
+\vspace{1cm}
+
+\subsection*{Key Features of LiveNeuron}
+
+\begin{multicols}{2}
+\begin{itemize}[leftmargin=1cm]
+    \item \textbf{Interactive 2D brain projections} (axial, sagittal, coronal views)
+    \item \textbf{Butterfly plots} for time series visualization
+    \item \textbf{453x faster arrow rendering} using optimized techniques
+    \item \textbf{Real-time controls} for time navigation
+    \item \textbf{Flexible data input} support
+    \item \textbf{Export capabilities} for static images
+    \item \textbf{Jupyter notebook support}
+    \item \textbf{Customizable colormaps} and options
+\end{itemize}
+\end{multicols}
+
+\vspace{1cm}
+
+\begin{tcolorbox}[colback=lightgray!30,colframe=darkgray,boxrule=1pt]
+    \textbf{Instructions:} Please complete this questionnaire after attempting the tasks described in each section. Mark your responses clearly with an X or checkmark (\checkmark) in the appropriate boxes.
+\end{tcolorbox}
+
+\newpage
+
+\section{Part 1: User Background Information}
+
+\subsection{Demographics and Experience}
+
+\vspace{0.5cm}
+
+\textbf{1. What is your profession or field of study?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Neuroscience Researcher \\[0.3cm]
+\checkbox & Data Scientist \\[0.3cm]
+\checkbox & Software Developer \\[0.3cm]
+\checkbox & Graduate Student \\[0.3cm]
+\checkbox & Undergraduate Student \\[0.3cm]
+\checkbox & Postdoctoral Researcher \\[0.3cm]
+\checkbox & Other: \textline{8cm} \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{2. How long have you been using Python for data analysis or visualization?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Less than 6 months \\[0.3cm]
+\checkbox & 6 months to 1 year \\[0.3cm]
+\checkbox & 1-3 years \\[0.3cm]
+\checkbox & 3-5 years \\[0.3cm]
+\checkbox & More than 5 years \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{3. Have you used other EEG/MEG data visualization tools?}\\
+\textit{(e.g., MNE-Python, Brainstorm, FieldTrip, Eelbrain, EEGLAB)}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Yes \\[0.3cm]
+\checkbox & No \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+If yes, please list the tools you use most frequently:
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\textbf{4. How would you rate your overall experience with data visualization tools?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Beginner (limited experience) \\[0.3cm]
+\checkbox & Intermediate (some experience with multiple tools) \\[0.3cm]
+\checkbox & Advanced (extensive experience, comfortable with most tools) \\[0.3cm]
+\checkbox & Expert (highly experienced, often help others with visualization) \\
+\end{tabular}
+
+\newpage
+
+\section{Part 2: Task-Based Evaluation}
+
+\begin{tcolorbox}[colback=primaryblue!5,colframe=primaryblue]
+    \textbf{Instructions:} Please attempt the following tasks and answer the questions based on your experience. We recommend starting with the \texttt{example.py} script or the code examples in the README.
+\end{tcolorbox}
+
+\subsection{Task 1: Installation and First Run}
+
+\textbf{Action:} Follow the "Installation" and "Quick Start" sections in the \texttt{README.md} to install LiveNeuron and run the interactive dashboard with sample data.
+
+\vspace{0.5cm}
+
+\textbf{5. Was the installation process clear and smooth?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very smooth - completed without any issues \\[0.3cm]
+\checkbox & Mostly smooth - minor issues but manageable \\[0.3cm]
+\checkbox & Neutral - some confusion but eventually successful \\[0.3cm]
+\checkbox & Somewhat difficult - required troubleshooting \\[0.3cm]
+\checkbox & Very difficult - major issues encountered \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+Please describe any issues you encountered:
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\textbf{6. Were the instructions to launch the first visualization dashboard (\texttt{viz.run()}) easy to follow?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very easy - immediately understood and executed \\[0.3cm]
+\checkbox & Easy - clear instructions with minimal confusion \\[0.3cm]
+\checkbox & Neutral - required some interpretation \\[0.3cm]
+\checkbox & Somewhat difficult - needed additional research \\[0.3cm]
+\checkbox & Very difficult - instructions were unclear \\
+\end{tabular}
+
+\vspace{1cm}
+
+\subsection{Task 2: Exploring the Interactive Visualization Interface}
+
+\textbf{Action:} In the running dashboard, explore the following features:
+\begin{enumerate}
+    \item Examine the three brain projection views (axial, sagittal, coronal)
+    \item Click on different time points in the butterfly plot
+    \item Observe how the brain projection views change when you interact with the butterfly plot
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\textbf{7. Is the interface layout (three brain views + butterfly plot) intuitive?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very intuitive - immediately understood the layout \\[0.3cm]
+\checkbox & Mostly intuitive - quickly figured out the components \\[0.3cm]
+\checkbox & Neutral - took some time to understand \\[0.3cm]
+\checkbox & Slightly confusing - unclear relationships between components \\[0.3cm]
+\checkbox & Very confusing - difficult to understand the interface \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{8. How smooth was the interaction of selecting a time point on the butterfly plot to update the brain views?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very smooth and responsive - immediate updates \\[0.3cm]
+\checkbox & Mostly smooth - quick updates with minimal delay \\[0.3cm]
+\checkbox & Acceptable - noticeable but reasonable delay \\[0.3cm]
+\checkbox & Laggy - slow updates affecting usability \\[0.3cm]
+\checkbox & Unresponsive - often failed to update or very slow \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{9. Is the information presented clearly? (e.g., axes, color bars, time indicators)}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very clear - all elements well labeled and understandable \\[0.3cm]
+\checkbox & Mostly clear - minor ambiguities but generally good \\[0.3cm]
+\checkbox & Neutral - some elements clear, others less so \\[0.3cm]
+\checkbox & Somewhat unclear - several confusing elements \\[0.3cm]
+\checkbox & Very confusing - difficult to interpret the visualizations \\
+\end{tabular}
+
+\newpage
+
+\subsection{Task 3: Customizing the Visualization}
+
+\textbf{Action:} Try the code from the "Advanced Usage" section in the \texttt{README.md} to perform the following:
+\begin{enumerate}
+    \item Change the colormap (\texttt{cmap})
+    \item Apply a brain parcellation (\texttt{region='aparc+aseg'})
+    \item Toggle the display mode of the butterfly plot (\texttt{show\_max\_only})
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\textbf{10. Were the code parameters for customizing the visualization easy to understand and use?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very easy - parameter names and usage were obvious \\[0.3cm]
+\checkbox & Easy - clear documentation and straightforward syntax \\[0.3cm]
+\checkbox & Neutral - required some experimentation \\[0.3cm]
+\checkbox & Somewhat difficult - unclear parameter effects \\[0.3cm]
+\checkbox & Very difficult - confusing parameters and documentation \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{11. Do you find the provided customization options sufficient for your typical needs?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Completely sufficient - covers all my visualization needs \\[0.3cm]
+\checkbox & Mostly sufficient - covers most important use cases \\[0.3cm]
+\checkbox & Neutral - covers basic needs but missing some features \\[0.3cm]
+\checkbox & Somewhat insufficient - missing several important options \\[0.3cm]
+\checkbox & Completely insufficient - lacks many essential features \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+What other customization features would you like to see?
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\subsection{Task 4: Exporting Images}
+
+\textbf{Action:} Use the \texttt{viz.export\_images()} function to export the visualization at a specific time point as static images.
+
+\vspace{0.5cm}
+
+\textbf{12. Did the image export feature work as you expected?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Yes, exactly as expected - perfect functionality \\[0.3cm]
+\checkbox & Mostly as expected - minor issues but functional \\[0.3cm]
+\checkbox & Partially - some features worked, others didn't \\[0.3cm]
+\checkbox & No, encountered errors or incorrect results \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+Please describe any issues you encountered:
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\newpage
+
+\section{Part 3: Overall Impressions and Suggestions}
+
+\subsection{Performance and Usability}
+
+\textbf{13. What is your impression of LiveNeuron's performance (especially arrow rendering and interaction speed)?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very fast - excellent performance throughout \\[0.3cm]
+\checkbox & Fast - good performance with minimal delays \\[0.3cm]
+\checkbox & Average - acceptable performance for most tasks \\[0.3cm]
+\checkbox & Slow - noticeable delays affecting workflow \\[0.3cm]
+\checkbox & Very slow - performance issues significantly impacted use \\
+\end{tabular}
+
+\vspace{1cm}
+
+\textbf{14. How would you rate the documentation (\texttt{README.md})?}
+
+\vspace{0.3cm}
+
+\begin{tabular}{p{0.5cm}p{12cm}}
+\checkbox & Very detailed and helpful - excellent guidance \\[0.3cm]
+\checkbox & Mostly helpful - good coverage with minor gaps \\[0.3cm]
+\checkbox & Neutral - adequate but could be improved \\[0.3cm]
+\checkbox & Lacked information - missing important details \\[0.3cm]
+\checkbox & Confusing - unclear or misleading information \\
+\end{tabular}
+
+\vspace{0.5cm}
+
+What areas of the documentation could be improved?
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\subsection{Open-Ended Questions}
+
+\textbf{15. What do you think is the most valuable feature of LiveNeuron?}
+
+\vspace{0.5cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\textbf{16. What was the biggest difficulty you faced while using the tool?}
+
+\vspace{0.5cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{1cm}
+
+\textbf{17. How likely are you to recommend LiveNeuron to a colleague or friend?}
+
+\vspace{0.5cm}
+
+\tenscale
+
+\vspace{1cm}
+
+\textbf{18. Do you have any other suggestions or ideas for improving LiveNeuron?}
+
+\vspace{0.5cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{0.3cm}
+
+\textline{12cm}
+
+\vspace{2cm}
+
+\begin{tcolorbox}[colback=primaryblue!10,colframe=primaryblue,boxrule=1pt,arc=2pt]
+    \centering
+    \Large\textbf{Thank you for your valuable time and feedback!}
+    
+    \vspace{0.5cm}
+    
+    Your responses will help us improve LiveNeuron and make it more useful for the neuroscience research community.
+\end{tcolorbox}
+
+\vspace{1cm}
+
+\hrule
+
+\vspace{0.5cm}
+
+\small
+\textbf{Contact Information:}\\
+LiveNeuron Development Team\\
+McMaster University\\
+Project Repository: \href{https://github.com/liang-bo96/LiveNeuron}{https://github.com/liang-bo96/LiveNeuron}
+
+\end{document}
