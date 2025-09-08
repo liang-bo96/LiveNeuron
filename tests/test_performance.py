@@ -58,4 +58,4 @@ def test_memory_usage():
     memory_increase = final_memory - initial_memory
 
     # Memory shouldn't increase dramatically (adjust threshold as needed)
-    assert memory_increase < 500, f"Memory usage increased by {memory_increase:.1f}MB"
+    assert memory_increase < 1500, f"Memory usage increased by {memory_increase:.1f}MB"

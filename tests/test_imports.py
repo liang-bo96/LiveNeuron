@@ -8,27 +8,6 @@ filename case mismatches or missing dependencies.
 import pytest
 
 
-def test_main_class_import():
-    """Test that the main class can be imported."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-
-    assert EelbrainPlotly2DViz is not None
-
-
-def test_alias_import():
-    """Test that the alias import works."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
-
-    assert BrainPlotly2DViz is not None
-
-
-def test_sample_data_import():
-    """Test that sample data function can be imported."""
-    from eelbrain_plotly_viz.sample_data import create_sample_brain_data
-
-    assert create_sample_brain_data is not None
-
-
 def test_all_imports_together():
     """Test that all imports can be done in a single statement."""
     from eelbrain_plotly_viz import (
