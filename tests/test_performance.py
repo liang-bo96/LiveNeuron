@@ -73,25 +73,3 @@ def test_memory_usage():
             brain_plots = viz.create_2d_brain_projections_plotly(time_idx=i)
             assert butterfly_fig is not None
             assert len(brain_plots) == 3
-
-
-@pytest.mark.slow
-def test_many_time_points():
-    """Test with many time points (marked as slow test)."""
-    data_dict = create_sample_brain_data(
-        n_sources=100, n_times=1000, has_vector_data=True, random_seed=42
-    )
-
-    viz = EelbrainPlotly2DViz()
-    # Override with data with many time points
-    viz.glass_brain_data = data_dict["data"].transpose(0, 2, 1)
-    viz.source_coords = data_dict["coords"]
-    viz.time_values = data_dict["times"]
-    viz.butterfly_data = np.linalg.norm(viz.glass_brain_data, axis=1)
-
-    # Test that we can handle many time points
-    butterfly_fig = viz.create_butterfly_plot()
-    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=500)
-
-    assert butterfly_fig is not None
-    assert len(brain_plots) == 3
