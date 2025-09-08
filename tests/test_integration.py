@@ -9,23 +9,18 @@ from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
 def test_export_functionality():
     """Test image export functionality."""
+    # Check for required dependencies upfront
+    pytest.importorskip("kaleido", reason="kaleido required for image export testing")
+
     viz = EelbrainPlotly2DViz()
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Test export (this will check if the method exists and can be called)
-        try:
-            result = viz.export_images(output_dir=temp_dir, time_idx=5, format="png")
+        # Test export functionality
+        result = viz.export_images(output_dir=temp_dir, time_idx=5, format="png")
 
-            # Check that export function runs without error
-            assert isinstance(result, dict)
-            assert "status" in result
-
-        except Exception as e:
-            # If kaleido or other dependencies aren't available, that's ok for basic test
-            if "kaleido" in str(e).lower() or "write_image" in str(e):
-                pytest.skip(f"Image export dependencies not available: {e}")
-            else:
-                raise
+        # Check that export function runs without error
+        assert isinstance(result, dict)
+        assert "status" in result
 
 
 def test_jupyter_mode():

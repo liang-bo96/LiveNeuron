@@ -8,27 +8,6 @@ filename case mismatches or missing dependencies.
 import pytest
 
 
-def test_main_class_import():
-    """Test that the main class can be imported."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-
-    assert EelbrainPlotly2DViz is not None
-
-
-def test_alias_import():
-    """Test that the alias import works."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz
-
-    assert BrainPlotly2DViz is not None
-
-
-def test_sample_data_import():
-    """Test that sample data function can be imported."""
-    from eelbrain_plotly_viz.sample_data import create_sample_brain_data
-
-    assert create_sample_brain_data is not None
-
-
 def test_all_imports_together():
     """Test that all imports can be done in a single statement."""
     from eelbrain_plotly_viz import (
@@ -82,33 +61,27 @@ def test_package_all_attribute():
 
 def test_no_import_errors():
     """Test that importing the package doesn't raise any exceptions."""
-    try:
-        import eelbrain_plotly_viz
+    import eelbrain_plotly_viz
 
-        # Test basic instantiation to catch runtime import issues
-        viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
-        assert viz is not None
-    except Exception as e:
-        pytest.fail(f"Import or instantiation failed with error: {e}")
+    # Test basic instantiation to catch runtime import issues
+    viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
+    assert viz is not None
 
 
 def test_case_sensitive_filename_compliance():
     """Test that the imports work correctly (indicating proper filename conventions)."""
     # Instead of checking file paths (which vary between dev and installed packages),
     # we test that the imports work, which indicates the files are named correctly
-    try:
-        # This import will only work if the file is named correctly (viz_2d.py)
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-        # Test that we can create an instance (ensures the import chain works)
-        viz = EelbrainPlotly2DViz()
-        assert viz is not None
+    # This import will only work if the file is named correctly (viz_2d.py)
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-        # Test that the module follows the expected pattern
-        import eelbrain_plotly_viz
+    # Test that we can create an instance (ensures the import chain works)
+    viz = EelbrainPlotly2DViz()
+    assert viz is not None
 
-        module_file = eelbrain_plotly_viz.__file__
-        assert "eelbrain_plotly_viz" in module_file
+    # Test that the module follows the expected pattern
+    import eelbrain_plotly_viz
 
-    except ImportError as e:
-        pytest.fail(f"Import failed, indicating filename case issue: {e}")
+    module_file = eelbrain_plotly_viz.__file__
+    assert "eelbrain_plotly_viz" in module_file
