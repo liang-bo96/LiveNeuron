@@ -62,6 +62,16 @@ class EelbrainPlotly2DViz:
         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
         - 'horizontal': Compact layout with butterfly plot on left, brain views on right
         Default is 'vertical' for backward compatibility.
+    display_mode
+        Anatomical view mode for brain projections. Options:
+        - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
+        - 'x': Sagittal view only
+        - 'y': Coronal view only
+        - 'z': Axial view only
+        - 'xz': Sagittal + Axial views
+        - 'yz': Coronal + Axial views
+        - 'yx': Coronal + Sagittal views
+        More modes will be added in future phases. Default is 'ortho' for backward compatibility.
 
     Notes
     -----
@@ -82,6 +92,7 @@ class EelbrainPlotly2DViz:
         arrow_threshold: Optional[Union[float, str]] = None,
         realtime: bool = False,
         layout_mode: str = "vertical",
+        display_mode: str = "ortho",
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -109,6 +120,17 @@ class EelbrainPlotly2DViz:
                 f"layout_mode must be one of {valid_layouts}, got '{layout_mode}'"
             )
         self.layout_mode: str = layout_mode
+
+        # Validate and set display mode
+        valid_display_modes = ["ortho", "x", "y", "z", "xz", "yz", "yx"]
+        if display_mode not in valid_display_modes:
+            raise ValueError(
+                f"display_mode must be one of {valid_display_modes}, got '{display_mode}'"
+            )
+        self.display_mode: str = display_mode
+
+        # Parse display mode to determine required views
+        self.brain_views = self._parse_display_mode(display_mode)
 
         # Load data
         if y is not None:
@@ -205,13 +227,44 @@ class EelbrainPlotly2DViz:
             # (n_sources, 1, n_times)
             self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]
 
+    def _parse_display_mode(self, mode: str) -> List[str]:
+        """Parse display_mode string into list of required brain views.
+
+        Parameters
+        ----------
+        mode : str
+            Display mode string (e.g., 'ortho', 'x', 'xz')
+
+        Returns
+        -------
+        List[str]
+            List of brain view types to generate
+        """
+        mode_mapping = {
+            'ortho': ['sagittal', 'coronal', 'axial'],  # Traditional 3-view
+            'x': ['sagittal'],
+            'y': ['coronal'],
+            'z': ['axial'],
+            'xz': ['sagittal', 'axial'],
+            'yz': ['coronal', 'axial'],
+            'yx': ['coronal', 'sagittal']
+        }
+
+        if mode in mode_mapping:
+            return mode_mapping[mode]
+        else:
+            raise ValueError(f"Unsupported display_mode: {mode}")
+
     def _get_layout_config(self) -> Dict[str, Any]:
-        """Get layout configuration based on layout_mode and environment."""
+        """Get layout configuration based on layout_mode, display_mode and environment."""
+        # Get number of brain views for this display mode
+        num_views = len(self.brain_views)
+
         # Base configurations for different layout modes
         layout_configs = {
             "vertical": {
                 "butterfly_width": "100%",
-                "brain_width": {"jupyter": "30%", "browser": "32%"},
+                "brain_width": self._get_brain_width_for_views(num_views, "vertical"),
                 "brain_margin": {"jupyter": "1.5%", "browser": "0.5%"},
                 "plot_height": {"jupyter": "250px", "browser": "450px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "400px"},
@@ -220,7 +273,7 @@ class EelbrainPlotly2DViz:
             },
             "horizontal": {
                 "butterfly_width": "35%",
-                "brain_width": {"jupyter": "20%", "browser": "20%"},
+                "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0.3%", "browser": "0.3%"},
                 "plot_height": {"jupyter": "300px", "browser": "350px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "350px"},
@@ -241,9 +294,80 @@ class EelbrainPlotly2DViz:
             "butterfly_height": base_config["butterfly_height"][env],
             "container_padding": base_config["container_padding"][env],
             "arrangement": base_config["arrangement"],
+            "num_views": num_views,
+            "brain_views": self.brain_views,
         }
 
         return config
+
+    def _get_brain_width_for_views(self, num_views: int, layout_mode: str) -> Dict[str, str]:
+        """Calculate brain view width based on number of views and layout mode."""
+        if layout_mode == "vertical":
+            # In vertical mode, views are arranged horizontally below butterfly plot
+            if num_views == 1:
+                return {"jupyter": "98%", "browser": "98%"}
+            elif num_views == 2:
+                return {"jupyter": "48%", "browser": "48%"}
+            else:  # 3 or more views
+                return {"jupyter": "30%", "browser": "32%"}
+        else:  # horizontal mode
+            # In horizontal mode, views share space with butterfly plot
+            if num_views == 1:
+                return {"jupyter": "60%", "browser": "60%"}
+            elif num_views == 2:
+                return {"jupyter": "30%", "browser": "30%"}
+            else:  # 3 or more views
+                return {"jupyter": "20%", "browser": "20%"}
+
+    def _create_brain_view_containers(self, brain_plots: Dict[str, go.Figure],
+                                      brain_height: str, brain_width: str, brain_margin: str) -> List:
+        """Create dynamic brain view containers based on display_mode."""
+        containers = []
+
+        for view_name in self.brain_views:
+            container = html.Div(
+                [
+                    dcc.Graph(
+                        id=f"brain-{view_name}-plot",
+                        figure=brain_plots[view_name],
+                        style={"height": brain_height},
+                    )
+                ],
+                style={
+                    "width": brain_width,
+                    "display": "inline-block",
+                    "margin": brain_margin,
+                },
+            )
+            containers.append(container)
+
+        return containers
+
+    def _create_brain_view_containers_horizontal(self, brain_plots: Dict[str, go.Figure],
+                                               brain_height: str, brain_width: str, brain_margin: str) -> List:
+        """Create dynamic brain view containers for horizontal layout."""
+        containers = []
+
+        for view_name in self.brain_views:
+            container = html.Div(
+                [
+                    dcc.Graph(
+                        id=f"brain-{view_name}-plot",
+                        figure=brain_plots[view_name],
+                        style={"height": brain_height},
+                    )
+                ],
+                style={
+                    "width": brain_width,
+                    "display": "inline-block",
+                    "verticalAlign": "top",
+                    "margin": brain_margin,
+                    "padding": "0px",
+                },
+            )
+            containers.append(container)
+
+        return containers
 
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode."""
@@ -316,56 +440,11 @@ class EelbrainPlotly2DViz:
                         # Bottom: 2D Brain projections using Plotly
                         html.Div(
                             [
-                                # Three brain view plots
+                                # Dynamic brain view plots based on display_mode
                                 html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-axial-plot",
-                                                    figure=initial_brain_plots["axial"],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-sagittal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "sagittal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-coronal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "coronal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                    ],
+                                    self._create_brain_view_containers(
+                                        initial_brain_plots, brain_height, brain_width, brain_margin
+                                    ),
                                     style={"textAlign": "center"},
                                 ),
                                 # Status indicator
@@ -440,57 +519,10 @@ class EelbrainPlotly2DViz:
                                 "margin": brain_margin,
                                 "padding": "0px",
                             },
-                        ),
-                        # Right: Brain projections (all at same level)
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-axial-plot",
-                                    figure=initial_brain_plots["axial"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-sagittal-plot",
-                                    figure=initial_brain_plots["sagittal"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-coronal-plot",
-                                    figure=initial_brain_plots["coronal"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                    ],
+                        )
+                    ] + self._create_brain_view_containers_horizontal(
+                        initial_brain_plots, brain_height, brain_width, brain_margin
+                    ),
                     style={"textAlign": "center"},
                 ),
                 # Status indicator
@@ -524,18 +556,18 @@ class EelbrainPlotly2DViz:
                 time_idx = 0
             return self.create_butterfly_plot(time_idx)
 
+        # Dynamic brain plot outputs based on display_mode
+        brain_outputs = [
+            Output(f"brain-{view_name}-plot", "figure")
+            for view_name in self.brain_views
+        ]
+
         @self.app.callback(
-            [
-                Output("brain-axial-plot", "figure"),
-                Output("brain-sagittal-plot", "figure"),
-                Output("brain-coronal-plot", "figure"),
-            ],
+            brain_outputs,
             Input("selected-time-idx", "data"),
             Input("selected-source-idx", "data"),
         )
-        def update_brain_projections(
-            time_idx: int, source_idx: int
-        ) -> tuple[go.Figure, go.Figure, go.Figure]:
+        def update_brain_projections(time_idx: int, source_idx: int):
             if time_idx is None:
                 time_idx = 0
 
@@ -543,11 +575,7 @@ class EelbrainPlotly2DViz:
                 brain_plots = self.create_2d_brain_projections_plotly(
                     time_idx, source_idx
                 )
-                return (
-                    brain_plots["axial"],
-                    brain_plots["sagittal"],
-                    brain_plots["coronal"],
-                )
+                return tuple(brain_plots[view_name] for view_name in self.brain_views)
             except Exception:
                 # Return empty plots on error
                 empty_fig = go.Figure()
@@ -559,7 +587,7 @@ class EelbrainPlotly2DViz:
                     y=0.5,
                     showarrow=False,
                 )
-                return empty_fig, empty_fig, empty_fig
+                return tuple(empty_fig for _ in self.brain_views)
 
         @self.app.callback(
             Output("selected-time-idx", "data"),
@@ -857,11 +885,7 @@ class EelbrainPlotly2DViz:
                 y=0.5,
                 showarrow=False,
             )
-            return {
-                "axial": placeholder_fig,
-                "sagittal": placeholder_fig,
-                "coronal": placeholder_fig,
-            }
+            return {view: placeholder_fig for view in self.brain_views}
 
         try:
             # Get time slice of data
@@ -885,12 +909,12 @@ class EelbrainPlotly2DViz:
 
             # Create brain projections
             brain_plots = {}
-            views = ["axial", "sagittal", "coronal"]
+            views = self.brain_views
 
             for i, view_name in enumerate(views):
                 try:
-                    # Only show colorbar on the last view (coronal)
-                    show_colorbar = view_name == "coronal"
+                    # Only show colorbar on the last view
+                    show_colorbar = i == len(views) - 1
                     brain_fig = self._create_plotly_brain_projection(
                         view_name,
                         self.source_coords,
@@ -1506,7 +1530,8 @@ if __name__ == "__main__":
             cmap=cmap,
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
-            layout_mode="horizontal",
+            layout_mode="vertical",
+            display_mode="ortho",
         )
 
         # Example: Export plot images
