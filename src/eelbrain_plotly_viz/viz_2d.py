@@ -241,13 +241,13 @@ class EelbrainPlotly2DViz:
             List of brain view types to generate
         """
         mode_mapping = {
-            'ortho': ['sagittal', 'coronal', 'axial'],  # Traditional 3-view
-            'x': ['sagittal'],
-            'y': ['coronal'],
-            'z': ['axial'],
-            'xz': ['sagittal', 'axial'],
-            'yz': ['coronal', 'axial'],
-            'yx': ['coronal', 'sagittal']
+            "ortho": ["sagittal", "coronal", "axial"],  # Traditional 3-view
+            "x": ["sagittal"],
+            "y": ["coronal"],
+            "z": ["axial"],
+            "xz": ["sagittal", "axial"],
+            "yz": ["coronal", "axial"],
+            "yx": ["coronal", "sagittal"],
         }
 
         if mode in mode_mapping:
@@ -300,7 +300,9 @@ class EelbrainPlotly2DViz:
 
         return config
 
-    def _get_brain_width_for_views(self, num_views: int, layout_mode: str) -> Dict[str, str]:
+    def _get_brain_width_for_views(
+        self, num_views: int, layout_mode: str
+    ) -> Dict[str, str]:
         """Calculate brain view width based on number of views and layout mode."""
         if layout_mode == "vertical":
             # In vertical mode, views are arranged horizontally below butterfly plot
@@ -319,8 +321,13 @@ class EelbrainPlotly2DViz:
             else:  # 3 or more views
                 return {"jupyter": "20%", "browser": "20%"}
 
-    def _create_brain_view_containers(self, brain_plots: Dict[str, go.Figure],
-                                      brain_height: str, brain_width: str, brain_margin: str) -> List:
+    def _create_brain_view_containers(
+        self,
+        brain_plots: Dict[str, go.Figure],
+        brain_height: str,
+        brain_width: str,
+        brain_margin: str,
+    ) -> List:
         """Create dynamic brain view containers based on display_mode."""
         containers = []
 
@@ -343,8 +350,13 @@ class EelbrainPlotly2DViz:
 
         return containers
 
-    def _create_brain_view_containers_horizontal(self, brain_plots: Dict[str, go.Figure],
-                                               brain_height: str, brain_width: str, brain_margin: str) -> List:
+    def _create_brain_view_containers_horizontal(
+        self,
+        brain_plots: Dict[str, go.Figure],
+        brain_height: str,
+        brain_width: str,
+        brain_margin: str,
+    ) -> List:
         """Create dynamic brain view containers for horizontal layout."""
         containers = []
 
@@ -443,7 +455,10 @@ class EelbrainPlotly2DViz:
                                 # Dynamic brain view plots based on display_mode
                                 html.Div(
                                     self._create_brain_view_containers(
-                                        initial_brain_plots, brain_height, brain_width, brain_margin
+                                        initial_brain_plots,
+                                        brain_height,
+                                        brain_width,
+                                        brain_margin,
                                     ),
                                     style={"textAlign": "center"},
                                 ),
@@ -520,7 +535,8 @@ class EelbrainPlotly2DViz:
                                 "padding": "0px",
                             },
                         )
-                    ] + self._create_brain_view_containers_horizontal(
+                    ]
+                    + self._create_brain_view_containers_horizontal(
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
                     style={"textAlign": "center"},
