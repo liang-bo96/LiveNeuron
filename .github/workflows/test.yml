@@ -74,6 +74,7 @@ jobs:
         # Skip slow tests for CI speed
         pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing -m "not slow" --durations=10
 
+
     - name: Upload coverage reports to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
       uses: codecov/codecov-action@v3

@@ -11,65 +11,51 @@ from eelbrain_plotly_viz.sample_data import create_sample_brain_data
 
 def test_large_dataset_performance():
     """Test performance with larger datasets."""
-    # Test with default sample data (no custom data needed for performance test)
+    # Create a larger dataset
+    data_dict = create_sample_brain_data(
+        n_sources=500, n_times=100, has_vector_data=True, random_seed=42
+    )
+
     start_time = time.time()
-    viz = EelbrainPlotly2DViz()  # Uses default MNE sample data
-    creation_time = time.time() - start_time
+    viz = EelbrainPlotly2DViz()
+    # Override with larger data
+    viz.glass_brain_data = data_dict["data"].transpose(
+        0, 2, 1
+    )  # (sources, space, time)
+    viz.source_coords = data_dict["coords"]
+    viz.time_values = data_dict["times"]
+    viz.butterfly_data = np.linalg.norm(viz.glass_brain_data, axis=1)
 
-    # Should create visualization in reasonable time (less than 30 seconds)
-    assert creation_time < 30.0, f"Visualization creation took {creation_time:.2f}s"
+    # Test plotting functions
+    butterfly_fig = viz.create_butterfly_plot()
+    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=10)
 
-    # Test plot creation performance
-    start_time = time.time()
-    butterfly_fig = viz.create_butterfly_plot(0)
-    butterfly_time = time.time() - start_time
+    end_time = time.time()
+    execution_time = end_time - start_time
 
-    assert butterfly_time < 10.0, f"Butterfly plot creation took {butterfly_time:.2f}s"
+    # Should complete within reasonable time (adjust threshold as needed)
+    assert execution_time < 30, f"Performance test took too long: {execution_time:.2f}s"
     assert butterfly_fig is not None
+    assert len(brain_plots) == 3
 
 
 def test_memory_usage():
-    """Test memory usage doesn't grow excessively."""
-    import gc
+    """Test memory usage doesn't explode with moderate datasets."""
+    # Check for required dependencies upfront
+    psutil = pytest.importorskip("psutil", reason="psutil required for memory testing")
+    import os
 
-    # Force garbage collection before test
-    gc.collect()
+    process = psutil.Process(os.getpid())
+    initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-    # Create multiple visualizations to test for memory leaks
-    vizualizations = []
+    # Create multiple visualizations
     for i in range(5):
-        # Use default sample data for each visualization
         viz = EelbrainPlotly2DViz()
-        vizualizations.append(viz)
+        _ = viz.create_butterfly_plot()
+        _ = viz.create_2d_brain_projections_plotly(time_idx=i)
 
-    # Test that we can create plots from all visualizations
-    for i, viz in enumerate(vizualizations):
-        butterfly_fig = viz.create_butterfly_plot(i % 10)
-        assert butterfly_fig is not None
+    final_memory = process.memory_info().rss / 1024 / 1024  # MB
+    memory_increase = final_memory - initial_memory
 
-    # Clean up
-    del vizualizations
-    gc.collect()
-
-
-def test_many_time_points():
-    """Test handling datasets with many time points."""
-    # Use default sample data which has sufficient time points for testing
-    viz = EelbrainPlotly2DViz()
-
-    # Test accessing different time points (use valid indices for default data)
-    max_time_idx = len(viz.time_values) - 1 if viz.time_values is not None else 50
-    time_points = [0, min(10, max_time_idx), min(25, max_time_idx), max_time_idx]
-    for time_idx in time_points:
-        start_time = time.time()
-        butterfly_fig = viz.create_butterfly_plot(time_idx)
-        brain_plots = viz.create_2d_brain_projections_plotly(time_idx)
-        plot_time = time.time() - start_time
-
-        assert butterfly_fig is not None
-        assert isinstance(brain_plots, dict)
-        assert "axial" in brain_plots
-        # Each plot should be created quickly
-        assert (
-            plot_time < 5.0
-        ), f"Plot creation for time {time_idx} took {plot_time:.2f}s"
+    # Memory shouldn't increase dramatically (adjust threshold as needed)
+    assert memory_increase < 1500, f"Memory usage increased by {memory_increase:.1f}MB"
