@@ -57,6 +57,11 @@ class EelbrainPlotly2DViz:
         magnitude greater than this value will be displayed. If None, all arrows
         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
         Default is None.
+    layout_mode
+        Layout arrangement mode for the visualization interface. Options:
+        - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
+        - 'horizontal': Compact layout with butterfly plot on left, brain views on right
+        Default is 'vertical' for backward compatibility.
 
     Notes
     -----
@@ -76,6 +81,7 @@ class EelbrainPlotly2DViz:
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
         realtime: bool = False,
+        layout_mode: str = "vertical",
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -95,6 +101,12 @@ class EelbrainPlotly2DViz:
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
         )  # Default state for real-time mode
+        
+        # Validate and set layout mode
+        valid_layouts = ["vertical", "horizontal"]
+        if layout_mode not in valid_layouts:
+            raise ValueError(f"layout_mode must be one of {valid_layouts}, got '{layout_mode}'")
+        self.layout_mode: str = layout_mode
 
         # Load data
         if y is not None:
@@ -191,29 +203,74 @@ class EelbrainPlotly2DViz:
             # (n_sources, 1, n_times)
             self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]
 
+    def _get_layout_config(self) -> Dict[str, Any]:
+        """Get layout configuration based on layout_mode and environment."""
+        # Base configurations for different layout modes
+        layout_configs = {
+            "vertical": {
+                "butterfly_width": "100%",
+                "brain_width": {"jupyter": "30%", "browser": "32%"},
+                "brain_margin": {"jupyter": "1.5%", "browser": "0.5%"},
+                "plot_height": {"jupyter": "250px", "browser": "450px"},
+                "butterfly_height": {"jupyter": "300px", "browser": "400px"},
+                "container_padding": {"jupyter": "2px", "browser": "5px"},
+                "arrangement": "vertical"
+            },
+            "horizontal": {
+                "butterfly_width": "35%",
+                "brain_width": {"jupyter": "20%", "browser": "20%"},
+                "brain_margin": {"jupyter": "0.3%", "browser": "0.3%"},
+                "plot_height": {"jupyter": "300px", "browser": "350px"},
+                "butterfly_height": {"jupyter": "300px", "browser": "350px"},
+                "container_padding": {"jupyter": "5px", "browser": "10px"},
+                "arrangement": "horizontal"
+            }
+        }
+        
+        base_config = layout_configs[self.layout_mode]
+        env = "jupyter" if self.is_jupyter_mode else "browser"
+        
+        # Build final configuration
+        config = {
+            "butterfly_width": base_config["butterfly_width"],
+            "brain_width": base_config["brain_width"][env],
+            "brain_margin": base_config["brain_margin"][env],
+            "plot_height": base_config["plot_height"][env],
+            "butterfly_height": base_config["butterfly_height"][env],
+            "container_padding": base_config["container_padding"][env],
+            "arrangement": base_config["arrangement"]
+        }
+        
+        return config
+
     def _setup_layout(self) -> None:
-        """Setup the Dash app layout."""
+        """Setup the Dash app layout based on layout_mode."""
         # Create initial figures
         initial_butterfly = self.create_butterfly_plot(0)
         initial_brain_plots = self.create_2d_brain_projections_plotly(0)
 
-        # Define styles based on mode
-        if self.is_jupyter_mode:
-            # Jupyter-specific styles
-            butterfly_style = {"width": "100%", "margin-bottom": "10px"}
-            butterfly_graph_style = {"height": "300px"}  # Reduced height for Jupyter
-            brain_height = "250px"  # Reduced height for brain views
-            brain_width = "30%"  # Slightly smaller width
-            brain_margin = "1.5%"  # Larger margin for better spacing
-            container_padding = "2px"  # Minimal padding for Jupyter
+        # Get layout configuration
+        config = self._get_layout_config()
+        
+        # Setup layout based on mode
+        if self.layout_mode == "horizontal":
+            self._setup_horizontal_layout(initial_butterfly, initial_brain_plots, config)
         else:
-            # Browser-specific styles
-            butterfly_style = {"width": "100%", "margin-bottom": "20px"}
-            butterfly_graph_style = {"height": "400px"}  # Standard height
-            brain_height = "450px"  # Standard height for brain views
-            brain_width = "32%"  # Standard width
-            brain_margin = "0.5%"  # Standard margin
-            container_padding = "5px"  # Standard padding
+            self._setup_vertical_layout(initial_butterfly, initial_brain_plots, config)
+
+    def _setup_vertical_layout(self, initial_butterfly, initial_brain_plots, config) -> None:
+        """Setup traditional vertical layout (butterfly top, brain views below)."""
+        # Build butterfly and brain styles
+        if self.layout_mode == "vertical":
+            butterfly_style = {"width": config["butterfly_width"], "margin-bottom": "20px" if not self.is_jupyter_mode else "10px"}
+        else:
+            butterfly_style = {"width": config["butterfly_width"]}
+            
+        butterfly_graph_style = {"height": config["butterfly_height"]}
+        brain_height = config["plot_height"]
+        brain_width = config["brain_width"]
+        brain_margin = config["brain_margin"]
+        container_padding = config["container_padding"]
 
         self.app.layout = html.Div(
             [
@@ -317,6 +374,124 @@ class EelbrainPlotly2DViz:
                             style={"width": "100%"},
                         ),
                     ]
+                ),
+                # Info panel
+                html.Div(
+                    id="info-panel",
+                    style={"clear": "both", "padding": "10px", "textAlign": "center"},
+                ),
+            ],
+            style={"width": "100%", "height": "100%", "padding": container_padding},
+        )
+
+    def _setup_horizontal_layout(self, initial_butterfly, initial_brain_plots, config) -> None:
+        """Setup horizontal layout (butterfly left, brain views right)."""
+        butterfly_graph_style = {"height": config["butterfly_height"]}
+        brain_height = config["plot_height"]
+        brain_width = config["brain_width"]
+        brain_margin = config["brain_margin"]
+        container_padding = config["container_padding"]
+
+        self.app.layout = html.Div(
+            [
+                html.H1(
+                    "Eelbrain Plotly 2D Brain Visualization - Horizontal Layout",
+                    style={"textAlign": "center", "margin": "10px 0"},
+                ),
+                # Real-time mode switch
+                dcc.Checklist(
+                    id="realtime-mode-switch",
+                    options=[
+                        {"label": "Real-time Update on Hover", "value": "realtime"}
+                    ],
+                    value=self.realtime_mode_default,
+                    style={"textAlign": "center", "margin": "10px 0"},
+                ),
+                # Hidden stores for state management
+                dcc.Store(id="selected-time-idx", data=0),
+                dcc.Store(id="selected-source-idx", data=None),
+                # Main content - arranged horizontally
+                html.Div(
+                    [
+                        # Left: Butterfly plot (compact)
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="butterfly-plot",
+                                    figure=initial_butterfly,
+                                    style=butterfly_graph_style,
+                                )
+                            ],
+                            style={
+                                "width": config["butterfly_width"],
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": brain_margin,
+                                "padding": "0px",
+                            },
+                        ),
+                        # Right: Brain projections (all at same level)
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="brain-axial-plot",
+                                    figure=initial_brain_plots["axial"],
+                                    style={"height": brain_height},
+                                )
+                            ],
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": brain_margin,
+                                "padding": "0px",
+                            },
+                        ),
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="brain-sagittal-plot",
+                                    figure=initial_brain_plots["sagittal"],
+                                    style={"height": brain_height},
+                                )
+                            ],
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": brain_margin,
+                                "padding": "0px",
+                            },
+                        ),
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="brain-coronal-plot",
+                                    figure=initial_brain_plots["coronal"],
+                                    style={"height": brain_height},
+                                )
+                            ],
+                            style={
+                                "width": brain_width,
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "margin": brain_margin,
+                                "padding": "0px",
+                            },
+                        ),
+                    ],
+                    style={"textAlign": "center"},
+                ),
+                # Status indicator
+                html.Div(
+                    id="update-status",
+                    children="Click on butterfly plot to update brain views | Hover for real-time updates",
+                    style={
+                        "textAlign": "center",
+                        "padding": "10px",
+                        "fontStyle": "italic",
+                        "color": "#666",
+                    },
                 ),
                 # Info panel
                 html.Div(
@@ -1320,6 +1495,7 @@ if __name__ == "__main__":
             cmap=cmap,
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
+            layout_mode="horizontal",
         )
 
         # Example: Export plot images
