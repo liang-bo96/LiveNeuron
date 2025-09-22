@@ -101,11 +101,13 @@ class EelbrainPlotly2DViz:
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
         )  # Default state for real-time mode
-        
+
         # Validate and set layout mode
         valid_layouts = ["vertical", "horizontal"]
         if layout_mode not in valid_layouts:
-            raise ValueError(f"layout_mode must be one of {valid_layouts}, got '{layout_mode}'")
+            raise ValueError(
+                f"layout_mode must be one of {valid_layouts}, got '{layout_mode}'"
+            )
         self.layout_mode: str = layout_mode
 
         # Load data
@@ -214,7 +216,7 @@ class EelbrainPlotly2DViz:
                 "plot_height": {"jupyter": "250px", "browser": "450px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "400px"},
                 "container_padding": {"jupyter": "2px", "browser": "5px"},
-                "arrangement": "vertical"
+                "arrangement": "vertical",
             },
             "horizontal": {
                 "butterfly_width": "35%",
@@ -223,13 +225,13 @@ class EelbrainPlotly2DViz:
                 "plot_height": {"jupyter": "300px", "browser": "350px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "350px"},
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
-                "arrangement": "horizontal"
-            }
+                "arrangement": "horizontal",
+            },
         }
-        
+
         base_config = layout_configs[self.layout_mode]
         env = "jupyter" if self.is_jupyter_mode else "browser"
-        
+
         # Build final configuration
         config = {
             "butterfly_width": base_config["butterfly_width"],
@@ -238,9 +240,9 @@ class EelbrainPlotly2DViz:
             "plot_height": base_config["plot_height"][env],
             "butterfly_height": base_config["butterfly_height"][env],
             "container_padding": base_config["container_padding"][env],
-            "arrangement": base_config["arrangement"]
+            "arrangement": base_config["arrangement"],
         }
-        
+
         return config
 
     def _setup_layout(self) -> None:
@@ -251,21 +253,28 @@ class EelbrainPlotly2DViz:
 
         # Get layout configuration
         config = self._get_layout_config()
-        
+
         # Setup layout based on mode
         if self.layout_mode == "horizontal":
-            self._setup_horizontal_layout(initial_butterfly, initial_brain_plots, config)
+            self._setup_horizontal_layout(
+                initial_butterfly, initial_brain_plots, config
+            )
         else:
             self._setup_vertical_layout(initial_butterfly, initial_brain_plots, config)
 
-    def _setup_vertical_layout(self, initial_butterfly, initial_brain_plots, config) -> None:
+    def _setup_vertical_layout(
+        self, initial_butterfly, initial_brain_plots, config
+    ) -> None:
         """Setup traditional vertical layout (butterfly top, brain views below)."""
         # Build butterfly and brain styles
         if self.layout_mode == "vertical":
-            butterfly_style = {"width": config["butterfly_width"], "margin-bottom": "20px" if not self.is_jupyter_mode else "10px"}
+            butterfly_style = {
+                "width": config["butterfly_width"],
+                "margin-bottom": "20px" if not self.is_jupyter_mode else "10px",
+            }
         else:
             butterfly_style = {"width": config["butterfly_width"]}
-            
+
         butterfly_graph_style = {"height": config["butterfly_height"]}
         brain_height = config["plot_height"]
         brain_width = config["brain_width"]
@@ -384,7 +393,9 @@ class EelbrainPlotly2DViz:
             style={"width": "100%", "height": "100%", "padding": container_padding},
         )
 
-    def _setup_horizontal_layout(self, initial_butterfly, initial_brain_plots, config) -> None:
+    def _setup_horizontal_layout(
+        self, initial_butterfly, initial_brain_plots, config
+    ) -> None:
         """Setup horizontal layout (butterfly left, brain views right)."""
         butterfly_graph_style = {"height": config["butterfly_height"]}
         brain_height = config["plot_height"]
