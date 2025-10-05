@@ -69,9 +69,16 @@ class EelbrainPlotly2DViz:
         - 'y': Coronal view only
         - 'z': Axial view only
         - 'xz': Sagittal + Axial views
-        - 'yz': Coronal + Axial views
         - 'yx': Coronal + Sagittal views
-        More modes will be added in future phases. Default is 'ortho' for backward compatibility.
+        - 'yz': Coronal + Axial views
+        - 'l': Left hemisphere view only
+        - 'r': Right hemisphere view only
+        - 'lr': Both hemisphere views (left + right)
+        - 'lzr': Left + Axial + Right hemispheres
+        - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
+        - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
+        - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
+        Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
 
     Notes
     -----
@@ -92,7 +99,7 @@ class EelbrainPlotly2DViz:
         arrow_threshold: Optional[Union[float, str]] = None,
         realtime: bool = False,
         layout_mode: str = "vertical",
-        display_mode: str = "ortho",
+        display_mode: str = "lyr",
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -121,15 +128,9 @@ class EelbrainPlotly2DViz:
             )
         self.layout_mode: str = layout_mode
 
-        # Validate and set display mode
-        valid_display_modes = ["ortho", "x", "y", "z", "xz", "yz", "yx"]
-        if display_mode not in valid_display_modes:
-            raise ValueError(
-                f"display_mode must be one of {valid_display_modes}, got '{display_mode}'"
-            )
+        # Set display mode and parse required views
         self.display_mode: str = display_mode
-
-        # Parse display mode to determine required views
+        # Parse display mode to determine required views (includes validation)
         self.brain_views = self._parse_display_mode(display_mode)
 
         # Load data
@@ -232,7 +233,7 @@ class EelbrainPlotly2DViz:
 
         Parameters
         ----------
-        mode : str
+        mode
             Display mode string (e.g., 'ortho', 'x', 'xz')
 
         Returns
@@ -246,8 +247,15 @@ class EelbrainPlotly2DViz:
             "y": ["coronal"],
             "z": ["axial"],
             "xz": ["sagittal", "axial"],
-            "yz": ["coronal", "axial"],
             "yx": ["coronal", "sagittal"],
+            "yz": ["coronal", "axial"],
+            "l": ["left_hemisphere"],     # Left hemisphere view
+            "r": ["right_hemisphere"],   # Right hemisphere view
+            "lr": ["left_hemisphere", "right_hemisphere"],  # Both hemispheres
+            "lzr": ["left_hemisphere", "axial", "right_hemisphere"],  # Left + Axial + Right
+            "lyr": ["left_hemisphere", "coronal", "right_hemisphere"],  # Left + Coronal + Right (GlassBrain default)
+            "lzry": ["left_hemisphere", "axial", "right_hemisphere", "coronal"],  # Left + Axial + Right + Coronal
+            "lyrz": ["left_hemisphere", "coronal", "right_hemisphere", "axial"],  # Left + Coronal + Right + Axial
         }
 
         if mode in mode_mapping:
@@ -298,6 +306,11 @@ class EelbrainPlotly2DViz:
             "brain_views": self.brain_views,
         }
 
+        # Special adjustments for 4-view modes (lzry, lyrz) in horizontal layout
+        if self.layout_mode == "horizontal" and self.display_mode in ['lzry', 'lyrz'] and num_views == 4:
+            config["brain_margin"] = "0.02%"  # Very small margin
+            config["butterfly_width"] = "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+
         return config
 
     def _get_brain_width_for_views(
@@ -314,11 +327,14 @@ class EelbrainPlotly2DViz:
                 return {"jupyter": "30%", "browser": "32%"}
         else:  # horizontal mode
             # In horizontal mode, views share space with butterfly plot
-            if num_views == 1:
+            # Special case for 4-view modes (lzry, lyrz) - arrange all in one row
+            if self.display_mode in ['lzry', 'lyrz'] and num_views == 4:
+                return {"jupyter": "16%", "browser": "16%"}  # 4 views: 25% + 4*16% + small margins = ~90%
+            elif num_views == 1:
                 return {"jupyter": "60%", "browser": "60%"}
             elif num_views == 2:
                 return {"jupyter": "30%", "browser": "30%"}
-            else:  # 3 or more views
+            else:  # 3 views (like lyr, lzr)
                 return {"jupyter": "20%", "browser": "20%"}
 
     def _create_brain_view_containers(
@@ -360,7 +376,7 @@ class EelbrainPlotly2DViz:
         """Create dynamic brain view containers for horizontal layout."""
         containers = []
 
-        for view_name in self.brain_views:
+        for i, view_name in enumerate(self.brain_views):
             container = html.Div(
                 [
                     dcc.Graph(
@@ -378,6 +394,14 @@ class EelbrainPlotly2DViz:
                 },
             )
             containers.append(container)
+
+            # Add line break after every 2 views if more than 2 views (except for 4-view modes)
+            if (self.display_mode not in ['lzry', 'lyrz'] and
+                len(self.brain_views) > 2 and
+                (i + 1) % 2 == 0 and
+                i < len(self.brain_views) - 1):
+                line_break = html.Div(style={"width": "100%", "height": "0px"})
+                containers.append(line_break)
 
         return containers
 
@@ -1026,6 +1050,47 @@ class EelbrainPlotly2DViz:
                 u_vectors = active_vectors[:, 0]  # X components
                 v_vectors = active_vectors[:, 2]  # Z components
             title = None
+        elif view_name == "left_hemisphere":  # Left hemisphere lateral view (Y vs Z, X < 0)
+            # Filter for left hemisphere (negative X coordinates)
+            left_mask = active_coords[:, 0] < 0
+            if np.any(left_mask):
+                active_coords = active_coords[left_mask]
+                active_activity = active_activity[left_mask]
+                active_indices = active_indices[left_mask]
+                if has_vector_data:
+                    active_vectors = active_vectors[left_mask]
+
+            # For left hemisphere, flip Y coordinates to match neuroimaging convention
+            x_coords = -active_coords[:, 1]  # Negative Y coordinates (flipped)
+            y_coords = active_coords[:, 2]   # Z coordinates
+            if has_vector_data:
+                u_vectors = -active_vectors[:, 1]  # Negative Y components (flipped)
+                v_vectors = active_vectors[:, 2]   # Z components
+            title = "Left Hemisphere"
+        elif view_name == "right_hemisphere":  # Right hemisphere lateral view (Y vs Z, X > 0)
+            # Filter for right hemisphere (positive X coordinates)
+            right_mask = active_coords[:, 0] > 0
+            if np.any(right_mask):
+                active_coords = active_coords[right_mask]
+                active_activity = active_activity[right_mask]
+                active_indices = active_indices[right_mask]
+                if has_vector_data:
+                    active_vectors = active_vectors[right_mask]
+
+            x_coords = active_coords[:, 1]  # Y coordinates
+            y_coords = active_coords[:, 2]  # Z coordinates
+            if has_vector_data:
+                u_vectors = active_vectors[:, 1]  # Y components
+                v_vectors = active_vectors[:, 2]  # Z components
+            title = "Right Hemisphere"
+        else:
+            # Fallback for unknown view types
+            x_coords = active_coords[:, 0]
+            y_coords = active_coords[:, 1]
+            if has_vector_data:
+                u_vectors = active_vectors[:, 0]
+                v_vectors = active_vectors[:, 1]
+            title = f"Unknown View: {view_name}"
 
         if len(active_coords) > 0:
             # Create data-driven grid using unique coordinate values
