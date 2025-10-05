@@ -1206,7 +1206,7 @@ class EelbrainPlotly2DViz:
         width: int = 1,
         size: float = 0.8,
     ) -> None:
-        """Create all arrows using batch method."""
+        """Create all arrows using Plotly's built-in annotation arrows."""
 
         if len(x_coords) == 0:
             return
@@ -1215,51 +1215,49 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Create all arrow lines as a single trace
-        # Use None to separate individual line segments
-        x_lines = []
-        y_lines = []
-        for i in range(len(x_coords)):
-            x_lines.extend([x_coords[i], x_ends[i], None])
-            y_lines.extend([y_coords[i], y_ends[i], None])
-
-        # Add all arrow lines as single trace (instead of 179+ individual annotations)
-        fig.add_trace(
-            go.Scatter(
-                x=x_lines,
-                y=y_lines,
-                mode="lines",
-                line=dict(color=color, width=width),
-                opacity=0.6,
-                showlegend=False,
-                hoverinfo="skip",
-                name="arrow_lines",
-            )
-        )
-
-        # Calculate arrow angles for proper arrowhead rotation
-        angles = np.degrees(np.arctan2(v_vectors, u_vectors))
+        # Calculate magnitudes for hover info
         magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
 
-        # Add all arrowheads as single trace (instead of 179+ individual annotations)
-        fig.add_trace(
-            go.Scatter(
-                x=x_ends,
-                y=y_ends,
-                mode="markers",
-                marker=dict(
-                    symbol="triangle-right",
-                    size=6 * size,  # Scale the marker size
-                    color=color,
-                    opacity=0.8,
-                    angle=angles,  # Rotate markers to match vector direction
-                ),
-                showlegend=False,
-                hovertemplate="Vector magnitude: %{customdata:.3f}<extra></extra>",
-                customdata=magnitudes,
-                name="arrow_heads",
-            )
-        )
+        # Collect all annotation data first, then add them in batch
+        annotations_to_add = []
+        
+        for i in range(len(x_coords)):
+            try:
+                annotation_data = dict(
+                    x=x_ends[i],           # Arrow points to this position
+                    y=y_ends[i],
+                    ax=x_coords[i],        # Arrow starts from this position  
+                    ay=y_coords[i],
+                    xref="x", yref="y",    # Use data coordinates
+                    axref="x", ayref="y",
+                    text="",               # No text, just the arrow
+                    showarrow=True,
+                    arrowhead=2,           # Filled triangle arrow head
+                    arrowsize=size,        # Scale arrow head size
+                    arrowwidth=width,      # Arrow shaft width
+                    arrowcolor=color,      # Arrow color
+                    # Add hover information
+                    hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
+                    # Make the annotation invisible except for the arrow
+                    font=dict(size=1, color="rgba(0,0,0,0)"),  # Minimum size is 1
+                    bgcolor="rgba(0,0,0,0)",
+                    bordercolor="rgba(0,0,0,0)",
+                )
+                annotations_to_add.append(annotation_data)
+                
+            except Exception as e:
+                # If annotation data creation fails, skip this arrow
+                print(f"Warning: Failed to create arrow data {i}: {e}")
+                continue
+        
+        # Batch add all annotations at once
+        if annotations_to_add:
+            # Get existing annotations (if any) and add new ones
+            existing_annotations = list(fig.layout.annotations) if fig.layout.annotations else []
+            all_annotations = existing_annotations + annotations_to_add
+            
+            # Update layout with all annotations in one operation
+            fig.update_layout(annotations=all_annotations)
 
     def _fig_to_base64(self, fig: plt.Figure) -> str:
         """Convert matplotlib figure to base64 string for Dash display."""
@@ -1506,7 +1504,6 @@ if __name__ == "__main__":
             cmap=cmap,
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
-            layout_mode="horizontal",
         )
 
         # Example: Export plot images
