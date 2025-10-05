@@ -97,13 +97,34 @@ def test_brain_projections():
     """Test brain projection creation."""
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    viz = EelbrainPlotly2DViz()
+    # Test with ortho mode to get the traditional 3 views
+    viz = EelbrainPlotly2DViz(display_mode="ortho")
     projections = viz.create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
     assert "axial" in projections
     assert "sagittal" in projections
     assert "coronal" in projections
+
+    # Check that each projection is a plotly figure
+    for view_name, fig in projections.items():
+        assert hasattr(fig, "data")
+        assert hasattr(fig, "layout")
+
+
+def test_default_lyr_mode():
+    """Test the default LYR display mode."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+    # Test with default mode (should be 'lyr')
+    viz = EelbrainPlotly2DViz()
+    projections = viz.create_2d_brain_projections_plotly(time_idx=5)
+
+    assert isinstance(projections, dict)
+    assert "left_hemisphere" in projections
+    assert "coronal" in projections
+    assert "right_hemisphere" in projections
+    assert len(projections) == 3  # Should have exactly 3 views
 
     # Check that each projection is a plotly figure
     for view_name, fig in projections.items():
