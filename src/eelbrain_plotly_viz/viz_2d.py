@@ -249,13 +249,31 @@ class EelbrainPlotly2DViz:
             "xz": ["sagittal", "axial"],
             "yx": ["coronal", "sagittal"],
             "yz": ["coronal", "axial"],
-            "l": ["left_hemisphere"],     # Left hemisphere view
-            "r": ["right_hemisphere"],   # Right hemisphere view
+            "l": ["left_hemisphere"],  # Left hemisphere view
+            "r": ["right_hemisphere"],  # Right hemisphere view
             "lr": ["left_hemisphere", "right_hemisphere"],  # Both hemispheres
-            "lzr": ["left_hemisphere", "axial", "right_hemisphere"],  # Left + Axial + Right
-            "lyr": ["left_hemisphere", "coronal", "right_hemisphere"],  # Left + Coronal + Right (GlassBrain default)
-            "lzry": ["left_hemisphere", "axial", "right_hemisphere", "coronal"],  # Left + Axial + Right + Coronal
-            "lyrz": ["left_hemisphere", "coronal", "right_hemisphere", "axial"],  # Left + Coronal + Right + Axial
+            "lzr": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+            ],  # Left + Axial + Right
+            "lyr": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+            ],  # Left + Coronal + Right (GlassBrain default)
+            "lzry": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+                "coronal",
+            ],  # Left + Axial + Right + Coronal
+            "lyrz": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+                "axial",
+            ],  # Left + Coronal + Right + Axial
         }
 
         if mode in mode_mapping:
@@ -307,9 +325,15 @@ class EelbrainPlotly2DViz:
         }
 
         # Special adjustments for 4-view modes (lzry, lyrz) in horizontal layout
-        if self.layout_mode == "horizontal" and self.display_mode in ['lzry', 'lyrz'] and num_views == 4:
+        if (
+            self.layout_mode == "horizontal"
+            and self.display_mode in ["lzry", "lyrz"]
+            and num_views == 4
+        ):
             config["brain_margin"] = "0.02%"  # Very small margin
-            config["butterfly_width"] = "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+            config["butterfly_width"] = (
+                "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+            )
 
         return config
 
@@ -328,8 +352,11 @@ class EelbrainPlotly2DViz:
         else:  # horizontal mode
             # In horizontal mode, views share space with butterfly plot
             # Special case for 4-view modes (lzry, lyrz) - arrange all in one row
-            if self.display_mode in ['lzry', 'lyrz'] and num_views == 4:
-                return {"jupyter": "16%", "browser": "16%"}  # 4 views: 25% + 4*16% + small margins = ~90%
+            if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
+                return {
+                    "jupyter": "16%",
+                    "browser": "16%",
+                }  # 4 views: 25% + 4*16% + small margins = ~90%
             elif num_views == 1:
                 return {"jupyter": "60%", "browser": "60%"}
             elif num_views == 2:
@@ -396,10 +423,12 @@ class EelbrainPlotly2DViz:
             containers.append(container)
 
             # Add line break after every 2 views if more than 2 views (except for 4-view modes)
-            if (self.display_mode not in ['lzry', 'lyrz'] and
-                len(self.brain_views) > 2 and
-                (i + 1) % 2 == 0 and
-                i < len(self.brain_views) - 1):
+            if (
+                self.display_mode not in ["lzry", "lyrz"]
+                and len(self.brain_views) > 2
+                and (i + 1) % 2 == 0
+                and i < len(self.brain_views) - 1
+            ):
                 line_break = html.Div(style={"width": "100%", "height": "0px"})
                 containers.append(line_break)
 
@@ -1050,7 +1079,9 @@ class EelbrainPlotly2DViz:
                 u_vectors = active_vectors[:, 0]  # X components
                 v_vectors = active_vectors[:, 2]  # Z components
             title = None
-        elif view_name == "left_hemisphere":  # Left hemisphere lateral view (Y vs Z, X < 0)
+        elif (
+            view_name == "left_hemisphere"
+        ):  # Left hemisphere lateral view (Y vs Z, X < 0)
             # Filter for left hemisphere (negative X coordinates)
             left_mask = active_coords[:, 0] < 0
             if np.any(left_mask):
@@ -1062,12 +1093,14 @@ class EelbrainPlotly2DViz:
 
             # For left hemisphere, flip Y coordinates to match neuroimaging convention
             x_coords = -active_coords[:, 1]  # Negative Y coordinates (flipped)
-            y_coords = active_coords[:, 2]   # Z coordinates
+            y_coords = active_coords[:, 2]  # Z coordinates
             if has_vector_data:
                 u_vectors = -active_vectors[:, 1]  # Negative Y components (flipped)
-                v_vectors = active_vectors[:, 2]   # Z components
+                v_vectors = active_vectors[:, 2]  # Z components
             title = "Left Hemisphere"
-        elif view_name == "right_hemisphere":  # Right hemisphere lateral view (Y vs Z, X > 0)
+        elif (
+            view_name == "right_hemisphere"
+        ):  # Right hemisphere lateral view (Y vs Z, X > 0)
             # Filter for right hemisphere (positive X coordinates)
             right_mask = active_coords[:, 0] > 0
             if np.any(right_mask):
