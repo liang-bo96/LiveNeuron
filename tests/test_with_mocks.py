@@ -5,7 +5,6 @@ This avoids downloading large datasets during testing.
 
 import pytest
 from unittest.mock import patch
-from src.eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
 
 # Handle different import paths for different environments
 try:
@@ -15,6 +14,20 @@ except ImportError:
         from tests.mock_utils import mock_get_mne_sample, skip_if_ci
     except ImportError:
         from mock_utils import mock_get_mne_sample, skip_if_ci
+
+# Handle different import paths for the main package
+try:
+    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
+except ImportError:
+    try:
+        from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
+    except ImportError:
+        # Fallback for when the package is installed
+        import sys
+        import os
+
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+        from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
 
 
 class TestEelbrainPlotly2DVizWithMock:

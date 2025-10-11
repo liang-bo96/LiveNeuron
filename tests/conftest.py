@@ -27,7 +27,19 @@ def mock_mne_dataset():
 @pytest.fixture
 def viz_with_mock_data(mock_mne_dataset):
     """Fixture that provides a EelbrainPlotly2DViz instance with mocked data."""
-    from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
+    # Handle different import paths for different environments
+    try:
+        from src.eelbrain_plotly_viz import EelbrainPlotly2DViz
+    except ImportError:
+        try:
+            from eelbrain_plotly_viz import EelbrainPlotly2DViz
+        except ImportError:
+            # Fallback for when the package is installed
+            import sys
+            import os
+
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+            from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     return EelbrainPlotly2DViz()
 
