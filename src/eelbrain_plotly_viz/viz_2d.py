@@ -380,13 +380,16 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height},
+                        style={"height": brain_height, "width": "100%"},
+                        responsive=True,  # Enable responsive behavior
                     )
                 ],
                 style={
                     "width": brain_width,
                     "display": "inline-block",
                     "margin": brain_margin,
+                    "vertical-align": "top",  # Better alignment
+                    "box-sizing": "border-box",  # Include padding/border in width
                 },
             )
             containers.append(container)
@@ -409,7 +412,8 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height},
+                        style={"height": brain_height, "width": "100%"},
+                        responsive=True,  # Enable responsive behavior
                     )
                 ],
                 style={
@@ -418,6 +422,7 @@ class EelbrainPlotly2DViz:
                     "verticalAlign": "top",
                     "margin": brain_margin,
                     "padding": "0px",
+                    "box-sizing": "border-box",  # Include padding/border in width
                 },
             )
             containers.append(container)
@@ -932,6 +937,8 @@ class EelbrainPlotly2DViz:
             showlegend=True,
             # Enable clicking on the plot area
             clickmode="event+select",
+            # Enable responsive design for butterfly plot
+            autosize=True,
         )
 
         return fig
@@ -1328,6 +1335,8 @@ class EelbrainPlotly2DViz:
             height=height,
             margin=margin,
             showlegend=False,
+            # Enable responsive design for all brain views
+            autosize=True,
         )
 
         return fig
