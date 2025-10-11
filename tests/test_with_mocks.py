@@ -106,7 +106,19 @@ class TestEelbrainPlotly2DVizWithMock:
 
     def test_alias_import_works(self):
         """Test that the BrainPlotly2DViz alias works."""
-        from src.eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+        # Handle different import paths for different environments
+        try:
+            from src.eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+        except ImportError:
+            try:
+                from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+            except ImportError:
+                # Fallback for when the package is installed
+                import sys
+                import os
+
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+                from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
 
         # The alias should be the same as the original class
         assert BrainPlotly2DViz is EelbrainPlotly2DViz
