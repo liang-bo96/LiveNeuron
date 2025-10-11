@@ -5,8 +5,26 @@ Performance and stress tests for eelbrain_plotly_viz package.
 import pytest
 import time
 import numpy as np
+import os
+from unittest.mock import patch
 from eelbrain_plotly_viz import EelbrainPlotly2DViz
 from eelbrain_plotly_viz.sample_data import create_sample_brain_data
+
+# Handle different import paths for different environments
+try:
+    from .mock_utils import mock_get_mne_sample, skip_if_ci
+except ImportError:
+    try:
+        from tests.mock_utils import mock_get_mne_sample, skip_if_ci
+    except ImportError:
+        from mock_utils import mock_get_mne_sample, skip_if_ci
+
+# Check if we should use mock data (for CI or offline testing)
+USE_MOCK_DATA = (
+    os.getenv("CI", "").lower() in ("true", "1", "yes")
+    or os.getenv("SKIP_MNE_DATASET", "").lower() in ("true", "1", "yes")
+    or os.getenv("USE_MOCK_DATA", "").lower() in ("true", "1", "yes")
+)
 
 
 def test_large_dataset_performance():
@@ -17,7 +35,12 @@ def test_large_dataset_performance():
     )
 
     start_time = time.time()
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
+
     # Override with larger data
     viz.glass_brain_data = data_dict["data"].transpose(
         0, 2, 1
@@ -50,7 +73,14 @@ def test_memory_usage():
 
     # Create multiple visualizations
     for i in range(5):
-        viz = EelbrainPlotly2DViz()
+        if USE_MOCK_DATA:
+            with patch(
+                "eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample
+            ):
+                viz = EelbrainPlotly2DViz()
+        else:
+            viz = EelbrainPlotly2DViz()
+
         _ = viz.create_butterfly_plot()
         _ = viz.create_2d_brain_projections_plotly(time_idx=i)
 
