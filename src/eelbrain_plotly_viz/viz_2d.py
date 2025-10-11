@@ -152,8 +152,15 @@ class EelbrainPlotly2DViz:
             Brain region to load using aparc+aseg parcellation.
             If None, loads all regions.
         """
-        # Load MNE sample data
-        data_ds = datasets.get_mne_sample(src="vol", ori="vector")
+        # Load MNE sample data with force_update for CI environments
+        try:
+            data_ds = datasets.get_mne_sample(src="vol", ori="vector")
+        except ValueError as e:
+            if "hash" in str(e).lower():
+                print("Hash mismatch detected, forcing dataset re-download...")
+                data_ds = datasets.get_mne_sample(src="vol", ori="vector", force_update=True)
+            else:
+                raise e
 
         # Set parcellation if region is specified
         if region is not None:
