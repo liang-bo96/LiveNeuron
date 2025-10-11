@@ -158,7 +158,9 @@ class EelbrainPlotly2DViz:
         except ValueError as e:
             if "hash" in str(e).lower():
                 print("Hash mismatch detected, forcing dataset re-download...")
-                data_ds = datasets.get_mne_sample(src="vol", ori="vector", force_update=True)
+                data_ds = datasets.get_mne_sample(
+                    src="vol", ori="vector", force_update=True
+                )
             else:
                 raise e
 

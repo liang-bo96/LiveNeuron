@@ -94,6 +94,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "performance: marks tests as performance tests",
+    "network: marks tests that require network access (may fail in CI)",
 ]
 filterwarnings = [
     "ignore::UserWarning",
