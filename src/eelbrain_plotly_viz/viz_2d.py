@@ -152,17 +152,8 @@ class EelbrainPlotly2DViz:
             Brain region to load using aparc+aseg parcellation.
             If None, loads all regions.
         """
-        # Load MNE sample data with force_update for CI environments
-        try:
-            data_ds = datasets.get_mne_sample(src="vol", ori="vector")
-        except ValueError as e:
-            if "hash" in str(e).lower():
-                print("Hash mismatch detected, forcing dataset re-download...")
-                data_ds = datasets.get_mne_sample(
-                    src="vol", ori="vector", force_update=True
-                )
-            else:
-                raise e
+        # Load MNE sample data
+        data_ds = datasets.get_mne_sample(src="vol", ori="vector")
 
         # Set parcellation if region is specified
         if region is not None:
@@ -389,16 +380,13 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height, "width": "100%"},
-                        responsive=True,  # Enable responsive behavior
+                        style={"height": brain_height},
                     )
                 ],
                 style={
                     "width": brain_width,
                     "display": "inline-block",
                     "margin": brain_margin,
-                    "vertical-align": "top",  # Better alignment
-                    "box-sizing": "border-box",  # Include padding/border in width
                 },
             )
             containers.append(container)
@@ -421,8 +409,7 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height, "width": "100%"},
-                        responsive=True,  # Enable responsive behavior
+                        style={"height": brain_height},
                     )
                 ],
                 style={
@@ -431,7 +418,6 @@ class EelbrainPlotly2DViz:
                     "verticalAlign": "top",
                     "margin": brain_margin,
                     "padding": "0px",
-                    "box-sizing": "border-box",  # Include padding/border in width
                 },
             )
             containers.append(container)
@@ -946,8 +932,6 @@ class EelbrainPlotly2DViz:
             showlegend=True,
             # Enable clicking on the plot area
             clickmode="event+select",
-            # Enable responsive design for butterfly plot
-            autosize=True,
         )
 
         return fig
@@ -1344,8 +1328,6 @@ class EelbrainPlotly2DViz:
             height=height,
             margin=margin,
             showlegend=False,
-            # Enable responsive design for all brain views
-            autosize=True,
         )
 
         return fig
