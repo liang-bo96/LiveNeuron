@@ -40,6 +40,40 @@ class MockNDVar:
             return self.data
         return self.data
 
+    def get_dim(self, dimension_name):
+        """Mock get_dim method to return dimension objects."""
+        if dimension_name == "source":
+            return self.source
+        elif dimension_name == "time":
+            return self.time
+        else:
+            # Return a mock dimension
+            mock_dim = MagicMock()
+            return mock_dim
+
+    def has_dim(self, dimension_name):
+        """Mock has_dim method to check if dimension exists."""
+        if dimension_name == "space":
+            return True  # We have vector data with space dimension
+        elif dimension_name == "case":
+            return self.has_case
+        elif dimension_name in ["source", "time"]:
+            return True
+        return False
+
+    @property
+    def shape(self):
+        """Mock shape property."""
+        return self.data.shape
+
+    @property
+    def dimnames(self):
+        """Mock dimnames property."""
+        if self.has_case:
+            return ("case", "source", "space", "time")
+        else:
+            return ("source", "space", "time")
+
 
 def create_mock_mne_dataset():
     """Create a mock MNE dataset that mimics the structure of get_mne_sample."""
