@@ -6,7 +6,15 @@ This avoids downloading large datasets during testing.
 import pytest
 from unittest.mock import patch
 from src.eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
-from tests.mock_utils import mock_get_mne_sample, skip_if_ci
+
+# Handle different import paths for different environments
+try:
+    from .mock_utils import mock_get_mne_sample, skip_if_ci
+except ImportError:
+    try:
+        from tests.mock_utils import mock_get_mne_sample, skip_if_ci
+    except ImportError:
+        from mock_utils import mock_get_mne_sample, skip_if_ci
 
 
 class TestEelbrainPlotly2DVizWithMock:

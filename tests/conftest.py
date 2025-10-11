@@ -4,7 +4,15 @@ Pytest configuration and fixtures for eelbrain_plotly_viz tests.
 
 import pytest
 from unittest.mock import patch
-from tests.mock_utils import mock_get_mne_sample
+
+# Handle different import paths for different environments
+try:
+    from .mock_utils import mock_get_mne_sample
+except ImportError:
+    try:
+        from tests.mock_utils import mock_get_mne_sample
+    except ImportError:
+        from mock_utils import mock_get_mne_sample
 
 
 @pytest.fixture
