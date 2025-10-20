@@ -362,7 +362,9 @@ class EelbrainPlotly2DViz:
         # Calculate activity magnitude across all time points
         if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
             # Compute norm for each source at each time point
-            all_magnitudes = np.linalg.norm(self.glass_brain_data, axis=1)  # (n_sources, n_times)
+            all_magnitudes = np.linalg.norm(
+                self.glass_brain_data, axis=1
+            )  # (n_sources, n_times)
         else:  # Scalar data (n_sources, n_times)
             all_magnitudes = self.glass_brain_data
 
@@ -1246,9 +1248,11 @@ class EelbrainPlotly2DViz:
 
             # Use binned_statistic_2d to get maximum value per bin
             H_max, x_edges_used, y_edges_used, _ = binned_statistic_2d(
-                x_coords, y_coords, active_activity,
-                statistic='max',  # Take maximum value in each bin
-                bins=[x_edges, y_edges]
+                x_coords,
+                y_coords,
+                active_activity,
+                statistic="max",  # Take maximum value in each bin
+                bins=[x_edges, y_edges],
             )
 
             # Use grid center points for display
@@ -1716,7 +1720,7 @@ if __name__ == "__main__":
         cmap = [
             [0, "rgba(255,255,255,0.8)"],  # White with 80% opacity (low activity)
             [0.5, "rgba(255,165,0,0.9)"],  # Orange with 90% opacity
-            [1, "rgba(255,0,0,1.0)"],      # Red with full opacity (high activity)
+            [1, "rgba(255,0,0,1.0)"],  # Red with full opacity (high activity)
         ]
 
         # Butterfly plot display options:
@@ -1746,7 +1750,7 @@ if __name__ == "__main__":
         # Method 2: Use default MNE sample data with region filtering
         viz_2d = EelbrainPlotly2DViz(
             region="aparc+aseg",
-            cmap='Reds',
+            cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="vertical",
