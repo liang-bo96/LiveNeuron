@@ -45,10 +45,11 @@ class EelbrainPlotly2DViz:
         If None, loads all regions. Only used when y is None.
     cmap
         Plotly colorscale for heatmaps. Can be:
-        - Built-in colorscale name (e.g., 'Hot', 'Viridis', 'YlOrRd')
-        - Custom colorscale list (e.g., [[0, 'yellow'], [1, 'red']])
-        Default is 'Hot'. See https://plotly.com/python/builtin-colorscales/
-        for all available built-in colorscales.
+        - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
+        - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
+        Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
+        background and doesn't obscure arrows. See
+        https://plotly.com/python/builtin-colorscales/ for all available options.
     show_max_only
         If True, butterfly plot shows only mean and max traces.
         If False, butterfly plot shows individual source traces, mean, and max.
@@ -142,6 +143,9 @@ class EelbrainPlotly2DViz:
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
         self._calculate_view_ranges()
+
+        # Calculate global colormap range across all time points for consistent visualization
+        self._calculate_global_colormap_range()
 
         # Setup app
         self._setup_layout()
@@ -287,16 +291,16 @@ class EelbrainPlotly2DViz:
 
     def _calculate_view_ranges(self) -> None:
         """Calculate fixed axis ranges for each brain view to prevent size changes.
-        
+
         This ensures that brain plots maintain consistent size across all time points.
         """
         if self.source_coords is None:
             self.view_ranges = {}
             return
-        
+
         coords = self.source_coords
         self.view_ranges = {}
-        
+
         for view_name in self.brain_views:
             # Get the appropriate coordinate projections for each view
             if view_name == "axial":  # Z view (X vs Y)
@@ -328,21 +332,47 @@ class EelbrainPlotly2DViz:
                 # Fallback for unknown views
                 x_coords = coords[:, 0]
                 y_coords = coords[:, 1]
-            
+
             # Calculate ranges with some padding
             x_min, x_max = x_coords.min(), x_coords.max()
             y_min, y_max = y_coords.min(), y_coords.max()
-            
+
             # Add 5% padding on each side
             x_range = x_max - x_min
             y_range = y_max - y_min
             x_padding = x_range * 0.05 if x_range > 0 else 0.01
             y_padding = y_range * 0.05 if y_range > 0 else 0.01
-            
+
             self.view_ranges[view_name] = {
                 "x": [x_min - x_padding, x_max + x_padding],
                 "y": [y_min - y_padding, y_max + y_padding],
             }
+
+    def _calculate_global_colormap_range(self) -> None:
+        """Calculate global min/max activity across all time points for fixed colormap.
+
+        This ensures consistent color mapping across time, making it easier to
+        compare activity levels at different time points.
+        """
+        if self.glass_brain_data is None:
+            self.global_vmin = 0.0
+            self.global_vmax = 1.0
+            return
+
+        # Calculate activity magnitude across all time points
+        if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+            # Compute norm for each source at each time point
+            all_magnitudes = np.linalg.norm(self.glass_brain_data, axis=1)  # (n_sources, n_times)
+        else:  # Scalar data (n_sources, n_times)
+            all_magnitudes = self.glass_brain_data
+
+        # Get global min/max across all sources and all time points
+        self.global_vmin = np.min(all_magnitudes)
+        self.global_vmax = np.max(all_magnitudes)
+
+        # Ensure we have a valid range (avoid zero range)
+        if self.global_vmax - self.global_vmin < 1e-10:
+            self.global_vmax = self.global_vmin + 1.0
 
     def _get_layout_config(self) -> Dict[str, Any]:
         """Get layout configuration based on layout_mode, display_mode and environment."""
@@ -1035,9 +1065,10 @@ class EelbrainPlotly2DViz:
             else:  # (n_sources, n_times)
                 activity_magnitude = self.glass_brain_data[:, time_idx]
 
-            # Calculate global min/max for consistent colorbar across all views
-            global_min = np.min(activity_magnitude)
-            global_max = np.max(activity_magnitude)
+            # Use global min/max for consistent colormap across all time points
+            # This allows intuitive comparison of activity levels across time
+            global_min = self.global_vmin
+            global_max = self.global_vmax
 
             # Create brain projections
             brain_plots = {}
@@ -1676,15 +1707,16 @@ class EelbrainPlotly2DViz:
 if __name__ == "__main__":
     try:
         # Example cmap options:
-        # cmap = 'Hot'           # Black → Red → Yellow → White
-        # cmap = 'YlOrRd'        # Yellow → Orange → Red
-        # cmap = 'Viridis'       # Purple → Blue → Green → Yellow
+        # cmap = 'YlOrRd'        # Yellow → Orange → Red (default, white-background friendly)
+        # cmap = 'OrRd'          # Orange → Red (good for white background)
+        # cmap = 'Reds'          # White → Red (minimal contrast)
+        # cmap = 'Viridis'       # Purple → Blue → Green → Yellow (perceptually uniform)
 
-        # Custom cmap example
+        # Custom cmap example (starts from white to avoid obscuring arrows)
         cmap = [
-            [0, "rgba(255,255,0,0.5)"],  # Yellow with 50% transparency
-            [0.5, "rgba(255,165,0,0.8)"],  # Orange with 80% transparency
-            [1, "rgba(255,0,0,1.0)"],  # Red with full opacity
+            [0, "rgba(255,255,255,0.8)"],  # White with 80% opacity (low activity)
+            [0.5, "rgba(255,165,0,0.9)"],  # Orange with 90% opacity
+            [1, "rgba(255,0,0,1.0)"],      # Red with full opacity (high activity)
         ]
 
         # Butterfly plot display options:
@@ -1714,11 +1746,11 @@ if __name__ == "__main__":
         # Method 2: Use default MNE sample data with region filtering
         viz_2d = EelbrainPlotly2DViz(
             region="aparc+aseg",
-            cmap=cmap,
+            cmap='Reds',
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="vertical",
-            display_mode="lzry",
+            display_mode="ortho",
         )
 
         # Example: Export plot images
