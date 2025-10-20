@@ -139,6 +139,9 @@ class EelbrainPlotly2DViz:
         else:
             self._load_source_data(region)
 
+        # Calculate and store fixed axis ranges for each view to prevent size changes
+        self._calculate_view_ranges()
+
         # Setup app
         self._setup_layout()
         self._setup_callbacks()
@@ -280,6 +283,65 @@ class EelbrainPlotly2DViz:
             return mode_mapping[mode]
         else:
             raise ValueError(f"Unsupported display_mode: {mode}")
+
+    def _calculate_view_ranges(self) -> None:
+        """Calculate fixed axis ranges for each brain view to prevent size changes.
+        
+        This ensures that brain plots maintain consistent size across all time points.
+        """
+        if self.source_coords is None:
+            self.view_ranges = {}
+            return
+        
+        coords = self.source_coords
+        self.view_ranges = {}
+        
+        for view_name in self.brain_views:
+            # Get the appropriate coordinate projections for each view
+            if view_name == "axial":  # Z view (X vs Y)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+            elif view_name == "sagittal":  # X view (Y vs Z)
+                x_coords = coords[:, 1]
+                y_coords = coords[:, 2]
+            elif view_name == "coronal":  # Y view (X vs Z)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 2]
+            elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z, X < 0)
+                left_mask = coords[:, 0] < 0
+                if np.any(left_mask):
+                    x_coords = -coords[left_mask, 1]  # Flipped Y
+                    y_coords = coords[left_mask, 2]
+                else:
+                    x_coords = np.array([0])
+                    y_coords = np.array([0])
+            elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X > 0)
+                right_mask = coords[:, 0] > 0
+                if np.any(right_mask):
+                    x_coords = coords[right_mask, 1]
+                    y_coords = coords[right_mask, 2]
+                else:
+                    x_coords = np.array([0])
+                    y_coords = np.array([0])
+            else:
+                # Fallback for unknown views
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+            
+            # Calculate ranges with some padding
+            x_min, x_max = x_coords.min(), x_coords.max()
+            y_min, y_max = y_coords.min(), y_coords.max()
+            
+            # Add 5% padding on each side
+            x_range = x_max - x_min
+            y_range = y_max - y_min
+            x_padding = x_range * 0.05 if x_range > 0 else 0.01
+            y_padding = y_range * 0.05 if y_range > 0 else 0.01
+            
+            self.view_ranges[view_name] = {
+                "x": [x_min - x_padding, x_max + x_padding],
+                "y": [y_min - y_padding, y_max + y_padding],
+            }
 
     def _get_layout_config(self) -> Dict[str, Any]:
         """Get layout configuration based on layout_mode, display_mode and environment."""
@@ -1320,11 +1382,26 @@ class EelbrainPlotly2DViz:
             height = 450
             margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
 
+        # Get fixed axis ranges for this view to prevent size changes across time
+        axis_ranges = self.view_ranges.get(view_name, {})
+        x_range = axis_ranges.get("x", None)
+        y_range = axis_ranges.get("y", None)
+
         fig.update_layout(
             title=title,
-            xaxis=dict(scaleanchor="y", scaleratio=1, showticklabels=False, title=""),
+            xaxis=dict(
+                scaleanchor="y",
+                scaleratio=1,
+                showticklabels=False,
+                title="",
+                range=x_range,  # Fixed range to prevent size changes
+            ),
             # Equal aspect ratio, hide labels
-            yaxis=dict(showticklabels=False, title=""),  # Hide labels
+            yaxis=dict(
+                showticklabels=False,
+                title="",
+                range=y_range,  # Fixed range to prevent size changes
+            ),
             height=height,
             margin=margin,
             showlegend=False,
