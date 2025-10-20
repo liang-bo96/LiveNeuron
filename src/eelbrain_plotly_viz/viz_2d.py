@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 from dash import dcc, html, Input, Output, State
+from scipy.stats import binned_statistic_2d
 
 from eelbrain import set_parc, NDVar, datasets
 
@@ -1212,25 +1213,20 @@ class EelbrainPlotly2DViz:
             x_edges = np.array(x_edges)
             y_edges = np.array(y_edges)
 
-            # Create 2D histogram - now each data point falls into its own grid cell
-            H, x_edges_used, y_edges_used = np.histogram2d(
-                x_coords, y_coords, bins=[x_edges, y_edges], weights=active_activity
+            # Use binned_statistic_2d to get maximum value per bin
+            H_max, x_edges_used, y_edges_used, _ = binned_statistic_2d(
+                x_coords, y_coords, active_activity,
+                statistic='max',  # Take maximum value in each bin
+                bins=[x_edges, y_edges]
             )
-
-            # Create count histogram to compute average weights per bin
-            H_count, _, _ = np.histogram2d(x_coords, y_coords, bins=[x_edges, y_edges])
-
-            # Compute average activity per bin (avoid division by zero)
-            # This prevents multiple sources in the same grid cell from summing up
-            H_avg = np.divide(H, H_count, out=np.zeros_like(H), where=H_count != 0)
 
             # Use grid center points for display
             x_centers = (x_edges_used[:-1] + x_edges_used[1:]) / 2
             y_centers = (y_edges_used[:-1] + y_edges_used[1:]) / 2
 
-            # Set zero values to NaN to make them transparent in heatmap
-            H_display = H_avg.copy()  # Use averaged data instead of summed data
-            H_display[H_display == 0] = np.nan
+            # Set NaN values to NaN to make them transparent in heatmap
+            # binned_statistic_2d returns NaN for empty bins
+            H_display = H_max.copy()  # Use maximum value per bin
 
             # Add heatmap trace
             fig.add_trace(
@@ -1722,7 +1718,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="vertical",
-            display_mode="ortho",
+            display_mode="lzry",
         )
 
         # Example: Export plot images
