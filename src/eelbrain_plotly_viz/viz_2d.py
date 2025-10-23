@@ -312,16 +312,18 @@ class EelbrainPlotly2DViz:
             elif view_name == "coronal":  # Y view (X vs Z)
                 x_coords = coords[:, 0]
                 y_coords = coords[:, 2]
-            elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z, X < 0)
-                left_mask = coords[:, 0] < 0
+            elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z, X <= 0)
+                # Include midline voxels (X=0) in left hemisphere view
+                left_mask = coords[:, 0] <= 0
                 if np.any(left_mask):
                     x_coords = -coords[left_mask, 1]  # Flipped Y
                     y_coords = coords[left_mask, 2]
                 else:
                     x_coords = np.array([0])
                     y_coords = np.array([0])
-            elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X > 0)
-                right_mask = coords[:, 0] > 0
+            elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X >= 0)
+                # Include midline voxels (X=0) in right hemisphere view
+                right_mask = coords[:, 0] >= 0
                 if np.any(right_mask):
                     x_coords = coords[right_mask, 1]
                     y_coords = coords[right_mask, 2]
@@ -1177,9 +1179,9 @@ class EelbrainPlotly2DViz:
             title = None
         elif (
             view_name == "left_hemisphere"
-        ):  # Left hemisphere lateral view (Y vs Z, X < 0)
-            # Filter for left hemisphere (negative X coordinates)
-            left_mask = active_coords[:, 0] < 0
+        ):  # Left hemisphere lateral view (Y vs Z, X <= 0)
+            # Filter for left hemisphere (include midline voxels with X=0)
+            left_mask = active_coords[:, 0] <= 0
             if np.any(left_mask):
                 active_coords = active_coords[left_mask]
                 active_activity = active_activity[left_mask]
@@ -1196,9 +1198,9 @@ class EelbrainPlotly2DViz:
             title = "Left Hemisphere"
         elif (
             view_name == "right_hemisphere"
-        ):  # Right hemisphere lateral view (Y vs Z, X > 0)
-            # Filter for right hemisphere (positive X coordinates)
-            right_mask = active_coords[:, 0] > 0
+        ):  # Right hemisphere lateral view (Y vs Z, X >= 0)
+            # Filter for right hemisphere (include midline voxels with X=0)
+            right_mask = active_coords[:, 0] >= 0
             if np.any(right_mask):
                 active_coords = active_coords[right_mask]
                 active_activity = active_activity[right_mask]
