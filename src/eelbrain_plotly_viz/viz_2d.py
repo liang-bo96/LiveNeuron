@@ -96,7 +96,7 @@ class EelbrainPlotly2DViz:
         self,
         y: Optional[NDVar] = None,
         region: Optional[str] = None,
-        cmap: Union[str, List] = "Hot",
+        cmap: Union[str, List] = "YlOrRd",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
         realtime: bool = False,
@@ -517,10 +517,10 @@ class EelbrainPlotly2DViz:
             )
             containers.append(container)
 
-            # Add line break after every 2 views if more than 2 views (except for 4-view modes)
+            # Add line break after every 2 views only for modes with more than 4 views
+            # For 3-view modes (ortho, lyr, lzr) and 4-view modes (lzry, lyrz), keep all in one row
             if (
-                self.display_mode not in ["lzry", "lyrz"]
-                and len(self.brain_views) > 2
+                len(self.brain_views) > 4
                 and (i + 1) % 2 == 0
                 and i < len(self.brain_views) - 1
             ):
@@ -1710,18 +1710,19 @@ class EelbrainPlotly2DViz:
 # Run the app when script is executed directly
 if __name__ == "__main__":
     try:
-        # Example cmap options:
-        # cmap = 'YlOrRd'        # Yellow → Orange → Red (default, white-background friendly)
+        # Colormap options (default is 'YlOrRd' - white-background friendly):
+        # cmap = 'YlOrRd'        # Yellow → Orange → Red (DEFAULT, best for white background)
         # cmap = 'OrRd'          # Orange → Red (good for white background)
         # cmap = 'Reds'          # White → Red (minimal contrast)
         # cmap = 'Viridis'       # Purple → Blue → Green → Yellow (perceptually uniform)
+        # cmap = 'Hot'           # Black → Red → Yellow → White (NOT recommended - obscures arrows)
 
-        # Custom cmap example (starts from white to avoid obscuring arrows)
-        cmap = [
-            [0, "rgba(255,255,255,0.8)"],  # White with 80% opacity (low activity)
-            [0.5, "rgba(255,165,0,0.9)"],  # Orange with 90% opacity
-            [1, "rgba(255,0,0,1.0)"],  # Red with full opacity (high activity)
-        ]
+        # Example: Custom cmap (starts from white to avoid obscuring arrows)
+        # cmap = [
+        #     [0, "rgba(255,255,255,0.8)"],  # White with 80% opacity (low activity)
+        #     [0.5, "rgba(255,165,0,0.9)"],  # Orange with 90% opacity
+        #     [1, "rgba(255,0,0,1.0)"],  # Red with full opacity (high activity)
+        # ]
 
         # Butterfly plot display options:
         # show_max_only=False: Shows individual source traces + mean + max (default)
