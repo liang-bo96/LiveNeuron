@@ -316,12 +316,12 @@ class EelbrainPlotly2DViz:
                 # Calculate range using ALL coordinates (no masking)
                 # This ensures left and right hemisphere views are aligned
                 x_coords = -coords[:, 1]  # Flipped Y (all points)
-                y_coords = coords[:, 2]   # Z (all points)
+                y_coords = coords[:, 2]  # Z (all points)
             elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X >= 0)
                 # Calculate range using ALL coordinates (no masking)
                 # This ensures left and right hemisphere views are aligned
-                x_coords = coords[:, 1]   # Y (all points)
-                y_coords = coords[:, 2]   # Z (all points)
+                x_coords = coords[:, 1]  # Y (all points)
+                y_coords = coords[:, 2]  # Z (all points)
             else:
                 # Fallback for unknown views
                 x_coords = coords[:, 0]
