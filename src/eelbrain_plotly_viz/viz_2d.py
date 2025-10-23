@@ -313,23 +313,15 @@ class EelbrainPlotly2DViz:
                 x_coords = coords[:, 0]
                 y_coords = coords[:, 2]
             elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z, X <= 0)
-                # Include midline voxels (X=0) in left hemisphere view
-                left_mask = coords[:, 0] <= 0
-                if np.any(left_mask):
-                    x_coords = -coords[left_mask, 1]  # Flipped Y
-                    y_coords = coords[left_mask, 2]
-                else:
-                    x_coords = np.array([0])
-                    y_coords = np.array([0])
+                # Calculate range using ALL coordinates (no masking)
+                # This ensures left and right hemisphere views are aligned
+                x_coords = -coords[:, 1]  # Flipped Y (all points)
+                y_coords = coords[:, 2]   # Z (all points)
             elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X >= 0)
-                # Include midline voxels (X=0) in right hemisphere view
-                right_mask = coords[:, 0] >= 0
-                if np.any(right_mask):
-                    x_coords = coords[right_mask, 1]
-                    y_coords = coords[right_mask, 2]
-                else:
-                    x_coords = np.array([0])
-                    y_coords = np.array([0])
+                # Calculate range using ALL coordinates (no masking)
+                # This ensures left and right hemisphere views are aligned
+                x_coords = coords[:, 1]   # Y (all points)
+                y_coords = coords[:, 2]   # Z (all points)
             else:
                 # Fallback for unknown views
                 x_coords = coords[:, 0]
@@ -1757,7 +1749,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="vertical",
-            display_mode="ortho",
+            display_mode="lyr",
         )
 
         # Example: Export plot images
