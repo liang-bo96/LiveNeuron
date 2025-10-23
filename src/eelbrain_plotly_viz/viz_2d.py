@@ -342,6 +342,49 @@ class EelbrainPlotly2DViz:
                 "y": [y_min - y_padding, y_max + y_padding],
             }
 
+    def _unify_view_sizes_for_jupyter(self) -> None:
+        """Unify view sizes for Jupyter mode to ensure consistent display.
+
+        This method adjusts all brain view ranges to have the same width and height,
+        making them appear uniform in size when displayed in Jupyter notebooks.
+        Only called when using show_in_jupyter().
+        """
+        if not self.view_ranges:
+            return
+
+        # Calculate the maximum width and height across all views
+        max_x_width = max(
+            ranges["x"][1] - ranges["x"][0] for ranges in self.view_ranges.values()
+        )
+        max_y_width = max(
+            ranges["y"][1] - ranges["y"][0] for ranges in self.view_ranges.values()
+        )
+
+        # Use the larger of the two to ensure square-ish plots with equal sizing
+        max_width = max(max_x_width, max_y_width)
+
+        # Update all views to use the unified maximum range
+        for view_name in self.view_ranges:
+            # Get current center
+            x_center = (
+                self.view_ranges[view_name]["x"][0]
+                + self.view_ranges[view_name]["x"][1]
+            ) / 2
+            y_center = (
+                self.view_ranges[view_name]["y"][0]
+                + self.view_ranges[view_name]["y"][1]
+            ) / 2
+
+            # Set new range centered around the same point with max width
+            self.view_ranges[view_name]["x"] = [
+                x_center - max_width / 2,
+                x_center + max_width / 2,
+            ]
+            self.view_ranges[view_name]["y"] = [
+                y_center - max_width / 2,
+                y_center + max_width / 2,
+            ]
+
     def _calculate_global_colormap_range(self) -> None:
         """Calculate global min/max activity across all time points for fixed colormap.
 
@@ -1264,7 +1307,17 @@ class EelbrainPlotly2DViz:
                     y=y_centers,
                     z=H_display.T,  # Transpose to match Plotly orientation
                     colorscale=self.cmap,
-                    colorbar=dict(title="") if show_colorbar else None,
+                    colorbar=(
+                        dict(
+                            title="",
+                            thickness=15,  # Thinner colorbar
+                            len=0.7,  # Shorter colorbar (70% of plot height)
+                            x=1.02,  # Position slightly outside the plot area
+                            xanchor="left",  # Anchor to the left of the colorbar
+                        )
+                        if show_colorbar
+                        else None
+                    ),
                     showscale=show_colorbar,
                     zmin=zmin,
                     zmax=zmax,
@@ -1627,6 +1680,10 @@ class EelbrainPlotly2DViz:
 
         # Set Jupyter mode and rebuild layout with Jupyter-specific styles
         self.is_jupyter_mode = True
+
+        # Unify view sizes for Jupyter mode to ensure consistent display
+        self._unify_view_sizes_for_jupyter()
+
         self._setup_layout()  # Rebuild layout with Jupyter styles
 
         self.run(mode="inline", width=width, height=height, debug=debug)
@@ -1748,8 +1805,8 @@ if __name__ == "__main__":
             cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
-            layout_mode="vertical",
-            display_mode="lyr",
+            layout_mode="horizontal",
+            display_mode="lyrz",
         )
 
         # Example: Export plot images
