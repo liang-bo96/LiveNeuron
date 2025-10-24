@@ -97,7 +97,8 @@ def test_brain_projections():
     """Test brain projection creation."""
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    viz = EelbrainPlotly2DViz()
+    # Test with ortho display mode (3 orthogonal views)
+    viz = EelbrainPlotly2DViz(display_mode="ortho")
     projections = viz.create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
@@ -109,6 +110,15 @@ def test_brain_projections():
     for view_name, fig in projections.items():
         assert hasattr(fig, "data")
         assert hasattr(fig, "layout")
+
+    # Test with default display mode (lyr - hemisphere views)
+    viz_default = EelbrainPlotly2DViz()
+    projections_default = viz_default.create_2d_brain_projections_plotly(time_idx=5)
+
+    assert isinstance(projections_default, dict)
+    assert "left_hemisphere" in projections_default
+    assert "coronal" in projections_default
+    assert "right_hemisphere" in projections_default
 
 
 def test_butterfly_plot():
