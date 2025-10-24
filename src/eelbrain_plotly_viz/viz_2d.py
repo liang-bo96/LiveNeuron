@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 from dash import dcc, html, Input, Output, State
+from scipy.stats import binned_statistic_2d
 
 from eelbrain import set_parc, NDVar, datasets
 
@@ -44,10 +45,11 @@ class EelbrainPlotly2DViz:
         If None, loads all regions. Only used when y is None.
     cmap
         Plotly colorscale for heatmaps. Can be:
-        - Built-in colorscale name (e.g., 'Hot', 'Viridis', 'YlOrRd')
-        - Custom colorscale list (e.g., [[0, 'yellow'], [1, 'red']])
-        Default is 'Hot'. See https://plotly.com/python/builtin-colorscales/
-        for all available built-in colorscales.
+        - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
+        - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
+        Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
+        background and doesn't obscure arrows. See
+        https://plotly.com/python/builtin-colorscales/ for all available options.
     show_max_only
         If True, butterfly plot shows only mean and max traces.
         If False, butterfly plot shows individual source traces, mean, and max.
@@ -62,6 +64,23 @@ class EelbrainPlotly2DViz:
         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
         - 'horizontal': Compact layout with butterfly plot on left, brain views on right
         Default is 'vertical' for backward compatibility.
+    display_mode
+        Anatomical view mode for brain projections. Options:
+        - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
+        - 'x': Sagittal view only
+        - 'y': Coronal view only
+        - 'z': Axial view only
+        - 'xz': Sagittal + Axial views
+        - 'yx': Coronal + Sagittal views
+        - 'yz': Coronal + Axial views
+        - 'l': Left hemisphere view only
+        - 'r': Right hemisphere view only
+        - 'lr': Both hemisphere views (left + right)
+        - 'lzr': Left + Axial + Right hemispheres
+        - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
+        - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
+        - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
+        Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
 
     Notes
     -----
@@ -77,11 +96,12 @@ class EelbrainPlotly2DViz:
         self,
         y: Optional[NDVar] = None,
         region: Optional[str] = None,
-        cmap: Union[str, List] = "Hot",
+        cmap: Union[str, List] = "YlOrRd",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
         realtime: bool = False,
         layout_mode: str = "vertical",
+        display_mode: str = "lyr",
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -110,11 +130,22 @@ class EelbrainPlotly2DViz:
             )
         self.layout_mode: str = layout_mode
 
+        # Set display mode and parse required views
+        self.display_mode: str = display_mode
+        # Parse display mode to determine required views (includes validation)
+        self.brain_views = self._parse_display_mode(display_mode)
+
         # Load data
         if y is not None:
             self._load_ndvar_data(y)
         else:
             self._load_source_data(region)
+
+        # Calculate and store fixed axis ranges for each view to prevent size changes
+        self._calculate_view_ranges()
+
+        # Calculate global colormap range across all time points for consistent visualization
+        self._calculate_global_colormap_range()
 
         # Setup app
         self._setup_layout()
@@ -205,13 +236,193 @@ class EelbrainPlotly2DViz:
             # (n_sources, 1, n_times)
             self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]
 
+    def _parse_display_mode(self, mode: str) -> List[str]:
+        """Parse display_mode string into list of required brain views.
+
+        Parameters
+        ----------
+        mode
+            Display mode string (e.g., 'ortho', 'x', 'xz')
+
+        Returns
+        -------
+        List[str]
+            List of brain view types to generate
+        """
+        mode_mapping = {
+            "ortho": ["sagittal", "coronal", "axial"],  # Traditional 3-view
+            "x": ["sagittal"],
+            "y": ["coronal"],
+            "z": ["axial"],
+            "xz": ["sagittal", "axial"],
+            "yx": ["coronal", "sagittal"],
+            "yz": ["coronal", "axial"],
+            "l": ["left_hemisphere"],  # Left hemisphere view
+            "r": ["right_hemisphere"],  # Right hemisphere view
+            "lr": ["left_hemisphere", "right_hemisphere"],  # Both hemispheres
+            "lzr": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+            ],  # Left + Axial + Right
+            "lyr": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+            ],  # Left + Coronal + Right (GlassBrain default)
+            "lzry": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+                "coronal",
+            ],  # Left + Axial + Right + Coronal
+            "lyrz": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+                "axial",
+            ],  # Left + Coronal + Right + Axial
+        }
+
+        if mode in mode_mapping:
+            return mode_mapping[mode]
+        else:
+            raise ValueError(f"Unsupported display_mode: {mode}")
+
+    def _calculate_view_ranges(self) -> None:
+        """Calculate fixed axis ranges for each brain view to prevent size changes.
+
+        This ensures that brain plots maintain consistent size across all time points.
+        """
+        if self.source_coords is None:
+            self.view_ranges = {}
+            return
+
+        coords = self.source_coords
+        self.view_ranges = {}
+
+        for view_name in self.brain_views:
+            # Get the appropriate coordinate projections for each view
+            if view_name == "axial":  # Z view (X vs Y)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+            elif view_name == "sagittal":  # X view (Y vs Z)
+                x_coords = coords[:, 1]
+                y_coords = coords[:, 2]
+            elif view_name == "coronal":  # Y view (X vs Z)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 2]
+            elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z, X <= 0)
+                # Calculate range using ALL coordinates (no masking)
+                # This ensures left and right hemisphere views are aligned
+                x_coords = -coords[:, 1]  # Flipped Y (all points)
+                y_coords = coords[:, 2]  # Z (all points)
+            elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z, X >= 0)
+                # Calculate range using ALL coordinates (no masking)
+                # This ensures left and right hemisphere views are aligned
+                x_coords = coords[:, 1]  # Y (all points)
+                y_coords = coords[:, 2]  # Z (all points)
+            else:
+                # Fallback for unknown views
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+
+            # Calculate ranges with some padding
+            x_min, x_max = x_coords.min(), x_coords.max()
+            y_min, y_max = y_coords.min(), y_coords.max()
+
+            # Add 5% padding on each side
+            x_range = x_max - x_min
+            y_range = y_max - y_min
+            x_padding = x_range * 0.05 if x_range > 0 else 0.01
+            y_padding = y_range * 0.05 if y_range > 0 else 0.01
+
+            self.view_ranges[view_name] = {
+                "x": [x_min - x_padding, x_max + x_padding],
+                "y": [y_min - y_padding, y_max + y_padding],
+            }
+
+    def _unify_view_sizes_for_jupyter(self) -> None:
+        """Unify view sizes for Jupyter mode to ensure consistent display.
+
+        This method adjusts all brain view ranges to have the same width and height,
+        making them appear uniform in size when displayed in Jupyter notebooks.
+        Only called when using show_in_jupyter().
+        """
+        if not self.view_ranges:
+            return
+
+        # Calculate the maximum width and height across all views
+        max_x_width = max(
+            ranges["x"][1] - ranges["x"][0] for ranges in self.view_ranges.values()
+        )
+        max_y_width = max(
+            ranges["y"][1] - ranges["y"][0] for ranges in self.view_ranges.values()
+        )
+
+        # Use the larger of the two to ensure square-ish plots with equal sizing
+        max_width = max(max_x_width, max_y_width)
+
+        # Update all views to use the unified maximum range
+        for view_name in self.view_ranges:
+            # Get current center
+            x_center = (
+                self.view_ranges[view_name]["x"][0]
+                + self.view_ranges[view_name]["x"][1]
+            ) / 2
+            y_center = (
+                self.view_ranges[view_name]["y"][0]
+                + self.view_ranges[view_name]["y"][1]
+            ) / 2
+
+            # Set new range centered around the same point with max width
+            self.view_ranges[view_name]["x"] = [
+                x_center - max_width / 2,
+                x_center + max_width / 2,
+            ]
+            self.view_ranges[view_name]["y"] = [
+                y_center - max_width / 2,
+                y_center + max_width / 2,
+            ]
+
+    def _calculate_global_colormap_range(self) -> None:
+        """Calculate global min/max activity across all time points for fixed colormap.
+
+        This ensures consistent color mapping across time, making it easier to
+        compare activity levels at different time points.
+        """
+        if self.glass_brain_data is None:
+            self.global_vmin = 0.0
+            self.global_vmax = 1.0
+            return
+
+        # Calculate activity magnitude across all time points
+        if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+            # Compute norm for each source at each time point
+            all_magnitudes = np.linalg.norm(
+                self.glass_brain_data, axis=1
+            )  # (n_sources, n_times)
+        else:  # Scalar data (n_sources, n_times)
+            all_magnitudes = self.glass_brain_data
+
+        # Get global min/max across all sources and all time points
+        self.global_vmin = np.min(all_magnitudes)
+        self.global_vmax = np.max(all_magnitudes)
+
+        # Ensure we have a valid range (avoid zero range)
+        if self.global_vmax - self.global_vmin < 1e-10:
+            self.global_vmax = self.global_vmin + 1.0
+
     def _get_layout_config(self) -> Dict[str, Any]:
-        """Get layout configuration based on layout_mode and environment."""
+        """Get layout configuration based on layout_mode, display_mode and environment."""
+        # Get number of brain views for this display mode
+        num_views = len(self.brain_views)
+
         # Base configurations for different layout modes
         layout_configs = {
             "vertical": {
                 "butterfly_width": "100%",
-                "brain_width": {"jupyter": "30%", "browser": "32%"},
+                "brain_width": self._get_brain_width_for_views(num_views, "vertical"),
                 "brain_margin": {"jupyter": "1.5%", "browser": "0.5%"},
                 "plot_height": {"jupyter": "250px", "browser": "450px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "400px"},
@@ -220,7 +431,7 @@ class EelbrainPlotly2DViz:
             },
             "horizontal": {
                 "butterfly_width": "35%",
-                "brain_width": {"jupyter": "20%", "browser": "20%"},
+                "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0.3%", "browser": "0.3%"},
                 "plot_height": {"jupyter": "300px", "browser": "350px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "350px"},
@@ -241,9 +452,119 @@ class EelbrainPlotly2DViz:
             "butterfly_height": base_config["butterfly_height"][env],
             "container_padding": base_config["container_padding"][env],
             "arrangement": base_config["arrangement"],
+            "num_views": num_views,
+            "brain_views": self.brain_views,
         }
 
+        # Special adjustments for 4-view modes (lzry, lyrz) in horizontal layout
+        if (
+            self.layout_mode == "horizontal"
+            and self.display_mode in ["lzry", "lyrz"]
+            and num_views == 4
+        ):
+            config["brain_margin"] = "0.02%"  # Very small margin
+            config["butterfly_width"] = (
+                "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+            )
+
         return config
+
+    def _get_brain_width_for_views(
+        self, num_views: int, layout_mode: str
+    ) -> Dict[str, str]:
+        """Calculate brain view width based on number of views and layout mode."""
+        if layout_mode == "vertical":
+            # In vertical mode, views are arranged horizontally below butterfly plot
+            if num_views == 1:
+                return {"jupyter": "98%", "browser": "98%"}
+            elif num_views == 2:
+                return {"jupyter": "48%", "browser": "48%"}
+            else:  # 3 or more views
+                return {"jupyter": "30%", "browser": "32%"}
+        else:  # horizontal mode
+            # In horizontal mode, views share space with butterfly plot
+            # Special case for 4-view modes (lzry, lyrz) - arrange all in one row
+            if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
+                return {
+                    "jupyter": "16%",
+                    "browser": "16%",
+                }  # 4 views: 25% + 4*16% + small margins = ~90%
+            elif num_views == 1:
+                return {"jupyter": "60%", "browser": "60%"}
+            elif num_views == 2:
+                return {"jupyter": "30%", "browser": "30%"}
+            else:  # 3 views (like lyr, lzr)
+                return {"jupyter": "20%", "browser": "20%"}
+
+    def _create_brain_view_containers(
+        self,
+        brain_plots: Dict[str, go.Figure],
+        brain_height: str,
+        brain_width: str,
+        brain_margin: str,
+    ) -> List:
+        """Create dynamic brain view containers based on display_mode."""
+        containers = []
+
+        for view_name in self.brain_views:
+            container = html.Div(
+                [
+                    dcc.Graph(
+                        id=f"brain-{view_name}-plot",
+                        figure=brain_plots[view_name],
+                        style={"height": brain_height},
+                    )
+                ],
+                style={
+                    "width": brain_width,
+                    "display": "inline-block",
+                    "margin": brain_margin,
+                },
+            )
+            containers.append(container)
+
+        return containers
+
+    def _create_brain_view_containers_horizontal(
+        self,
+        brain_plots: Dict[str, go.Figure],
+        brain_height: str,
+        brain_width: str,
+        brain_margin: str,
+    ) -> List:
+        """Create dynamic brain view containers for horizontal layout."""
+        containers = []
+
+        for i, view_name in enumerate(self.brain_views):
+            container = html.Div(
+                [
+                    dcc.Graph(
+                        id=f"brain-{view_name}-plot",
+                        figure=brain_plots[view_name],
+                        style={"height": brain_height},
+                    )
+                ],
+                style={
+                    "width": brain_width,
+                    "display": "inline-block",
+                    "verticalAlign": "top",
+                    "margin": brain_margin,
+                    "padding": "0px",
+                },
+            )
+            containers.append(container)
+
+            # Add line break after every 2 views only for modes with more than 4 views
+            # For 3-view modes (ortho, lyr, lzr) and 4-view modes (lzry, lyrz), keep all in one row
+            if (
+                len(self.brain_views) > 4
+                and (i + 1) % 2 == 0
+                and i < len(self.brain_views) - 1
+            ):
+                line_break = html.Div(style={"width": "100%", "height": "0px"})
+                containers.append(line_break)
+
+        return containers
 
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode."""
@@ -316,56 +637,14 @@ class EelbrainPlotly2DViz:
                         # Bottom: 2D Brain projections using Plotly
                         html.Div(
                             [
-                                # Three brain view plots
+                                # Dynamic brain view plots based on display_mode
                                 html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-axial-plot",
-                                                    figure=initial_brain_plots["axial"],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-sagittal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "sagittal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                        html.Div(
-                                            [
-                                                dcc.Graph(
-                                                    id="brain-coronal-plot",
-                                                    figure=initial_brain_plots[
-                                                        "coronal"
-                                                    ],
-                                                    style={"height": brain_height},
-                                                )
-                                            ],
-                                            style={
-                                                "width": brain_width,
-                                                "display": "inline-block",
-                                                "margin": brain_margin,
-                                            },
-                                        ),
-                                    ],
+                                    self._create_brain_view_containers(
+                                        initial_brain_plots,
+                                        brain_height,
+                                        brain_width,
+                                        brain_margin,
+                                    ),
                                     style={"textAlign": "center"},
                                 ),
                                 # Status indicator
@@ -440,57 +719,11 @@ class EelbrainPlotly2DViz:
                                 "margin": brain_margin,
                                 "padding": "0px",
                             },
-                        ),
-                        # Right: Brain projections (all at same level)
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-axial-plot",
-                                    figure=initial_brain_plots["axial"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-sagittal-plot",
-                                    figure=initial_brain_plots["sagittal"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                        html.Div(
-                            [
-                                dcc.Graph(
-                                    id="brain-coronal-plot",
-                                    figure=initial_brain_plots["coronal"],
-                                    style={"height": brain_height},
-                                )
-                            ],
-                            style={
-                                "width": brain_width,
-                                "display": "inline-block",
-                                "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
-                            },
-                        ),
-                    ],
+                        )
+                    ]
+                    + self._create_brain_view_containers_horizontal(
+                        initial_brain_plots, brain_height, brain_width, brain_margin
+                    ),
                     style={"textAlign": "center"},
                 ),
                 # Status indicator
@@ -524,18 +757,18 @@ class EelbrainPlotly2DViz:
                 time_idx = 0
             return self.create_butterfly_plot(time_idx)
 
+        # Dynamic brain plot outputs based on display_mode
+        brain_outputs = [
+            Output(f"brain-{view_name}-plot", "figure")
+            for view_name in self.brain_views
+        ]
+
         @self.app.callback(
-            [
-                Output("brain-axial-plot", "figure"),
-                Output("brain-sagittal-plot", "figure"),
-                Output("brain-coronal-plot", "figure"),
-            ],
+            brain_outputs,
             Input("selected-time-idx", "data"),
             Input("selected-source-idx", "data"),
         )
-        def update_brain_projections(
-            time_idx: int, source_idx: int
-        ) -> tuple[go.Figure, go.Figure, go.Figure]:
+        def update_brain_projections(time_idx: int, source_idx: int):
             if time_idx is None:
                 time_idx = 0
 
@@ -543,11 +776,7 @@ class EelbrainPlotly2DViz:
                 brain_plots = self.create_2d_brain_projections_plotly(
                     time_idx, source_idx
                 )
-                return (
-                    brain_plots["axial"],
-                    brain_plots["sagittal"],
-                    brain_plots["coronal"],
-                )
+                return tuple(brain_plots[view_name] for view_name in self.brain_views)
             except Exception:
                 # Return empty plots on error
                 empty_fig = go.Figure()
@@ -559,7 +788,7 @@ class EelbrainPlotly2DViz:
                     y=0.5,
                     showarrow=False,
                 )
-                return empty_fig, empty_fig, empty_fig
+                return tuple(empty_fig for _ in self.brain_views)
 
         @self.app.callback(
             Output("selected-time-idx", "data"),
@@ -857,11 +1086,7 @@ class EelbrainPlotly2DViz:
                 y=0.5,
                 showarrow=False,
             )
-            return {
-                "axial": placeholder_fig,
-                "sagittal": placeholder_fig,
-                "coronal": placeholder_fig,
-            }
+            return {view: placeholder_fig for view in self.brain_views}
 
         try:
             # Get time slice of data
@@ -879,18 +1104,19 @@ class EelbrainPlotly2DViz:
             else:  # (n_sources, n_times)
                 activity_magnitude = self.glass_brain_data[:, time_idx]
 
-            # Calculate global min/max for consistent colorbar across all views
-            global_min = np.min(activity_magnitude)
-            global_max = np.max(activity_magnitude)
+            # Use global min/max for consistent colormap across all time points
+            # This allows intuitive comparison of activity levels across time
+            global_min = self.global_vmin
+            global_max = self.global_vmax
 
             # Create brain projections
             brain_plots = {}
-            views = ["axial", "sagittal", "coronal"]
+            views = self.brain_views
 
             for i, view_name in enumerate(views):
                 try:
-                    # Only show colorbar on the last view (coronal)
-                    show_colorbar = view_name == "coronal"
+                    # Only show colorbar on the last view
+                    show_colorbar = i == len(views) - 1
                     brain_fig = self._create_plotly_brain_projection(
                         view_name,
                         self.source_coords,
@@ -986,6 +1212,51 @@ class EelbrainPlotly2DViz:
                 u_vectors = active_vectors[:, 0]  # X components
                 v_vectors = active_vectors[:, 2]  # Z components
             title = None
+        elif (
+            view_name == "left_hemisphere"
+        ):  # Left hemisphere lateral view (Y vs Z, X <= 0)
+            # Filter for left hemisphere (include midline voxels with X=0)
+            left_mask = active_coords[:, 0] <= 0
+            if np.any(left_mask):
+                active_coords = active_coords[left_mask]
+                active_activity = active_activity[left_mask]
+                active_indices = active_indices[left_mask]
+                if has_vector_data:
+                    active_vectors = active_vectors[left_mask]
+
+            # For left hemisphere, flip Y coordinates to match neuroimaging convention
+            x_coords = -active_coords[:, 1]  # Negative Y coordinates (flipped)
+            y_coords = active_coords[:, 2]  # Z coordinates
+            if has_vector_data:
+                u_vectors = -active_vectors[:, 1]  # Negative Y components (flipped)
+                v_vectors = active_vectors[:, 2]  # Z components
+            title = "Left Hemisphere"
+        elif (
+            view_name == "right_hemisphere"
+        ):  # Right hemisphere lateral view (Y vs Z, X >= 0)
+            # Filter for right hemisphere (include midline voxels with X=0)
+            right_mask = active_coords[:, 0] >= 0
+            if np.any(right_mask):
+                active_coords = active_coords[right_mask]
+                active_activity = active_activity[right_mask]
+                active_indices = active_indices[right_mask]
+                if has_vector_data:
+                    active_vectors = active_vectors[right_mask]
+
+            x_coords = active_coords[:, 1]  # Y coordinates
+            y_coords = active_coords[:, 2]  # Z coordinates
+            if has_vector_data:
+                u_vectors = active_vectors[:, 1]  # Y components
+                v_vectors = active_vectors[:, 2]  # Z components
+            title = "Right Hemisphere"
+        else:
+            # Fallback for unknown view types
+            x_coords = active_coords[:, 0]
+            y_coords = active_coords[:, 1]
+            if has_vector_data:
+                u_vectors = active_vectors[:, 0]
+                v_vectors = active_vectors[:, 1]
+            title = f"Unknown View: {view_name}"
 
         if len(active_coords) > 0:
             # Create data-driven grid using unique coordinate values
@@ -1012,25 +1283,22 @@ class EelbrainPlotly2DViz:
             x_edges = np.array(x_edges)
             y_edges = np.array(y_edges)
 
-            # Create 2D histogram - now each data point falls into its own grid cell
-            H, x_edges_used, y_edges_used = np.histogram2d(
-                x_coords, y_coords, bins=[x_edges, y_edges], weights=active_activity
+            # Use binned_statistic_2d to get maximum value per bin
+            H_max, x_edges_used, y_edges_used, _ = binned_statistic_2d(
+                x_coords,
+                y_coords,
+                active_activity,
+                statistic="max",  # Take maximum value in each bin
+                bins=[x_edges, y_edges],
             )
-
-            # Create count histogram to compute average weights per bin
-            H_count, _, _ = np.histogram2d(x_coords, y_coords, bins=[x_edges, y_edges])
-
-            # Compute average activity per bin (avoid division by zero)
-            # This prevents multiple sources in the same grid cell from summing up
-            H_avg = np.divide(H, H_count, out=np.zeros_like(H), where=H_count != 0)
 
             # Use grid center points for display
             x_centers = (x_edges_used[:-1] + x_edges_used[1:]) / 2
             y_centers = (y_edges_used[:-1] + y_edges_used[1:]) / 2
 
-            # Set zero values to NaN to make them transparent in heatmap
-            H_display = H_avg.copy()  # Use averaged data instead of summed data
-            H_display[H_display == 0] = np.nan
+            # Set NaN values to NaN to make them transparent in heatmap
+            # binned_statistic_2d returns NaN for empty bins
+            H_display = H_max.copy()  # Use maximum value per bin
 
             # Add heatmap trace
             fig.add_trace(
@@ -1039,7 +1307,17 @@ class EelbrainPlotly2DViz:
                     y=y_centers,
                     z=H_display.T,  # Transpose to match Plotly orientation
                     colorscale=self.cmap,
-                    colorbar=dict(title="") if show_colorbar else None,
+                    colorbar=(
+                        dict(
+                            title="",
+                            thickness=15,  # Thinner colorbar
+                            len=0.7,  # Shorter colorbar (70% of plot height)
+                            x=1.02,  # Position slightly outside the plot area
+                            xanchor="left",  # Anchor to the left of the colorbar
+                        )
+                        if show_colorbar
+                        else None
+                    ),
                     showscale=show_colorbar,
                     zmin=zmin,
                     zmax=zmax,
@@ -1182,11 +1460,26 @@ class EelbrainPlotly2DViz:
             height = 450
             margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
 
+        # Get fixed axis ranges for this view to prevent size changes across time
+        axis_ranges = self.view_ranges.get(view_name, {})
+        x_range = axis_ranges.get("x", None)
+        y_range = axis_ranges.get("y", None)
+
         fig.update_layout(
             title=title,
-            xaxis=dict(scaleanchor="y", scaleratio=1, showticklabels=False, title=""),
+            xaxis=dict(
+                scaleanchor="y",
+                scaleratio=1,
+                showticklabels=False,
+                title="",
+                range=x_range,  # Fixed range to prevent size changes
+            ),
             # Equal aspect ratio, hide labels
-            yaxis=dict(showticklabels=False, title=""),  # Hide labels
+            yaxis=dict(
+                showticklabels=False,
+                title="",
+                range=y_range,  # Fixed range to prevent size changes
+            ),
             height=height,
             margin=margin,
             showlegend=False,
@@ -1387,6 +1680,10 @@ class EelbrainPlotly2DViz:
 
         # Set Jupyter mode and rebuild layout with Jupyter-specific styles
         self.is_jupyter_mode = True
+
+        # Unify view sizes for Jupyter mode to ensure consistent display
+        self._unify_view_sizes_for_jupyter()
+
         self._setup_layout()  # Rebuild layout with Jupyter styles
 
         self.run(mode="inline", width=width, height=height, debug=debug)
@@ -1464,17 +1761,19 @@ class EelbrainPlotly2DViz:
 # Run the app when script is executed directly
 if __name__ == "__main__":
     try:
-        # Example cmap options:
-        # cmap = 'Hot'           # Black → Red → Yellow → White
-        # cmap = 'YlOrRd'        # Yellow → Orange → Red
-        # cmap = 'Viridis'       # Purple → Blue → Green → Yellow
+        # Colormap options (default is 'YlOrRd' - white-background friendly):
+        # cmap = 'YlOrRd'        # Yellow → Orange → Red (DEFAULT, best for white background)
+        # cmap = 'OrRd'          # Orange → Red (good for white background)
+        # cmap = 'Reds'          # White → Red (minimal contrast)
+        # cmap = 'Viridis'       # Purple → Blue → Green → Yellow (perceptually uniform)
+        # cmap = 'Hot'           # Black → Red → Yellow → White (NOT recommended - obscures arrows)
 
-        # Custom cmap example
-        cmap = [
-            [0, "rgba(255,255,0,0.5)"],  # Yellow with 50% transparency
-            [0.5, "rgba(255,165,0,0.8)"],  # Orange with 80% transparency
-            [1, "rgba(255,0,0,1.0)"],  # Red with full opacity
-        ]
+        # Example: Custom cmap (starts from white to avoid obscuring arrows)
+        # cmap = [
+        #     [0, "rgba(255,255,255,0.8)"],  # White with 80% opacity (low activity)
+        #     [0.5, "rgba(255,165,0,0.9)"],  # Orange with 90% opacity
+        #     [1, "rgba(255,0,0,1.0)"],  # Red with full opacity (high activity)
+        # ]
 
         # Butterfly plot display options:
         # show_max_only=False: Shows individual source traces + mean + max (default)
@@ -1503,10 +1802,11 @@ if __name__ == "__main__":
         # Method 2: Use default MNE sample data with region filtering
         viz_2d = EelbrainPlotly2DViz(
             region="aparc+aseg",
-            cmap=cmap,
+            cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
+            display_mode="lyrz",
         )
 
         # Example: Export plot images

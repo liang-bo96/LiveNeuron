@@ -4,7 +4,25 @@ Integration tests for eelbrain_plotly_viz package.
 
 import pytest
 import tempfile
+import os
+from unittest.mock import patch
 from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+# Handle different import paths for different environments
+try:
+    from .mock_utils import mock_get_mne_sample, skip_if_ci
+except ImportError:
+    try:
+        from tests.mock_utils import mock_get_mne_sample, skip_if_ci
+    except ImportError:
+        from mock_utils import mock_get_mne_sample, skip_if_ci
+
+# Check if we should use mock data (for CI or offline testing)
+USE_MOCK_DATA = (
+    os.getenv("CI", "").lower() in ("true", "1", "yes")
+    or os.getenv("SKIP_MNE_DATASET", "").lower() in ("true", "1", "yes")
+    or os.getenv("USE_MOCK_DATA", "").lower() in ("true", "1", "yes")
+)
 
 
 def test_export_functionality():
@@ -12,7 +30,11 @@ def test_export_functionality():
     # Check for required dependencies upfront
     pytest.importorskip("kaleido", reason="kaleido required for image export testing")
 
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Test export functionality
@@ -25,7 +47,11 @@ def test_export_functionality():
 
 def test_jupyter_mode():
     """Test Jupyter mode functionality."""
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     # Test setting Jupyter mode
     viz.is_jupyter_mode = True
@@ -38,8 +64,13 @@ def test_jupyter_mode():
 
 def test_multiple_visualizations():
     """Test creating multiple visualizations doesn't interfere."""
-    viz1 = EelbrainPlotly2DViz(cmap="Hot", show_max_only=False)
-    viz2 = EelbrainPlotly2DViz(cmap="Viridis", show_max_only=True)
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz1 = EelbrainPlotly2DViz(cmap="Hot", show_max_only=False)
+            viz2 = EelbrainPlotly2DViz(cmap="Viridis", show_max_only=True)
+    else:
+        viz1 = EelbrainPlotly2DViz(cmap="Hot", show_max_only=False)
+        viz2 = EelbrainPlotly2DViz(cmap="Viridis", show_max_only=True)
 
     # Each should maintain its own settings
     assert viz1.cmap == "Hot"
@@ -58,7 +89,13 @@ def test_multiple_visualizations():
 
 def test_error_handling():
     """Test error handling in various scenarios."""
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+            viz_empty = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
+        viz_empty = EelbrainPlotly2DViz()
 
     # Test with invalid time index
     brain_plots = viz.create_2d_brain_projections_plotly(time_idx=999999)
@@ -68,7 +105,6 @@ def test_error_handling():
     assert len(brain_plots) == 3
 
     # Test with None data (edge case)
-    viz_empty = EelbrainPlotly2DViz()
     viz_empty.glass_brain_data = None
     viz_empty.source_coords = None
     viz_empty.time_values = None
@@ -80,7 +116,11 @@ def test_error_handling():
 
 def test_callback_functionality():
     """Test that Dash callbacks are properly set up."""
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     # Check that the app has callbacks registered
     assert hasattr(viz.app, "callback_map")
@@ -92,7 +132,11 @@ def test_callback_functionality():
 
 def test_data_consistency():
     """Test data consistency across different methods."""
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     # All data arrays should have consistent shapes
     n_sources, n_space, n_times = viz.glass_brain_data.shape

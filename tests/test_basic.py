@@ -3,6 +3,24 @@ Basic tests for eelbrain_plotly_viz package.
 """
 
 import pytest
+import os
+from unittest.mock import patch
+
+# Handle different import paths for different environments
+try:
+    from .mock_utils import mock_get_mne_sample, skip_if_ci
+except ImportError:
+    try:
+        from tests.mock_utils import mock_get_mne_sample, skip_if_ci
+    except ImportError:
+        from mock_utils import mock_get_mne_sample, skip_if_ci
+
+# Check if we should use mock data (for CI or offline testing)
+USE_MOCK_DATA = (
+    os.getenv("CI", "").lower() in ("true", "1", "yes")
+    or os.getenv("SKIP_MNE_DATASET", "").lower() in ("true", "1", "yes")
+    or os.getenv("USE_MOCK_DATA", "").lower() in ("true", "1", "yes")
+)
 
 
 def test_package_import():
@@ -53,7 +71,11 @@ def test_viz_creation_with_sample_data():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # This should work without errors
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     assert viz.glass_brain_data is not None
     assert viz.source_coords is not None
@@ -69,9 +91,23 @@ def test_viz_creation_with_options():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test with different parameters
-    viz = EelbrainPlotly2DViz(
-        y=None, region=None, cmap="Viridis", show_max_only=True, arrow_threshold="auto"
-    )
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz(
+                y=None,
+                region=None,
+                cmap="Viridis",
+                show_max_only=True,
+                arrow_threshold="auto",
+            )
+    else:
+        viz = EelbrainPlotly2DViz(
+            y=None,
+            region=None,
+            cmap="Viridis",
+            show_max_only=True,
+            arrow_threshold="auto",
+        )
 
     assert viz.glass_brain_data is not None
     assert viz.source_coords is not None
@@ -89,7 +125,11 @@ def test_alias_import():
     assert BrainPlotly2DViz is EelbrainPlotly2DViz
 
     # Should be able to create instance with alias
-    viz = BrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = BrainPlotly2DViz()
+    else:
+        viz = BrainPlotly2DViz()
     assert viz.glass_brain_data is not None
 
 
@@ -97,7 +137,13 @@ def test_brain_projections():
     """Test brain projection creation."""
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    viz = EelbrainPlotly2DViz()
+    # Test with ortho mode to get the traditional 3 views
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz(display_mode="ortho")
+    else:
+        viz = EelbrainPlotly2DViz(display_mode="ortho")
+
     projections = viz.create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
@@ -111,11 +157,41 @@ def test_brain_projections():
         assert hasattr(fig, "layout")
 
 
+def test_default_lyr_mode():
+    """Test the default LYR display mode."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+    # Test with default mode (should be 'lyr')
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
+
+    projections = viz.create_2d_brain_projections_plotly(time_idx=5)
+
+    assert isinstance(projections, dict)
+    assert "left_hemisphere" in projections
+    assert "coronal" in projections
+    assert "right_hemisphere" in projections
+    assert len(projections) == 3  # Should have exactly 3 views
+
+    # Check that each projection is a plotly figure
+    for view_name, fig in projections.items():
+        assert hasattr(fig, "data")
+        assert hasattr(fig, "layout")
+
+
 def test_butterfly_plot():
     """Test butterfly plot creation."""
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
+
     butterfly_fig = viz.create_butterfly_plot()
 
     assert hasattr(butterfly_fig, "data")
@@ -130,7 +206,11 @@ def test_custom_colormap():
     # Test custom colormap
     custom_cmap = [[0, "yellow"], [0.5, "orange"], [1, "red"]]
 
-    viz = EelbrainPlotly2DViz(cmap=custom_cmap)
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz(cmap=custom_cmap)
+    else:
+        viz = EelbrainPlotly2DViz(cmap=custom_cmap)
     assert viz.cmap == custom_cmap
 
 
@@ -139,15 +219,18 @@ def test_different_arrow_thresholds():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test None threshold
-    viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
+            viz2 = EelbrainPlotly2DViz(arrow_threshold="auto")
+            viz3 = EelbrainPlotly2DViz(arrow_threshold=0.5)
+    else:
+        viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
+        viz2 = EelbrainPlotly2DViz(arrow_threshold="auto")
+        viz3 = EelbrainPlotly2DViz(arrow_threshold=0.5)
+
     assert viz1.arrow_threshold is None
-
-    # Test auto threshold
-    viz2 = EelbrainPlotly2DViz(arrow_threshold="auto")
     assert viz2.arrow_threshold == "auto"
-
-    # Test numeric threshold
-    viz3 = EelbrainPlotly2DViz(arrow_threshold=0.5)
     assert viz3.arrow_threshold == 0.5
 
 
@@ -156,11 +239,15 @@ def test_show_max_only_option():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test with show_max_only=True
-    viz1 = EelbrainPlotly2DViz(show_max_only=True)
-    butterfly_fig1 = viz1.create_butterfly_plot()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz1 = EelbrainPlotly2DViz(show_max_only=True)
+            viz2 = EelbrainPlotly2DViz(show_max_only=False)
+    else:
+        viz1 = EelbrainPlotly2DViz(show_max_only=True)
+        viz2 = EelbrainPlotly2DViz(show_max_only=False)
 
-    # Test with show_max_only=False
-    viz2 = EelbrainPlotly2DViz(show_max_only=False)
+    butterfly_fig1 = viz1.create_butterfly_plot()
     butterfly_fig2 = viz2.create_butterfly_plot()
 
     # Both should create valid figures
@@ -181,11 +268,17 @@ def test_eelbrain_integration():
         from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
         # Load eelbrain data
-        data_ds = datasets.get_mne_sample(src="vol", ori="vector")
-        y = data_ds["src"]
-
-        # Create visualization with eelbrain data
-        viz = EelbrainPlotly2DViz(y=y)
+        if USE_MOCK_DATA:
+            with patch(
+                "eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample
+            ):
+                data_ds = datasets.get_mne_sample(src="vol", ori="vector")
+                y = data_ds["src"]
+                viz = EelbrainPlotly2DViz(y=y)
+        else:
+            data_ds = datasets.get_mne_sample(src="vol", ori="vector")
+            y = data_ds["src"]
+            viz = EelbrainPlotly2DViz(y=y)
 
         assert viz.glass_brain_data is not None
         assert viz.source_coords is not None
@@ -199,7 +292,11 @@ def test_app_creation():
     """Test that the Dash app is created properly."""
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    viz = EelbrainPlotly2DViz()
+    if USE_MOCK_DATA:
+        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
+            viz = EelbrainPlotly2DViz()
+    else:
+        viz = EelbrainPlotly2DViz()
 
     # Check that the app exists and has the expected attributes
     assert hasattr(viz, "app")
