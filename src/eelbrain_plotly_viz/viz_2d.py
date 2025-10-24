@@ -1513,22 +1513,24 @@ class EelbrainPlotly2DViz:
 
         # Collect all annotation data first, then add them in batch
         annotations_to_add = []
-        
+
         for i in range(len(x_coords)):
             try:
                 annotation_data = dict(
-                    x=x_ends[i],           # Arrow points to this position
+                    x=x_ends[i],  # Arrow points to this position
                     y=y_ends[i],
-                    ax=x_coords[i],        # Arrow starts from this position  
+                    ax=x_coords[i],  # Arrow starts from this position
                     ay=y_coords[i],
-                    xref="x", yref="y",    # Use data coordinates
-                    axref="x", ayref="y",
-                    text="",               # No text, just the arrow
+                    xref="x",
+                    yref="y",  # Use data coordinates
+                    axref="x",
+                    ayref="y",
+                    text="",  # No text, just the arrow
                     showarrow=True,
-                    arrowhead=2,           # Filled triangle arrow head
-                    arrowsize=size,        # Scale arrow head size
-                    arrowwidth=width,      # Arrow shaft width
-                    arrowcolor=color,      # Arrow color
+                    arrowhead=2,  # Filled triangle arrow head
+                    arrowsize=size,  # Scale arrow head size
+                    arrowwidth=width,  # Arrow shaft width
+                    arrowcolor=color,  # Arrow color
                     # Add hover information
                     hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
                     # Make the annotation invisible except for the arrow
@@ -1537,18 +1539,20 @@ class EelbrainPlotly2DViz:
                     bordercolor="rgba(0,0,0,0)",
                 )
                 annotations_to_add.append(annotation_data)
-                
+
             except Exception as e:
                 # If annotation data creation fails, skip this arrow
                 print(f"Warning: Failed to create arrow data {i}: {e}")
                 continue
-        
+
         # Batch add all annotations at once
         if annotations_to_add:
             # Get existing annotations (if any) and add new ones
-            existing_annotations = list(fig.layout.annotations) if fig.layout.annotations else []
+            existing_annotations = (
+                list(fig.layout.annotations) if fig.layout.annotations else []
+            )
             all_annotations = existing_annotations + annotations_to_add
-            
+
             # Update layout with all annotations in one operation
             fig.update_layout(annotations=all_annotations)
 
