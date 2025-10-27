@@ -60,6 +60,11 @@ class EelbrainPlotly2DViz:
         magnitude greater than this value will be displayed. If None, all arrows
         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
         Default is None.
+    arrow_scale
+        Scale factor for arrow length in brain projections. Smaller values make
+        arrows shorter, larger values make them longer. Useful for adjusting
+        visualization clarity when vectors have large magnitudes or high density.
+        Default is 0.025. Typical range: 0.01 (short) to 0.05 (long).
     layout_mode
         Layout arrangement mode for the visualization interface. Options:
         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
@@ -100,6 +105,7 @@ class EelbrainPlotly2DViz:
         cmap: Union[str, List] = "YlOrRd",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
+        arrow_scale: float = 0.025,
         realtime: bool = False,
         layout_mode: str = "vertical",
         display_mode: str = "lyr",
@@ -118,6 +124,8 @@ class EelbrainPlotly2DViz:
         self.show_max_only: bool = show_max_only  # Control butterfly plot display mode
         # Threshold for displaying arrows
         self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold
+        # Scale factor for arrow length
+        self.arrow_scale: float = arrow_scale
         self.is_jupyter_mode: bool = False  # Track if running in Jupyter mode
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
@@ -1331,7 +1339,8 @@ class EelbrainPlotly2DViz:
 
             # Add vector arrows if we have vector data (not scalar data)
             if has_vector_data:
-                arrow_scale = 0.025  # Scale arrows for visibility - increased for better visibility
+                # Use the arrow_scale parameter for arrow length
+                arrow_scale = self.arrow_scale
 
                 # Calculate arrow magnitudes for filtering
                 arrow_magnitudes = np.linalg.norm(active_vectors, axis=1)
@@ -1514,10 +1523,10 @@ class EelbrainPlotly2DViz:
             quiver_fig = ff.create_quiver(
                 x=x_coords,
                 y=y_coords,
-                u=u_vectors * arrow_scale,
-                v=v_vectors * arrow_scale,
-                scale=1.0,  # We've already scaled the vectors
-                arrow_scale=size * 0.3,  # Arrow head size
+                u=u_vectors,
+                v=v_vectors,
+                scale=arrow_scale,  # Scale controls arrow length
+                arrow_scale=size * 0.3,  # Arrow head size (relative to arrow length)
                 line=dict(color=color, width=width),
                 name="vectors",
             )
@@ -1528,8 +1537,30 @@ class EelbrainPlotly2DViz:
                 trace.showlegend = False
                 # Calculate magnitude for hover
                 magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
-                trace.hovertemplate = "Vector<br>Magnitude: %{text:.3f}<extra></extra>"
-                trace.text = magnitudes
+
+                if hasattr(trace, "x") and trace.x is not None:
+                    n_points = len(trace.x)
+                    # Repeat each magnitude for all points of that arrow
+                    # Approximate: each arrow has ~7-14 points (shaft + head)
+                    points_per_arrow = (
+                        n_points // len(magnitudes) if len(magnitudes) > 0 else 1
+                    )
+                    customdata_expanded = np.repeat(magnitudes, points_per_arrow)
+                    # Pad or trim to exact length
+                    if len(customdata_expanded) < n_points:
+                        customdata_expanded = np.pad(
+                            customdata_expanded,
+                            (0, n_points - len(customdata_expanded)),
+                            mode="edge",
+                        )
+                    elif len(customdata_expanded) > n_points:
+                        customdata_expanded = customdata_expanded[:n_points]
+
+                    trace.customdata = customdata_expanded
+                    trace.hovertemplate = (
+                        "Vector<br>Magnitude: %{customdata:.3f}<extra></extra>"
+                    )
+
                 fig.add_trace(trace)
 
         except Exception as e:
@@ -1842,6 +1873,11 @@ if __name__ == "__main__":
         # arrow_threshold='auto': Show arrows with magnitude > 10% of max
         # arrow_threshold=0.01: Show arrows with magnitude > 0.01 (custom threshold)
 
+        # Arrow scale options:
+        # arrow_scale=0.025: Default arrow length (good for most cases)
+        # arrow_scale=0.01: Shorter arrows (useful for dense or high-magnitude data)
+        # arrow_scale=0.05: Longer arrows (useful for sparse or low-magnitude data)
+
         # Method 1: Pass data directly using y parameter (same as plot.GlassBrain)
         # from eelbrain import datasets
         #
@@ -1865,6 +1901,7 @@ if __name__ == "__main__":
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
             display_mode="lyrz",
+            arrow_scale=0.01,
         )
 
         # Example: Export plot images
