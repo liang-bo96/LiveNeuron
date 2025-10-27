@@ -7,6 +7,7 @@ import dash
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 from dash import dcc, html, Input, Output, State
 from scipy.stats import binned_statistic_2d
 
@@ -1380,9 +1381,8 @@ class EelbrainPlotly2DViz:
                     arrow_u = u_vectors[selected_indices]
                     arrow_v = v_vectors[selected_indices]
 
-                    # Create all arrows as 2 traces instead of 179+ individual
-                    # annotations
-                    self._create_batch_arrows(
+                    # Create all arrows using Plotly quiver plot (fastest method)
+                    self._create_quiver_arrows(
                         fig, arrow_x, arrow_y, arrow_u, arrow_v, arrow_scale
                     )
 
@@ -1429,8 +1429,8 @@ class EelbrainPlotly2DViz:
                             x_start = x_coords[pos]
                             y_start = y_coords[pos]
 
-                            # Add highlighted arrow for selected source (optimized)
-                            self._create_batch_arrows(
+                            # Add highlighted arrow for selected source (using quiver)
+                            self._create_quiver_arrows(
                                 fig,
                                 np.array([x_start]),
                                 np.array([y_start]),
@@ -1487,6 +1487,66 @@ class EelbrainPlotly2DViz:
 
         return fig
 
+    def _create_quiver_arrows(
+        self,
+        fig: go.Figure,
+        x_coords: np.ndarray,
+        y_coords: np.ndarray,
+        u_vectors: np.ndarray,
+        v_vectors: np.ndarray,
+        arrow_scale: float,
+        color: str = "black",
+        width: int = 1,
+        size: float = 0.8,
+    ) -> None:
+        """Create arrows using Plotly's figure_factory quiver plot.
+
+        This method uses ff.create_quiver which provides proper arrow visualization
+        with built-in Plotly optimizations.
+
+        Note: Arrow head size scales with arrow length (Plotly default behavior).
+        """
+        if len(x_coords) == 0:
+            return
+
+        try:
+            # Create quiver figure using Plotly's figure_factory
+            quiver_fig = ff.create_quiver(
+                x=x_coords,
+                y=y_coords,
+                u=u_vectors * arrow_scale,
+                v=v_vectors * arrow_scale,
+                scale=1.0,  # We've already scaled the vectors
+                arrow_scale=size * 0.3,  # Arrow head size
+                line=dict(color=color, width=width),
+                name="vectors",
+            )
+
+            # Add all traces from quiver figure to our figure
+            for trace in quiver_fig.data:
+                # Customize the trace
+                trace.showlegend = False
+                # Calculate magnitude for hover
+                magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
+                trace.hovertemplate = "Vector<br>Magnitude: %{text:.3f}<extra></extra>"
+                trace.text = magnitudes
+                fig.add_trace(trace)
+
+        except Exception as e:
+            print(f"Warning: Quiver plot failed ({e}), falling back to annotations")
+            # Fall back to annotation method if quiver fails
+            self._create_batch_arrows(
+                fig,
+                x_coords,
+                y_coords,
+                u_vectors,
+                v_vectors,
+                arrow_scale,
+                color,
+                width,
+                size,
+            )
+
     def _create_batch_arrows(
         self,
         fig: go.Figure,
@@ -1499,7 +1559,12 @@ class EelbrainPlotly2DViz:
         width: int = 1,
         size: float = 0.8,
     ) -> None:
-        """Create all arrows using Plotly's built-in annotation arrows."""
+        """Create arrows using annotation-based method (fallback for quiver).
+
+        This is a simple, single-threaded implementation used as fallback
+        when quiver plots fail. The bottleneck is in rendering (adding to figure),
+        not in computation, so multi-threading doesn't help much.
+        """
 
         if len(x_coords) == 0:
             return
@@ -1508,42 +1573,33 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Calculate magnitudes for hover info
+        # Calculate magnitudes for hover info (vectorized)
         magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
 
-        # Collect all annotation data first, then add them in batch
-        annotations_to_add = []
-
-        for i in range(len(x_coords)):
-            try:
-                annotation_data = dict(
-                    x=x_ends[i],  # Arrow points to this position
-                    y=y_ends[i],
-                    ax=x_coords[i],  # Arrow starts from this position
-                    ay=y_coords[i],
-                    xref="x",
-                    yref="y",  # Use data coordinates
-                    axref="x",
-                    ayref="y",
-                    text="",  # No text, just the arrow
-                    showarrow=True,
-                    arrowhead=2,  # Filled triangle arrow head
-                    arrowsize=size,  # Scale arrow head size
-                    arrowwidth=width,  # Arrow shaft width
-                    arrowcolor=color,  # Arrow color
-                    # Add hover information
-                    hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
-                    # Make the annotation invisible except for the arrow
-                    font=dict(size=1, color="rgba(0,0,0,0)"),  # Minimum size is 1
-                    bgcolor="rgba(0,0,0,0)",
-                    bordercolor="rgba(0,0,0,0)",
-                )
-                annotations_to_add.append(annotation_data)
-
-            except Exception as e:
-                # If annotation data creation fails, skip this arrow
-                print(f"Warning: Failed to create arrow data {i}: {e}")
-                continue
+        # Create annotation objects using simple list comprehension
+        annotations_to_add = [
+            dict(
+                x=float(x_ends[i]),
+                y=float(y_ends[i]),
+                ax=float(x_coords[i]),
+                ay=float(y_coords[i]),
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                text="",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=size,
+                arrowwidth=width,
+                arrowcolor=color,
+                hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
+                font=dict(size=1, color="rgba(0,0,0,0)"),
+                bgcolor="rgba(0,0,0,0)",
+                bordercolor="rgba(0,0,0,0)",
+            )
+            for i in range(len(x_coords))
+        ]
 
         # Batch add all annotations at once
         if annotations_to_add:
