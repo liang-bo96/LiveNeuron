@@ -7,6 +7,7 @@ import dash
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 from dash import dcc, html, Input, Output, State
 from scipy.stats import binned_statistic_2d
 
@@ -59,6 +60,12 @@ class EelbrainPlotly2DViz:
         magnitude greater than this value will be displayed. If None, all arrows
         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
         Default is None.
+    arrow_scale
+        Relative scale factor for arrow length in brain projections. The default
+        value of 1.0 provides a good balance for most datasets. Use 0.5 for half
+        the length, 2.0 for double the length, etc. Useful for adjusting
+        visualization clarity when vectors have large magnitudes or high density.
+        Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
     layout_mode
         Layout arrangement mode for the visualization interface. Options:
         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
@@ -99,6 +106,7 @@ class EelbrainPlotly2DViz:
         cmap: Union[str, List] = "YlOrRd",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
+        arrow_scale: float = 1.0,
         realtime: bool = False,
         layout_mode: str = "vertical",
         display_mode: str = "lyr",
@@ -117,6 +125,8 @@ class EelbrainPlotly2DViz:
         self.show_max_only: bool = show_max_only  # Control butterfly plot display mode
         # Threshold for displaying arrows
         self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold
+        # Scale factor for arrow length
+        self.arrow_scale: float = arrow_scale
         self.is_jupyter_mode: bool = False  # Track if running in Jupyter mode
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
@@ -1330,7 +1340,9 @@ class EelbrainPlotly2DViz:
 
             # Add vector arrows if we have vector data (not scalar data)
             if has_vector_data:
-                arrow_scale = 0.025  # Scale arrows for visibility - increased for better visibility
+                # Convert relative arrow_scale (user parameter, default=1.0) to absolute scale
+                # Base scale of 0.025 provides good default visualization
+                arrow_scale = self.arrow_scale * 0.025
 
                 # Calculate arrow magnitudes for filtering
                 arrow_magnitudes = np.linalg.norm(active_vectors, axis=1)
@@ -1380,9 +1392,8 @@ class EelbrainPlotly2DViz:
                     arrow_u = u_vectors[selected_indices]
                     arrow_v = v_vectors[selected_indices]
 
-                    # Create all arrows as 2 traces instead of 179+ individual
-                    # annotations
-                    self._create_batch_arrows(
+                    # Create all arrows using Plotly quiver plot (fastest method)
+                    self._create_quiver_arrows(
                         fig, arrow_x, arrow_y, arrow_u, arrow_v, arrow_scale
                     )
 
@@ -1429,8 +1440,8 @@ class EelbrainPlotly2DViz:
                             x_start = x_coords[pos]
                             y_start = y_coords[pos]
 
-                            # Add highlighted arrow for selected source (optimized)
-                            self._create_batch_arrows(
+                            # Add highlighted arrow for selected source (using quiver)
+                            self._create_quiver_arrows(
                                 fig,
                                 np.array([x_start]),
                                 np.array([y_start]),
@@ -1487,6 +1498,88 @@ class EelbrainPlotly2DViz:
 
         return fig
 
+    def _create_quiver_arrows(
+        self,
+        fig: go.Figure,
+        x_coords: np.ndarray,
+        y_coords: np.ndarray,
+        u_vectors: np.ndarray,
+        v_vectors: np.ndarray,
+        arrow_scale: float,
+        color: str = "black",
+        width: int = 1,
+        size: float = 0.8,
+    ) -> None:
+        """Create arrows using Plotly's figure_factory quiver plot.
+
+        This method uses ff.create_quiver which provides proper arrow visualization
+        with built-in Plotly optimizations.
+
+        Note: Arrow head size scales with arrow length (Plotly default behavior).
+        """
+        if len(x_coords) == 0:
+            return
+
+        try:
+            # Create quiver figure using Plotly's figure_factory
+            quiver_fig = ff.create_quiver(
+                x=x_coords,
+                y=y_coords,
+                u=u_vectors,
+                v=v_vectors,
+                scale=arrow_scale,  # Scale controls arrow length
+                arrow_scale=size * 0.3,  # Arrow head size (relative to arrow length)
+                line=dict(color=color, width=width),
+                name="vectors",
+            )
+
+            # Add all traces from quiver figure to our figure
+            for trace in quiver_fig.data:
+                # Customize the trace
+                trace.showlegend = False
+                # Calculate magnitude for hover
+                magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
+
+                if hasattr(trace, "x") and trace.x is not None:
+                    n_points = len(trace.x)
+                    # Repeat each magnitude for all points of that arrow
+                    # Approximate: each arrow has ~7-14 points (shaft + head)
+                    points_per_arrow = (
+                        n_points // len(magnitudes) if len(magnitudes) > 0 else 1
+                    )
+                    customdata_expanded = np.repeat(magnitudes, points_per_arrow)
+                    # Pad or trim to exact length
+                    if len(customdata_expanded) < n_points:
+                        customdata_expanded = np.pad(
+                            customdata_expanded,
+                            (0, n_points - len(customdata_expanded)),
+                            mode="edge",
+                        )
+                    elif len(customdata_expanded) > n_points:
+                        customdata_expanded = customdata_expanded[:n_points]
+
+                    trace.customdata = customdata_expanded
+                    trace.hovertemplate = (
+                        "Vector<br>Magnitude: %{customdata:.3f}<extra></extra>"
+                    )
+
+                fig.add_trace(trace)
+
+        except Exception as e:
+            print(f"Warning: Quiver plot failed ({e}), falling back to annotations")
+            # Fall back to annotation method if quiver fails
+            self._create_batch_arrows(
+                fig,
+                x_coords,
+                y_coords,
+                u_vectors,
+                v_vectors,
+                arrow_scale,
+                color,
+                width,
+                size,
+            )
+
     def _create_batch_arrows(
         self,
         fig: go.Figure,
@@ -1499,7 +1592,12 @@ class EelbrainPlotly2DViz:
         width: int = 1,
         size: float = 0.8,
     ) -> None:
-        """Create all arrows using batch method."""
+        """Create arrows using annotation-based method (fallback for quiver).
+
+        This is a simple, single-threaded implementation used as fallback
+        when quiver plots fail. The bottleneck is in rendering (adding to figure),
+        not in computation, so multi-threading doesn't help much.
+        """
 
         if len(x_coords) == 0:
             return
@@ -1508,51 +1606,44 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Create all arrow lines as a single trace
-        # Use None to separate individual line segments
-        x_lines = []
-        y_lines = []
-        for i in range(len(x_coords)):
-            x_lines.extend([x_coords[i], x_ends[i], None])
-            y_lines.extend([y_coords[i], y_ends[i], None])
-
-        # Add all arrow lines as single trace (instead of 179+ individual annotations)
-        fig.add_trace(
-            go.Scatter(
-                x=x_lines,
-                y=y_lines,
-                mode="lines",
-                line=dict(color=color, width=width),
-                opacity=0.6,
-                showlegend=False,
-                hoverinfo="skip",
-                name="arrow_lines",
-            )
-        )
-
-        # Calculate arrow angles for proper arrowhead rotation
-        angles = np.degrees(np.arctan2(v_vectors, u_vectors))
+        # Calculate magnitudes for hover info (vectorized)
         magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
 
-        # Add all arrowheads as single trace (instead of 179+ individual annotations)
-        fig.add_trace(
-            go.Scatter(
-                x=x_ends,
-                y=y_ends,
-                mode="markers",
-                marker=dict(
-                    symbol="triangle-right",
-                    size=6 * size,  # Scale the marker size
-                    color=color,
-                    opacity=0.8,
-                    angle=angles,  # Rotate markers to match vector direction
-                ),
-                showlegend=False,
-                hovertemplate="Vector magnitude: %{customdata:.3f}<extra></extra>",
-                customdata=magnitudes,
-                name="arrow_heads",
+        # Create annotation objects using simple list comprehension
+        annotations_to_add = [
+            dict(
+                x=float(x_ends[i]),
+                y=float(y_ends[i]),
+                ax=float(x_coords[i]),
+                ay=float(y_coords[i]),
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                text="",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=size,
+                arrowwidth=width,
+                arrowcolor=color,
+                hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
+                font=dict(size=1, color="rgba(0,0,0,0)"),
+                bgcolor="rgba(0,0,0,0)",
+                bordercolor="rgba(0,0,0,0)",
             )
-        )
+            for i in range(len(x_coords))
+        ]
+
+        # Batch add all annotations at once
+        if annotations_to_add:
+            # Get existing annotations (if any) and add new ones
+            existing_annotations = (
+                list(fig.layout.annotations) if fig.layout.annotations else []
+            )
+            all_annotations = existing_annotations + annotations_to_add
+
+            # Update layout with all annotations in one operation
+            fig.update_layout(annotations=all_annotations)
 
     def _fig_to_base64(self, fig: plt.Figure) -> str:
         """Convert matplotlib figure to base64 string for Dash display."""
@@ -1784,6 +1875,11 @@ if __name__ == "__main__":
         # arrow_threshold='auto': Show arrows with magnitude > 10% of max
         # arrow_threshold=0.01: Show arrows with magnitude > 0.01 (custom threshold)
 
+        # Arrow scale options:
+        # arrow_scale=1.0: Default arrow length (good for most cases)
+        # arrow_scale=0.5: Half length (useful for dense or high-magnitude data)
+        # arrow_scale=2.0: Double length (useful for sparse or low-magnitude data)
+
         # Method 1: Pass data directly using y parameter (same as plot.GlassBrain)
         # from eelbrain import datasets
         #
@@ -1807,6 +1903,7 @@ if __name__ == "__main__":
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
             display_mode="lyrz",
+            arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
         # Example: Export plot images

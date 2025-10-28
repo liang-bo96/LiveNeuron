@@ -6,24 +6,6 @@ filename case mismatches or missing dependencies.
 """
 
 import pytest
-import os
-from unittest.mock import patch
-
-# Handle different import paths for different environments
-try:
-    from .mock_utils import mock_get_mne_sample, skip_if_ci
-except ImportError:
-    try:
-        from tests.mock_utils import mock_get_mne_sample, skip_if_ci
-    except ImportError:
-        from mock_utils import mock_get_mne_sample, skip_if_ci
-
-# Check if we should use mock data (for CI or offline testing)
-USE_MOCK_DATA = (
-    os.getenv("CI", "").lower() in ("true", "1", "yes")
-    or os.getenv("SKIP_MNE_DATASET", "").lower() in ("true", "1", "yes")
-    or os.getenv("USE_MOCK_DATA", "").lower() in ("true", "1", "yes")
-)
 
 
 def test_all_imports_together():
@@ -82,11 +64,7 @@ def test_no_import_errors():
     import eelbrain_plotly_viz
 
     # Test basic instantiation to catch runtime import issues
-    if USE_MOCK_DATA:
-        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
-            viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
-    else:
-        viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
+    viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
     assert viz is not None
 
 
@@ -99,11 +77,7 @@ def test_case_sensitive_filename_compliance():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     # Test that we can create an instance (ensures the import chain works)
-    if USE_MOCK_DATA:
-        with patch("eelbrain.datasets.get_mne_sample", side_effect=mock_get_mne_sample):
-            viz = EelbrainPlotly2DViz()
-    else:
-        viz = EelbrainPlotly2DViz()
+    viz = EelbrainPlotly2DViz()
     assert viz is not None
 
     # Test that the module follows the expected pattern
