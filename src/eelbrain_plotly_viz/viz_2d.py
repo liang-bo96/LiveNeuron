@@ -61,10 +61,11 @@ class EelbrainPlotly2DViz:
         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
         Default is None.
     arrow_scale
-        Scale factor for arrow length in brain projections. Smaller values make
-        arrows shorter, larger values make them longer. Useful for adjusting
+        Relative scale factor for arrow length in brain projections. The default
+        value of 1.0 provides a good balance for most datasets. Use 0.5 for half
+        the length, 2.0 for double the length, etc. Useful for adjusting
         visualization clarity when vectors have large magnitudes or high density.
-        Default is 0.025. Typical range: 0.01 (short) to 0.05 (long).
+        Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
     layout_mode
         Layout arrangement mode for the visualization interface. Options:
         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
@@ -105,7 +106,7 @@ class EelbrainPlotly2DViz:
         cmap: Union[str, List] = "YlOrRd",
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
-        arrow_scale: float = 0.025,
+        arrow_scale: float = 1.0,
         realtime: bool = False,
         layout_mode: str = "vertical",
         display_mode: str = "lyr",
@@ -1339,8 +1340,9 @@ class EelbrainPlotly2DViz:
 
             # Add vector arrows if we have vector data (not scalar data)
             if has_vector_data:
-                # Use the arrow_scale parameter for arrow length
-                arrow_scale = self.arrow_scale
+                # Convert relative arrow_scale (user parameter, default=1.0) to absolute scale
+                # Base scale of 0.025 provides good default visualization
+                arrow_scale = self.arrow_scale * 0.025
 
                 # Calculate arrow magnitudes for filtering
                 arrow_magnitudes = np.linalg.norm(active_vectors, axis=1)
@@ -1874,9 +1876,9 @@ if __name__ == "__main__":
         # arrow_threshold=0.01: Show arrows with magnitude > 0.01 (custom threshold)
 
         # Arrow scale options:
-        # arrow_scale=0.025: Default arrow length (good for most cases)
-        # arrow_scale=0.01: Shorter arrows (useful for dense or high-magnitude data)
-        # arrow_scale=0.05: Longer arrows (useful for sparse or low-magnitude data)
+        # arrow_scale=1.0: Default arrow length (good for most cases)
+        # arrow_scale=0.5: Half length (useful for dense or high-magnitude data)
+        # arrow_scale=2.0: Double length (useful for sparse or low-magnitude data)
 
         # Method 1: Pass data directly using y parameter (same as plot.GlassBrain)
         # from eelbrain import datasets
@@ -1901,7 +1903,7 @@ if __name__ == "__main__":
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
             display_mode="lyrz",
-            arrow_scale=0.01,
+            arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
         # Example: Export plot images
