@@ -964,13 +964,21 @@ class EelbrainPlotly2DViz:
         y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
 
         # Add invisible clickable markers FIRST so they're behind other traces
-        # Create a dense grid of invisible markers to capture clicks anywhere
+        # Create a DENSE grid of invisible markers to capture clicks precisely
+        # Use many more time points than actual data to ensure click precision
         n_rows = 5  # Number of rows of markers to cover the plot vertically
         y_positions = np.linspace(y_min - y_margin / 2, y_max + y_margin / 2, n_rows)
 
-        # Create markers at multiple vertical positions
-        x_grid = np.tile(self.time_values, n_rows)
-        y_grid = np.repeat(y_positions, len(self.time_values))
+        # Create a much denser time grid for precise click detection
+        # Use 10x more points than the actual data to ensure clicks are accurate
+        n_dense_time_points = max(500, len(self.time_values) * 10)
+        dense_time_grid = np.linspace(
+            self.time_values[0], self.time_values[-1], n_dense_time_points
+        )
+
+        # Create markers at multiple vertical positions using the dense time grid
+        x_grid = np.tile(dense_time_grid, n_rows)
+        y_grid = np.repeat(y_positions, len(dense_time_grid))
 
         fig.add_trace(
             go.Scatter(
@@ -978,7 +986,7 @@ class EelbrainPlotly2DViz:
                 y=y_grid,
                 mode="markers",
                 marker=dict(
-                    size=35,  # Large invisible markers
+                    size=20,  # Smaller markers for denser grid
                     color="rgba(0,0,0,0.001)",  # Nearly transparent (but not completely)
                     line=dict(width=0),
                 ),
@@ -1067,6 +1075,7 @@ class EelbrainPlotly2DViz:
             title=title_text,
             xaxis_title="Time (s)",
             yaxis_title=f"Activity{unit_suffix}",
+            xaxis=dict(range=[self.time_values[0], self.time_values[-1]]),
             yaxis=dict(range=[y_min - y_margin, y_max + y_margin]),
             hovermode="closest",
             height=height,
