@@ -1340,7 +1340,7 @@ class EelbrainPlotly2DViz:
                     showscale=show_colorbar,
                     zmin=zmin,
                     zmax=zmax,
-                    hovertemplate="Activity: %{z:.2e}<extra></extra>",
+                    hovertemplate="Activity: %{z:.3f}<extra></extra>",  # Show heatmap values
                 )
             )
 
@@ -1369,11 +1369,14 @@ class EelbrainPlotly2DViz:
                     threshold_value = float(self.arrow_threshold)
                     show_arrow_mask = arrow_magnitudes > threshold_value
 
-                # Group sources by position and select the one with maximum magnitude
-                # for each position
+                # Group sources by 2D position and select the one with maximum ACTIVITY
+                # (not 2D projected magnitude) for each position.
+                # Multiple 3D sources can project to the same 2D position, so we need
+                # to select one. We choose the source with highest activity because
+                # that's what we display in the hover and heatmap.
                 position_to_max_idx = {}
 
-                # Remove performance limit, check all source points
+                # Check all source points
                 for i in range(len(active_coords)):
                     # Only consider arrows that meet the threshold criteria
                     if not show_arrow_mask[i]:
@@ -1383,12 +1386,14 @@ class EelbrainPlotly2DViz:
                     # issues)
                     pos_key = (round(x_coords[i], 6), round(y_coords[i], 6))
 
-                    # If this position hasn't been seen, or current arrow has larger
-                    # magnitude
+                    # If this position hasn't been seen, or current source has larger
+                    # ACTIVITY (3D magnitude), select it.
+                    # This ensures the displayed arrow shows the maximum activity value
+                    # for that 2D position, matching the heatmap and hover display.
                     if (
                         pos_key not in position_to_max_idx
-                        or arrow_magnitudes[i]
-                        > arrow_magnitudes[position_to_max_idx[pos_key]]
+                        or active_activity[i]
+                        > active_activity[position_to_max_idx[pos_key]]
                     ):
                         position_to_max_idx[pos_key] = i
 
@@ -1400,10 +1405,18 @@ class EelbrainPlotly2DViz:
                     arrow_y = y_coords[selected_indices]
                     arrow_u = u_vectors[selected_indices]
                     arrow_v = v_vectors[selected_indices]
+                    # Get the actual activity (3D magnitude) for hover display
+                    arrow_activities = active_activity[selected_indices]
 
                     # Create all arrows using Plotly quiver plot (fastest method)
                     self._create_quiver_arrows(
-                        fig, arrow_x, arrow_y, arrow_u, arrow_v, arrow_scale
+                        fig,
+                        arrow_x,
+                        arrow_y,
+                        arrow_u,
+                        arrow_v,
+                        arrow_scale,
+                        activity_values=arrow_activities,
                     )
 
             # Highlight selected source if provided
@@ -1518,6 +1531,7 @@ class EelbrainPlotly2DViz:
         color: str = "black",
         width: int = 1,
         size: float = 0.8,
+        activity_values: Optional[np.ndarray] = None,
     ) -> None:
         """Create arrows using Plotly's figure_factory quiver plot.
 
@@ -1525,6 +1539,12 @@ class EelbrainPlotly2DViz:
         with built-in Plotly optimizations.
 
         Note: Arrow head size scales with arrow length (Plotly default behavior).
+
+        Parameters
+        ----------
+        activity_values
+            Optional array of activity values (3D magnitude) to display in hover.
+            If None, uses 2D projected magnitude.
         """
         if len(x_coords) == 0:
             return
@@ -1546,31 +1566,8 @@ class EelbrainPlotly2DViz:
             for trace in quiver_fig.data:
                 # Customize the trace
                 trace.showlegend = False
-                # Calculate magnitude for hover
-                magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
-
-                if hasattr(trace, "x") and trace.x is not None:
-                    n_points = len(trace.x)
-                    # Repeat each magnitude for all points of that arrow
-                    # Approximate: each arrow has ~7-14 points (shaft + head)
-                    points_per_arrow = (
-                        n_points // len(magnitudes) if len(magnitudes) > 0 else 1
-                    )
-                    customdata_expanded = np.repeat(magnitudes, points_per_arrow)
-                    # Pad or trim to exact length
-                    if len(customdata_expanded) < n_points:
-                        customdata_expanded = np.pad(
-                            customdata_expanded,
-                            (0, n_points - len(customdata_expanded)),
-                            mode="edge",
-                        )
-                    elif len(customdata_expanded) > n_points:
-                        customdata_expanded = customdata_expanded[:n_points]
-
-                    trace.customdata = customdata_expanded
-                    trace.hovertemplate = (
-                        "Vector<br>Magnitude: %{customdata:.3f}<extra></extra>"
-                    )
+                # Disable hover on arrows to show only heatmap hover
+                trace.hoverinfo = "skip"
 
                 fig.add_trace(trace)
 
@@ -1587,6 +1584,7 @@ class EelbrainPlotly2DViz:
                 color,
                 width,
                 size,
+                activity_values,
             )
 
     def _create_batch_arrows(
@@ -1600,12 +1598,19 @@ class EelbrainPlotly2DViz:
         color: str = "black",
         width: int = 1,
         size: float = 0.8,
+        activity_values: Optional[np.ndarray] = None,
     ) -> None:
         """Create arrows using annotation-based method (fallback for quiver).
 
         This is a simple, single-threaded implementation used as fallback
         when quiver plots fail. The bottleneck is in rendering (adding to figure),
         not in computation, so multi-threading doesn't help much.
+
+        Parameters
+        ----------
+        activity_values
+            Optional array of activity values (3D magnitude) to display in hover.
+            If None, uses 2D projected magnitude.
         """
 
         if len(x_coords) == 0:
@@ -1615,10 +1620,17 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Calculate magnitudes for hover info (vectorized)
-        magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
+        # Use activity values (3D magnitude) for hover if provided,
+        # otherwise calculate 2D projected magnitude
+        if activity_values is not None:
+            magnitudes = activity_values
+            hover_label = "Activity"
+        else:
+            magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
+            hover_label = "Vector magnitude"
 
         # Create annotation objects using simple list comprehension
+        # Note: No hovertext to avoid interfering with heatmap hover
         annotations_to_add = [
             dict(
                 x=float(x_ends[i]),
@@ -1635,10 +1647,7 @@ class EelbrainPlotly2DViz:
                 arrowsize=size,
                 arrowwidth=width,
                 arrowcolor=color,
-                hovertext=f"Vector magnitude: {magnitudes[i]:.3f}",
-                font=dict(size=1, color="rgba(0,0,0,0)"),
-                bgcolor="rgba(0,0,0,0)",
-                bordercolor="rgba(0,0,0,0)",
+                # No hovertext - show only heatmap hover
             )
             for i in range(len(x_coords))
         ]
