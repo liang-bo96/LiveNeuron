@@ -1499,6 +1499,11 @@ class EelbrainPlotly2DViz:
             height=height,
             margin=margin,
             showlegend=False,
+            hoverlabel=dict(
+                bgcolor="rgba(255, 255, 255, 0.7)",  # Semi-transparent white background
+                font=dict(color="black", size=10),
+                bordercolor="rgba(0, 0, 0, 0.2)",
+            ),
         )
 
         return fig
