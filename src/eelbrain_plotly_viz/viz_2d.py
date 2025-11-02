@@ -813,7 +813,15 @@ class EelbrainPlotly2DViz:
             hover_data: Optional[Dict[str, Any]],
             realtime_value: List[str],
         ) -> tuple[Any, Any, Any]:
-            """Handle user interaction with butterfly plot."""
+            """Handle user interaction with butterfly plot.
+
+            Uses hoverData with spikesnap="cursor" for precise time selection.
+            The spike follows the mouse cursor (not just data points), giving
+            direct access to mouse x-coordinate.
+
+            - Real-time mode: Updates on hover (dynamic)
+            - Normal mode: Updates on click (explicit selection)
+            """
             ctx = dash.callback_context
             if not ctx.triggered or self.time_values is None:
                 return dash.no_update, dash.no_update, dash.no_update
@@ -822,27 +830,28 @@ class EelbrainPlotly2DViz:
             is_realtime = realtime_value and "realtime" in realtime_value
 
             # Handle hover events in real-time mode
+            # With spikesnap="cursor", point["x"] is the actual mouse x-coordinate
             if "hoverData" in triggered_id and is_realtime:
                 if not hover_data:
                     return dash.no_update, dash.no_update, dash.no_update
 
                 try:
                     point = hover_data["points"][0]
-                    hover_time = point["x"]
+                    hover_time = point["x"]  # Direct mouse x-coordinate from cursor
                     time_idx = np.argmin(np.abs(self.time_values - hover_time))
                     # Do not update source index on hover to avoid frantic updates
                     return time_idx, dash.no_update, dash.no_update
                 except (KeyError, IndexError, TypeError):
                     return dash.no_update, dash.no_update, dash.no_update
 
-            # Handle click events
+            # Handle click events in normal mode
             if "clickData" in triggered_id:
                 if not click_data:
                     return dash.no_update, dash.no_update, dash.no_update
 
                 try:
                     point = click_data["points"][0]
-                    clicked_time = point["x"]
+                    clicked_time = point["x"]  # Time from clicked data point
                     time_idx = np.argmin(np.abs(self.time_values - clicked_time))
                     source_idx = point.get("customdata", None)
 
@@ -963,39 +972,6 @@ class EelbrainPlotly2DViz:
         y_min, y_max = data_to_plot.min(), data_to_plot.max()
         y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
 
-        # Add invisible clickable markers FIRST so they're behind other traces
-        # Create a DENSE grid of invisible markers to capture clicks precisely
-        # Use many more time points than actual data to ensure click precision
-        n_rows = 5  # Number of rows of markers to cover the plot vertically
-        y_positions = np.linspace(y_min - y_margin / 2, y_max + y_margin / 2, n_rows)
-
-        # Create a much denser time grid for precise click detection
-        # Use 10x more points than the actual data to ensure clicks are accurate
-        n_dense_time_points = max(500, len(self.time_values) * 10)
-        dense_time_grid = np.linspace(
-            self.time_values[0], self.time_values[-1], n_dense_time_points
-        )
-
-        # Create markers at multiple vertical positions using the dense time grid
-        x_grid = np.tile(dense_time_grid, n_rows)
-        y_grid = np.repeat(y_positions, len(dense_time_grid))
-
-        fig.add_trace(
-            go.Scatter(
-                x=x_grid,
-                y=y_grid,
-                mode="markers",
-                marker=dict(
-                    size=20,  # Smaller markers for denser grid
-                    color="rgba(0,0,0,0.001)",  # Nearly transparent (but not completely)
-                    line=dict(width=0),
-                ),
-                showlegend=False,
-                hovertemplate="Time: %{x:.3f}s<extra></extra>",  # Show time on hover
-                name="clickable_background",
-            )
-        )
-
         # Add individual source traces only if show_max_only is False
         if not self.show_max_only:
             # Plot subset of traces for performance
@@ -1017,6 +993,7 @@ class EelbrainPlotly2DViz:
                         showlegend=(idx < 3),
                         opacity=0.6,
                         line=dict(width=1),
+                        hoverinfo="skip",  # Don't show in hover
                     )
                 )
 
@@ -1030,6 +1007,7 @@ class EelbrainPlotly2DViz:
                 name="Mean Activity",
                 line=dict(color="red", width=3),
                 showlegend=True,
+                hovertemplate="Mean: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
 
@@ -1043,6 +1021,7 @@ class EelbrainPlotly2DViz:
                 name="Max Activity",
                 line=dict(color="darkblue", width=3),
                 showlegend=True,
+                hovertemplate="Max: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
 
@@ -1056,12 +1035,10 @@ class EelbrainPlotly2DViz:
         # Update title based on display mode
         if self.show_max_only:
             title_text = (
-                f"Source Activity Time Series - Mean & Max Only ({n_sources} sources)"
+                f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
             )
         else:
-            title_text = (
-                f"Source Activity Time Series (showing subset of {n_sources} sources)"
-            )
+            title_text = f"Source Activity Time Series (subset of {n_sources} sources)"
 
         # Adjust layout based on mode
         if self.is_jupyter_mode:
@@ -1075,9 +1052,15 @@ class EelbrainPlotly2DViz:
             title=title_text,
             xaxis_title="Time (s)",
             yaxis_title=f"Activity{unit_suffix}",
-            xaxis=dict(range=[self.time_values[0], self.time_values[-1]]),
+            xaxis=dict(
+                range=[self.time_values[0], self.time_values[-1]],
+                showspikes=True,  # Show vertical spike line at cursor
+                spikemode="across",  # Spike goes across the plot
+                spikesnap="cursor",  # Spike follows cursor, not data points
+            ),
             yaxis=dict(range=[y_min - y_margin, y_max + y_margin]),
-            hovermode="closest",
+            hovermode="x unified",  # Unified hover on x-axis
+            hoverdistance=-1,  # Allow hover without nearby data points
             height=height,
             margin=margin,
             showlegend=True,
