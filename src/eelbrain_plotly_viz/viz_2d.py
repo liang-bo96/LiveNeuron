@@ -442,7 +442,7 @@ class EelbrainPlotly2DViz:
             "horizontal": {
                 "butterfly_width": "35%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
-                "brain_margin": {"jupyter": "0.3%", "browser": "0.3%"},
+                "brain_margin": {"jupyter": "0px", "browser": "0px"},
                 "plot_height": {"jupyter": "300px", "browser": "350px"},
                 "butterfly_height": {"jupyter": "300px", "browser": "350px"},
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
@@ -472,9 +472,9 @@ class EelbrainPlotly2DViz:
             and self.display_mode in ["lzry", "lyrz"]
             and num_views == 4
         ):
-            config["brain_margin"] = "0.02%"  # Very small margin
+            config["brain_margin"] = "0px"  # No margin between brain plots
             config["butterfly_width"] = (
-                "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+                "25%"  # Smaller butterfly plot: 25% + 4*16% = ~90%
             )
 
         return config
@@ -1312,10 +1312,11 @@ class EelbrainPlotly2DViz:
                     colorbar=(
                         dict(
                             title="",
-                            thickness=15,  # Thinner colorbar
+                            thickness=12,  # Thinner colorbar for less space usage
                             len=0.7,  # Shorter colorbar (70% of plot height)
-                            x=1.02,  # Position slightly outside the plot area
+                            x=1.15,  # Position further outside to avoid squeezing brain plot
                             xanchor="left",  # Anchor to the left of the colorbar
+                            xpad=0,  # No padding between plot and colorbar
                         )
                         if show_colorbar
                         else None
@@ -1475,6 +1476,13 @@ class EelbrainPlotly2DViz:
         else:
             height = 450
             margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
+
+        # If colorbar is shown, increase right margin to prevent squeezing
+        if show_colorbar:
+            if self.is_jupyter_mode:
+                margin["r"] = 80  # Extra space for colorbar in Jupyter
+            else:
+                margin["r"] = 100  # Extra space for colorbar in browser
 
         # Get fixed axis ranges for this view to prevent size changes across time
         axis_ranges = self.view_ranges.get(view_name, {})
@@ -1908,7 +1916,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
-            display_mode="lyrz",
+            display_mode="lyr",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
