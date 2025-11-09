@@ -154,6 +154,10 @@ class EelbrainPlotly2DViz:
         # Calculate and store fixed axis ranges for each view to prevent size changes
         self._calculate_view_ranges()
 
+        # Unify view sizes to ensure all brain plots have consistent display size
+        # This is especially important in horizontal layout mode
+        self._unify_view_sizes_for_jupyter()
+
         # Calculate global colormap range across all time points for consistent visualization
         self._calculate_global_colormap_range()
 
@@ -482,7 +486,11 @@ class EelbrainPlotly2DViz:
     def _get_brain_width_for_views(
         self, num_views: int, layout_mode: str
     ) -> Dict[str, str]:
-        """Calculate brain view width based on number of views and layout mode."""
+        """Calculate brain view width based on number of views and layout mode.
+
+        For horizontal mode, we pre-allocate space for butterfly plot and colorbar,
+        then divide the remaining space equally among brain plots to ensure uniform size.
+        """
         if layout_mode == "vertical":
             # In vertical mode, views are arranged horizontally below butterfly plot
             if num_views == 1:
@@ -492,19 +500,26 @@ class EelbrainPlotly2DViz:
             else:  # 3 or more views
                 return {"jupyter": "30%", "browser": "32%"}
         else:  # horizontal mode
-            # In horizontal mode, views share space with butterfly plot
-            # Special case for 4-view modes (lzry, lyrz) - arrange all in one row
+            # Pre-allocate space for butterfly plot and colorbar
+            # Total available: 100%
+            # - Butterfly plot: 35%
+            # - Colorbar space: 8% (reserved for the rightmost plot's colorbar)
+            # - Remaining for brain plots: 100% - 35% - 8% = 57%
+
+            butterfly_width = 35  # Butterfly占35%
+            colorbar_space = 8  # Colorbar预留8%
+            available_for_brains = 100 - butterfly_width - colorbar_space  # 57%
+
+            # Special case for 4-view modes (lzry, lyrz)
             if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
-                return {
-                    "jupyter": "16%",
-                    "browser": "16%",
-                }  # 4 views: 25% + 4*16% + small margins = ~90%
-            elif num_views == 1:
-                return {"jupyter": "60%", "browser": "60%"}
-            elif num_views == 2:
-                return {"jupyter": "30%", "browser": "30%"}
-            else:  # 3 views (like lyr, lzr)
-                return {"jupyter": "20%", "browser": "20%"}
+                butterfly_width = 25  # 4视图模式下butterfly更小
+                available_for_brains = 100 - butterfly_width - colorbar_space  # 67%
+
+            # Divide remaining space equally among all brain plots
+            brain_width = available_for_brains / num_views
+            brain_width_str = f"{brain_width:.2f}%"
+
+            return {"jupyter": brain_width_str, "browser": brain_width_str}
 
     def _create_brain_view_containers(
         self,
@@ -682,6 +697,48 @@ class EelbrainPlotly2DViz:
             style={"width": "100%", "height": "100%", "padding": container_padding},
         )
 
+    def _create_horizontal_colorbar(self) -> go.Figure:
+        """Create a standalone horizontal colorbar figure."""
+        fig = go.Figure()
+
+        # Add invisible scatter trace just for the colorbar
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="markers",
+                marker=dict(
+                    colorscale=self.cmap,
+                    showscale=True,
+                    cmin=self.global_vmin,
+                    cmax=self.global_vmax,
+                    colorbar=dict(
+                        thickness=20,
+                        len=0.8,
+                        x=0.5,
+                        xanchor="center",
+                        y=0.5,
+                        yanchor="middle",
+                        orientation="h",
+                    ),
+                ),
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+
+        # Minimal layout - just show the colorbar
+        fig.update_layout(
+            height=80,
+            margin=dict(l=0, r=0, t=0, b=0),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+        )
+
+        return fig
+
     def _setup_horizontal_layout(
         self, initial_butterfly, initial_brain_plots, config
     ) -> None:
@@ -691,6 +748,9 @@ class EelbrainPlotly2DViz:
         brain_width = config["brain_width"]
         brain_margin = config["brain_margin"]
         container_padding = config["container_padding"]
+
+        # Create horizontal colorbar
+        colorbar_fig = self._create_horizontal_colorbar()
 
         self.app.layout = html.Div(
             [
@@ -734,7 +794,24 @@ class EelbrainPlotly2DViz:
                     + self._create_brain_view_containers_horizontal(
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
-                    style={"textAlign": "center"},
+                    style={"textAlign": "center", "marginBottom": "10px"},
+                ),
+                # Horizontal colorbar below brain plots
+                html.Div(
+                    [
+                        dcc.Graph(
+                            id="horizontal-colorbar",
+                            figure=colorbar_fig,
+                            style={"height": "80px"},
+                            config={"displayModeBar": False},
+                        )
+                    ],
+                    style={
+                        "width": "65%",
+                        "marginLeft": "35%",
+                        "marginTop": "10px",
+                        "textAlign": "center",
+                    },
                 ),
                 # Status indicator
                 html.Div(
@@ -1117,8 +1194,8 @@ class EelbrainPlotly2DViz:
 
             for i, view_name in enumerate(views):
                 try:
-                    # Only show colorbar on the last view
-                    show_colorbar = i == len(views) - 1
+                    # Temporarily hide colorbar to debug size consistency
+                    show_colorbar = False  # i == len(views) - 1
                     brain_fig = self._create_plotly_brain_projection(
                         view_name,
                         self.source_coords,
@@ -1470,19 +1547,16 @@ class EelbrainPlotly2DViz:
             )
 
         # Update layout based on mode
+        # Use consistent right margin for all plots to ensure uniform size
         if self.is_jupyter_mode:
             height = 250
-            margin = dict(l=30, r=30, t=30, b=30)  # Reduced margins for Jupyter
+            margin = dict(l=0, r=80, t=20, b=0)  # Consistent margins for tight layout
         else:
             height = 450
-            margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
+            margin = dict(l=0, r=0, t=30, b=0)  # Consistent margins for tight layout
 
-        # If colorbar is shown, increase right margin to prevent squeezing
-        if show_colorbar:
-            if self.is_jupyter_mode:
-                margin["r"] = 80  # Extra space for colorbar in Jupyter
-            else:
-                margin["r"] = 100  # Extra space for colorbar in browser
+        # Note: Right margin is the same for all plots (with or without colorbar)
+        # to ensure uniform brain plot sizes. Colorbar is positioned outside at x=1.15
 
         # Get fixed axis ranges for this view to prevent size changes across time
         axis_ranges = self.view_ranges.get(view_name, {})
@@ -1497,16 +1571,19 @@ class EelbrainPlotly2DViz:
                 showticklabels=False,
                 title="",
                 range=x_range,  # Fixed range to prevent size changes
+                domain=[0, 1],  # Use full width of plot area
             ),
             # Equal aspect ratio, hide labels
             yaxis=dict(
                 showticklabels=False,
                 title="",
                 range=y_range,  # Fixed range to prevent size changes
+                domain=[0, 1],  # Use full height of plot area
             ),
             height=height,
             margin=margin,
             showlegend=False,
+            # plot_bgcolor="#2b2b2b",  # Dark background for brain plots
             hoverlabel=dict(
                 bgcolor="rgba(255, 255, 255, 0.7)",  # Semi-transparent white background
                 font=dict(color="black", size=10),
@@ -1616,14 +1693,8 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Use activity values (3D magnitude) for hover if provided,
-        # otherwise calculate 2D projected magnitude
-        if activity_values is not None:
-            magnitudes = activity_values
-            hover_label = "Activity"
-        else:
-            magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
-            hover_label = "Vector magnitude"
+        # Note: activity_values parameter exists for API compatibility but is not used
+        # because annotations don't display hovertext (to avoid interfering with heatmap hover)
 
         # Create annotation objects using simple list comprehension
         # Note: No hovertext to avoid interfering with heatmap hover
@@ -1916,7 +1987,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
-            display_mode="lyr",
+            display_mode="lzry",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
