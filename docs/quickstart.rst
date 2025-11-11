@@ -13,35 +13,56 @@ Creating a Simple Visualization
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Create visualization with default settings
+   # Create visualization with built-in MNE sample data
    viz = EelbrainPlotly2DViz()
    
-   # Launch in browser
-   viz.show()
+   # Launch in browser (uses random port)
+   viz.run()
 
-Using Sample Data
-^^^^^^^^^^^^^^^^^
+The server will start on a random port. Check the console output for the exact URL.
 
-LiveNeuron includes sample data for quick testing:
+Using Custom Options
+^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz.sample_data import create_sample_brain_data
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Generate sample data
-   data = create_sample_brain_data()
+   # Customize visualization
+   viz = EelbrainPlotly2DViz(
+       y=None,                    # Use built-in sample data
+       region=None,               # Use full brain
+       cmap='Hot',                # Colormap (default: 'YlOrRd')
+       show_max_only=True,        # Show only mean and max in butterfly plot
+       arrow_threshold='auto'     # Auto threshold for arrows
+   )
    
-   # Create visualization
-   viz = EelbrainPlotly2DViz()
-   viz.show()
+   viz.run()
 
 Display Modes
 -------------
 
-LiveNeuron supports 17 different anatomical view configurations:
+LiveNeuron supports multiple anatomical view configurations:
 
-Single View Modes
-^^^^^^^^^^^^^^^^^
+Basic Views
+^^^^^^^^^^^
+
+.. code-block:: python
+
+   # Orthogonal views (sagittal + coronal + axial)
+   viz = EelbrainPlotly2DViz(display_mode="ortho")
+   
+   # Sagittal view only (X-axis)
+   viz = EelbrainPlotly2DViz(display_mode="x")
+   
+   # Coronal view only (Y-axis)
+   viz = EelbrainPlotly2DViz(display_mode="y")
+   
+   # Axial view only (Z-axis)
+   viz = EelbrainPlotly2DViz(display_mode="z")
+
+Hemisphere Views
+^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -51,30 +72,24 @@ Single View Modes
    # Right hemisphere only
    viz = EelbrainPlotly2DViz(display_mode="r")
    
-   # Sagittal view (X-axis)
-   viz = EelbrainPlotly2DViz(display_mode="x")
+   # Both hemispheres (left + right)
+   viz = EelbrainPlotly2DViz(display_mode="lr")
    
-   # Coronal view (Y-axis)
-   viz = EelbrainPlotly2DViz(display_mode="y")
-   
-   # Axial view (Z-axis)
-   viz = EelbrainPlotly2DViz(display_mode="z")
+   # Left + Coronal + Right (default, best for comparison)
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
 
 Multi-View Modes
 ^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # Orthogonal views (sagittal, coronal, axial)
-   viz = EelbrainPlotly2DViz(display_mode="ortho")
+   # Left + Axial + Right
+   viz = EelbrainPlotly2DViz(display_mode="lzr")
    
-   # Left and right hemispheres
-   viz = EelbrainPlotly2DViz(display_mode="lr")
+   # Four views: Left + Coronal + Right + Axial
+   viz = EelbrainPlotly2DViz(display_mode="lyrz")
    
-   # Left, coronal, right
-   viz = EelbrainPlotly2DViz(display_mode="lyr")
-   
-   # Four views: left, axial, sagittal, right
+   # Four views: Left + Axial + Right + Coronal
    viz = EelbrainPlotly2DViz(display_mode="lzry")
 
 Layout Modes
@@ -89,6 +104,7 @@ Vertical Layout (Default)
        display_mode="lyr",
        layout_mode="vertical"  # Default
    )
+   viz.run()
 
 Horizontal Layout
 ^^^^^^^^^^^^^^^^^
@@ -101,6 +117,7 @@ Better for wide screens:
        display_mode="lyr",
        layout_mode="horizontal"
    )
+   viz.run()
 
 Customizing Arrows
 ------------------
@@ -119,29 +136,38 @@ Adjusting Arrow Length
    # Longer arrows (double length)
    viz = EelbrainPlotly2DViz(arrow_scale=2.0)
 
-Filtering Small Arrows
-^^^^^^^^^^^^^^^^^^^^^^^
+Filtering Arrows by Magnitude
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # Show only arrows with magnitude > 0.1
-   viz = EelbrainPlotly2DViz(arrow_threshold=0.1)
-   
    # Show all arrows
-   viz = EelbrainPlotly2DViz(arrow_threshold=0.0)
+   viz = EelbrainPlotly2DViz(arrow_threshold=None)
    
-   # Show only strong arrows
-   viz = EelbrainPlotly2DViz(arrow_threshold=0.5)
+   # Auto threshold (10% of max magnitude)
+   viz = EelbrainPlotly2DViz(arrow_threshold='auto')
+   
+   # Custom threshold
+   viz = EelbrainPlotly2DViz(arrow_threshold=0.1)
 
 Customizing Colors
 ------------------
 
 .. code-block:: python
 
-   # Use different colormaps
-   viz = EelbrainPlotly2DViz(cmap="Reds")      # Red color scheme
-   viz = EelbrainPlotly2DViz(cmap="Blues")     # Blue color scheme
-   viz = EelbrainPlotly2DViz(cmap="Viridis")   # Viridis color scheme
+   # Use different built-in colormaps
+   viz = EelbrainPlotly2DViz(cmap='Hot')        # Hot (red/yellow)
+   viz = EelbrainPlotly2DViz(cmap='YlOrRd')     # Yellow-Orange-Red (default)
+   viz = EelbrainPlotly2DViz(cmap='Viridis')    # Viridis (perceptually uniform)
+   viz = EelbrainPlotly2DViz(cmap='OrRd')       # Orange-Red
+
+   # Custom colormap
+   custom_cmap = [
+       [0, 'rgba(255,255,0,0.5)'],    # Yellow with 50% transparency
+       [0.5, 'rgba(255,165,0,0.8)'],  # Orange with 80% transparency
+       [1, 'rgba(255,0,0,1.0)']       # Red with full opacity
+   ]
+   viz = EelbrainPlotly2DViz(cmap=custom_cmap)
 
 Using in Jupyter Notebook
 --------------------------
@@ -156,30 +182,95 @@ Using in Jupyter Notebook
        layout_mode="horizontal"
    )
    
-   # Display in notebook
-   viz.show_jupyter()
+   # Display inline in notebook
+   viz.show_in_jupyter(width=1200, height=900)
+
+Alternative: Use run() method with mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   # Inline mode
+   viz.run(mode='inline', width=1200, height=900)
+   
+   # JupyterLab tab mode
+   viz.run(mode='jupyterlab', width=1400, height=1000)
+   
+   # External browser (default)
+   viz.run(mode='external')
+
+Working with Eelbrain Data
+---------------------------
+
+.. code-block:: python
+
+   from eelbrain import datasets
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Load Eelbrain NDVar data
+   data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+   y = data_ds['src']  # NDVar format
+   
+   # Visualize
+   viz = EelbrainPlotly2DViz(y=y, cmap='Hot')
+   viz.run()
+
+Using Brain Region Filtering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   # Apply parcellation to filter specific brain regions
+   viz = EelbrainPlotly2DViz(
+       y=None,                 # Built-in sample data
+       region='aparc+aseg',    # Apply aparc+aseg parcellation
+       cmap='Viridis'
+   )
+   viz.run()
+
+Exporting Images
+----------------
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Create visualization
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
+   
+   # Export all views as PNG
+   result = viz.export_images(
+       output_dir="./my_brain_plots",
+       time_idx=30,
+       format="png"
+   )
+   
+   if result["status"] == "success":
+       print("Exported files:")
+       for plot_type, filepath in result["files"].items():
+           print(f"  {plot_type}: {filepath}")
+
+Custom Server Configuration
+----------------------------
+
+.. code-block:: python
+
+   # Run on custom port
+   viz.run(port=8888, debug=True)
+   
+   # Run on random port (default)
+   viz.run()  # Check console for URL
 
 Interactive Features
 --------------------
 
-Hover to Explore
-^^^^^^^^^^^^^^^^
+Once running, you can:
 
-* Hover over brain plots to see activity values
-* Hover over butterfly plot to see max/min activity
-
-Click to Navigate
-^^^^^^^^^^^^^^^^^
-
-* Click on the butterfly plot's time axis to jump to specific time points
-* The brain views update automatically to show activity at that time
-
-Zoom and Pan
-^^^^^^^^^^^^
-
-* Use mouse wheel to zoom
-* Click and drag to pan
-* Double-click to reset view
+* **Hover** over brain plots to see activity values
+* **Hover** over butterfly plot to see max/min activity at each time point
+* **Click** on butterfly plot to navigate to specific time points
+* **Zoom and pan** on all plots using mouse controls
+* **Double-click** to reset zoom
 
 Next Steps
 ----------
@@ -187,4 +278,3 @@ Next Steps
 * Read the :doc:`user_guide` for detailed information
 * Check :doc:`examples` for more use cases
 * Explore the :doc:`api_reference` for all available options
-

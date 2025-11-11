@@ -14,19 +14,26 @@ LiveNeuron requires:
 * SciPy >= 1.7.0
 * Eelbrain (optional, for full functionality)
 
-Install from PyPI
------------------
+Install from GitHub
+-------------------
 
-The simplest way to install LiveNeuron is via pip:
+Install directly from GitHub:
 
 .. code-block:: bash
 
-   pip install LiveNeuron
+   # Basic installation
+   pip install git+https://github.com/liang-bo96/LiveNeuron.git
 
-Install from Source
--------------------
+   # With optional Eelbrain support
+   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[eelbrain]"
 
-To get the latest development version:
+   # Development installation
+   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[dev]"
+
+Local Development
+-----------------
+
+To install from source for development:
 
 .. code-block:: bash
 

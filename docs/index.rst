@@ -14,13 +14,14 @@ Welcome to LiveNeuron's documentation!
 Key Features
 ------------
 
-* **Interactive Visualization**: Real-time exploration with hover, click, and zoom
-* **Multiple Display Modes**: 17 different anatomical view configurations (ortho, l, r, lr, lyr, lzr, lyrz, etc.)
-* **Dual Layout Modes**: Vertical (default) or horizontal layout for different screen sizes
-* **Smart Performance**: Optimized rendering with binning and deduplication
-* **Customizable Arrows**: Adjustable arrow scale and threshold for vector field visualization
-* **Unified Sizing**: Consistent brain plot dimensions across all views
-* **Professional UI**: Dark-themed plots with transparent hover labels
+* **Interactive 2D brain projections** - axial, sagittal, coronal, and hemisphere views
+* **Butterfly plots** for time series visualization
+* **453x faster arrow rendering** using optimized batch techniques
+* **Real-time controls** for time navigation and interaction
+* **Flexible data input** - supports Eelbrain NDVar, numpy arrays, and built-in MNE sample data
+* **Jupyter notebook support** for interactive development
+* **Customizable colormaps** and visualization options
+* **Export capabilities** for static images
 
 Quick Start
 -----------
@@ -30,7 +31,8 @@ Installation
 
 .. code-block:: bash
 
-   pip install LiveNeuron
+   # Install from GitHub
+   pip install git+https://github.com/liang-bo96/LiveNeuron.git
 
 Basic Usage
 ^^^^^^^^^^^
@@ -39,20 +41,14 @@ Basic Usage
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Create visualization with sample data
-   viz = EelbrainPlotly2DViz(
-       display_mode="lyr",      # Left, Y-axis (coronal), Right views
-       layout_mode="horizontal", # Horizontal layout
-       arrow_scale=1.0,         # Default arrow length
-       arrow_threshold=0.1,     # Filter small arrows
-       cmap="Reds"             # Colormap
-   )
+   # Create visualization with built-in sample data
+   viz = EelbrainPlotly2DViz()
    
-   # Launch in browser
-   viz.show()
+   # Launch in browser (random port)
+   viz.run()
 
    # Or use in Jupyter
-   viz.show_jupyter()
+   viz.show_in_jupyter(width=1200, height=900)
 
 .. toctree::
    :maxdepth: 2

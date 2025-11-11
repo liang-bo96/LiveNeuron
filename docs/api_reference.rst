@@ -11,8 +11,8 @@ Main Class
    :undoc-members:
    :show-inheritance:
 
-Constructor Parameters
-----------------------
+Constructor
+-----------
 
 EelbrainPlotly2DViz
 ^^^^^^^^^^^^^^^^^^^
@@ -20,163 +20,255 @@ EelbrainPlotly2DViz
 .. code-block:: python
 
    EelbrainPlotly2DViz(
-       display_mode: str = "ortho",
-       layout_mode: str = "vertical",
-       arrow_scale: float = 1.0,
-       arrow_threshold: float = 0.0,
-       cmap: str = "Reds",
-       is_jupyter_mode: bool = False,
-       bin_size: int = 200
+       y=None,
+       region=None,
+       cmap='YlOrRd',
+       show_max_only=False,
+       arrow_threshold=None,
+       arrow_scale=1.0,
+       realtime=False,
+       layout_mode='vertical',
+       display_mode='lyr'
    )
 
 **Parameters:**
 
-* **display_mode** (*str*, default="ortho")
+* **y** (*NDVar or None*, default=None)
   
-  Anatomical view configuration. Options:
+  Data to plot with dimensions ``([case,] time, source[, space])``.
   
-  * Single views: ``"l"``, ``"r"``, ``"x"``, ``"y"``, ``"z"``
-  * Multi views: ``"lr"``, ``"lyr"``, ``"lzr"``, ``"xyz"``, ``"ortho"``
-  * Four views: ``"lyrz"``, ``"lzry"``, and all permutations
+  * If ``y`` has a case dimension, the mean is plotted
+  * If ``y`` has a space dimension, the norm is plotted
+  * If None, uses MNE sample data for demonstration
   
-* **layout_mode** (*str*, default="vertical")
+* **region** (*str or None*, default=None)
   
-  Layout orientation:
+  Brain region to load using aparc+aseg parcellation.
   
-  * ``"vertical"``: Butterfly on top, brain views below
-  * ``"horizontal"``: Butterfly on left, brain views on right
+  * If None, loads all regions
+  * Only used when ``y`` is None
+  * Examples: ``'aparc+aseg'``, ``'aseg'``
+  
+* **cmap** (*str or list*, default='YlOrRd')
+  
+  Plotly colorscale for heatmaps.
+  
+  * Built-in names: ``'YlOrRd'``, ``'Hot'``, ``'Viridis'``, ``'OrRd'``, ``'Reds'``
+  * Custom colorscale: ``[[0, 'white'], [1, 'red']]``
+  * See https://plotly.com/python/builtin-colorscales/
+  
+* **show_max_only** (*bool*, default=False)
+  
+  If True, butterfly plot shows only mean and max traces.
+  If False, shows individual source traces, mean, and max.
+  
+* **arrow_threshold** (*float, str, or None*, default=None)
+  
+  Threshold for displaying arrows in brain projections.
+  
+  * ``None``: Show all arrows
+  * ``'auto'``: Use 10% of maximum magnitude as threshold
+  * *float*: Custom threshold value
   
 * **arrow_scale** (*float*, default=1.0)
   
-  Relative scale factor for arrow length. 
+  Relative scale factor for arrow length in brain projections.
   
-  * ``1.0`` = default length
-  * ``< 1.0`` = shorter arrows
-  * ``> 1.0`` = longer arrows
+  * ``1.0``: Default length (good balance)
+  * ``< 1.0``: Shorter arrows (e.g., 0.5 for half length)
+  * ``> 1.0``: Longer arrows (e.g., 2.0 for double length)
   * Typical range: 0.5 to 2.0
   
-* **arrow_threshold** (*float*, default=0.0)
+* **realtime** (*bool*, default=False)
   
-  Minimum vector magnitude to display arrows.
+  If True, enables real-time mode by default.
+  Internal parameter for future features.
   
-  * ``0.0`` = show all arrows
-  * ``> 0.0`` = only show arrows with magnitude above threshold
-  * Useful for reducing visual clutter in dense vector fields
+* **layout_mode** (*str*, default='vertical')
   
-* **cmap** (*str*, default="Reds")
+  Layout arrangement mode. Options:
   
-  Plotly colormap name for heatmap visualization.
+  * ``'vertical'``: Butterfly plot on top, brain views below (default)
+  * ``'horizontal'``: Butterfly plot on left, brain views on right
   
-  * Sequential: ``"Reds"``, ``"Blues"``, ``"Greens"``, ``"Viridis"``
-  * Diverging: ``"RdBu"``, ``"RdYlBu"``, ``"Spectral"``
+* **display_mode** (*str*, default='lyr')
   
-* **is_jupyter_mode** (*bool*, default=False)
+  Anatomical view mode for brain projections. Options:
   
-  Internal flag for Jupyter notebook mode. 
-  Automatically set by ``show_jupyter()`` method.
+  **Single views:**
   
-* **bin_size** (*int*, default=200)
+  * ``'x'``: Sagittal view (left-right)
+  * ``'y'``: Coronal view (front-back)
+  * ``'z'``: Axial view (top-bottom)
+  * ``'l'``: Left hemisphere view
+  * ``'r'``: Right hemisphere view
   
-  Resolution of 2D projection grid (pixels).
+  **Multi views:**
   
-  * Higher values = more detail but slower rendering
-  * Lower values = faster but less detail
-  * Typical range: 100 to 300
+  * ``'ortho'``: Orthogonal views (x + y + z)
+  * ``'lr'``: Both hemispheres (left + right)
+  * ``'lyr'``: Left + Coronal + Right (default, best for comparison)
+  * ``'lzr'``: Left + Axial + Right
+  * ``'xz'``: Sagittal + Axial
+  * ``'yx'``: Coronal + Sagittal
+  * ``'yz'``: Coronal + Axial
+  
+  **Four-view modes:**
+  
+  * ``'lyrz'``: Left + Coronal + Right + Axial
+  * ``'lzry'``: Left + Axial + Right + Coronal
 
 Methods
 -------
 
-show()
-^^^^^^
+run()
+^^^^^
 
-Launch the visualization in a web browser using Dash server.
+Start the interactive Dash application.
 
 .. code-block:: python
 
-   viz.show()
+   viz.run(
+       port=None,
+       debug=True,
+       mode='external',
+       width=1200,
+       height=900
+   )
+
+**Parameters:**
+
+* **port** (*int or None*): Port number for server. If None, uses random port.
+* **debug** (*bool*): Enable debug mode (default: True).
+* **mode** (*str*): Display mode - ``'external'``, ``'inline'``, or ``'jupyterlab'``.
+* **width** (*int*): Display width in pixels (default: 1200).
+* **height** (*int*): Display height in pixels (default: 900).
 
 **Returns:**
   None
 
-**Notes:**
-  * Opens browser automatically
-  * Runs local Dash server on http://127.0.0.1:8050
-  * Press Ctrl+C to stop server
-
-show_jupyter()
-^^^^^^^^^^^^^^
-
-Display the visualization inline in a Jupyter notebook.
+**Example:**
 
 .. code-block:: python
 
-   viz.show_jupyter()
+   # External browser (default)
+   viz.run()
+   
+   # Custom port
+   viz.run(port=8888)
+   
+   # Jupyter inline
+   viz.run(mode='inline', width=1200, height=900)
+
+show_in_jupyter()
+^^^^^^^^^^^^^^^^^
+
+Display the visualization inline in Jupyter notebooks.
+
+.. code-block:: python
+
+   viz.show_in_jupyter(
+       width=1200,
+       height=900,
+       debug=False
+   )
+
+**Parameters:**
+
+* **width** (*int*): Display width in pixels (default: 1200).
+* **height** (*int*): Display height in pixels (default: 900).
+* **debug** (*bool*): Enable debug mode (default: False).
 
 **Returns:**
-  JupyterDash display object
+  None
 
-**Notes:**
-  * Automatically sets ``is_jupyter_mode=True``
-  * Adjusts layout for notebook display
-  * Interactive features work the same as browser mode
+**Example:**
 
-Private Methods
----------------
+.. code-block:: python
 
-These methods are used internally and not typically called directly.
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
+   viz.show_in_jupyter(width=1400, height=1000)
 
-_parse_display_mode()
-^^^^^^^^^^^^^^^^^^^^^
+export_images()
+^^^^^^^^^^^^^^^
 
-Parse display mode string into list of views.
+Export current plots as image files.
 
-_calculate_view_ranges()
-^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: python
 
-Calculate fixed axis ranges for consistent view sizing.
+   viz.export_images(
+       output_dir='./images',
+       time_idx=None,
+       format='png'
+   )
 
-_unify_view_sizes_for_jupyter()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Parameters:**
 
-Ensure all brain plots have consistent dimensions.
+* **output_dir** (*str*): Directory to save image files (default: "./images").
+* **time_idx** (*int or None*): Time index to export. If None, uses 0.
+* **format** (*str*): Image format - ``'png'``, ``'jpg'``, ``'svg'``, or ``'pdf'`` (default: 'png').
 
-_create_plotly_butterfly()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Returns:**
+  *dict*: Dictionary with keys:
+  
+  * ``'status'``: ``'success'`` or ``'error'``
+  * ``'files'``: Dictionary mapping plot types to file paths
+  * ``'message'``: Status message
+
+**Example:**
+
+.. code-block:: python
+
+   result = viz.export_images(
+       output_dir="./my_plots",
+       time_idx=30,
+       format="png"
+   )
+   
+   if result["status"] == "success":
+       for plot_type, filepath in result["files"].items():
+           print(f"{plot_type}: {filepath}")
+
+create_2d_brain_projections_plotly()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Generate 2D brain projection figures for a specific time point.
+
+.. code-block:: python
+
+   viz.create_2d_brain_projections_plotly(
+       time_idx,
+       source_idx=None
+   )
+
+**Parameters:**
+
+* **time_idx** (*int*): Time index to visualize.
+* **source_idx** (*int or None*): Optional source index for highlighting.
+
+**Returns:**
+  *dict*: Dictionary mapping view names to Plotly figures.
+
+create_butterfly_plot()
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Create the butterfly plot showing activity over time.
 
-_create_plotly_brain_projection()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: python
 
-Create 2D brain projection heatmap with optional arrows.
+   viz.create_butterfly_plot(
+       selected_time_idx=0
+   )
 
-_create_quiver_arrows()
-^^^^^^^^^^^^^^^^^^^^^^^^
+**Parameters:**
 
-Create vector field arrows using Plotly's figure factory.
+* **selected_time_idx** (*int*): Time index to highlight (default: 0).
 
-_create_batch_arrows()
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Create arrow annotations for fallback rendering.
-
-_create_horizontal_colorbar()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Create standalone horizontal colorbar figure.
-
-_generate_initial_plots()
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Generate initial brain plots for all views.
+**Returns:**
+  *plotly.graph_objects.Figure*: Butterfly plot figure.
 
 Sample Data Module
 ------------------
-
-.. automodule:: eelbrain_plotly_viz.sample_data
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 create_sample_brain_data()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -185,41 +277,54 @@ Generate sample brain data for testing and demonstration.
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz.sample_data import create_sample_brain_data
+   from eelbrain_plotly_viz import create_sample_brain_data
    
-   data = create_sample_brain_data()
+   data_dict = create_sample_brain_data(
+       n_sources=200,
+       n_times=50,
+       has_vector_data=True,
+       random_seed=42
+   )
+
+**Parameters:**
+
+* **n_sources** (*int*): Number of brain sources (default: 200).
+* **n_times** (*int*): Number of time points (default: 50).
+* **has_vector_data** (*bool*): Generate vector data if True (default: True).
+* **random_seed** (*int*): Random seed for reproducibility (default: 42).
 
 **Returns:**
-  * Sample brain data object compatible with EelbrainPlotly2DViz
+  *dict*: Dictionary with keys:
+  
+  * ``'data'``: Brain activity data array
+  * ``'coords'``: Source coordinates
+  * ``'times'``: Time values
 
-**Notes:**
-  * Generates synthetic data with realistic spatial and temporal patterns
-  * Includes both scalar activity and vector field data
-  * Useful for testing and learning the library
+**Note:** Direct dictionary input is not supported in current implementation. Use built-in MNE sample data or Eelbrain NDVar instead.
 
-Type Hints
-----------
+Data Format
+-----------
 
-The library uses Python type hints for better IDE support and code quality.
+Input Data Expectations
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Example with type hints:
+**Vector Data** (with direction and magnitude):
 
-.. code-block:: python
+* Eelbrain NDVar with dimensions: ``([case,] time, source, space)``
+* MNE sample data: Built-in volumetric source with 3D vectors
+* Space dimension: 3D components (X, Y, Z)
 
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   from typing import Optional
-   
-   def create_visualization(
-       mode: str = "ortho",
-       layout: str = "vertical",
-       scale: float = 1.0
-   ) -> EelbrainPlotly2DViz:
-       """Create a new visualization with specified parameters."""
-       return EelbrainPlotly2DViz(
-           display_mode=mode,
-           layout_mode=layout,
-           arrow_scale=scale
-       )
+**Scalar Data** (magnitude only):
+
+* Eelbrain NDVar with dimensions: ``([case,] time, source)``
+* Single value per source at each time point
+
+**Built-in Sample Data:**
+
+* 1589 sources in volumetric source space
+* 76 time points (-100ms to 400ms)
+* Vector data (3D current dipoles)
+* Optional brain region filtering
 
 Exceptions
 ----------
@@ -227,9 +332,9 @@ Exceptions
 The library may raise the following exceptions:
 
 **ValueError**
-  * Invalid display_mode string
-  * Invalid layout_mode (not "vertical" or "horizontal")
-  * Invalid parameter ranges (e.g., negative arrow_scale)
+  * Invalid ``display_mode`` string
+  * Invalid ``layout_mode`` (not "vertical" or "horizontal")
+  * Invalid parameter values
 
 **ImportError**
   * Missing required dependencies
@@ -249,7 +354,23 @@ Example error handling:
        print(f"Invalid display mode: {e}")
    
    try:
-       viz.show()
+       viz.run()
    except RuntimeError as e:
        print(f"Visualization error: {e}")
 
+Type Hints
+----------
+
+The library uses Python type hints for better IDE support:
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+   from typing import Optional
+   from eelbrain import NDVar
+   
+   def create_viz(
+       data: Optional[NDVar] = None,
+       mode: str = "lyr"
+   ) -> EelbrainPlotly2DViz:
+       return EelbrainPlotly2DViz(y=data, display_mode=mode)

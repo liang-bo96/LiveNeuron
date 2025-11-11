@@ -1,7 +1,7 @@
 Examples
 ========
 
-This page provides practical examples of using LiveNeuron for various visualization tasks.
+This page provides practical, working examples based on the actual LiveNeuron API.
 
 Basic Examples
 --------------
@@ -12,14 +12,12 @@ Example 1: Quick Start with Sample Data
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   from eelbrain_plotly_viz.sample_data import create_sample_brain_data
 
-   # Generate sample data
-   data = create_sample_brain_data()
-   
-   # Create basic visualization
+   # Create basic visualization with built-in MNE sample data
    viz = EelbrainPlotly2DViz()
-   viz.show()
+   
+   # Run interactive dashboard (random port)
+   viz.run()  # Check console output for the URL
 
 Example 2: Custom Display Mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,9 +26,9 @@ Example 2: Custom Display Mode
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Show left and right hemispheres only
-   viz = EelbrainPlotly2DViz(display_mode="lr")
-   viz.show()
+   # Show left hemisphere, coronal view, and right hemisphere
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
+   viz.run()
 
 Example 3: Horizontal Layout
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -44,7 +42,7 @@ Example 3: Horizontal Layout
        display_mode="lyr",
        layout_mode="horizontal"
    )
-   viz.show()
+   viz.run()
 
 Advanced Examples
 -----------------
@@ -59,27 +57,26 @@ Example 4: Custom Arrow Visualization
    # Fine-tune arrow display
    viz = EelbrainPlotly2DViz(
        display_mode="lyr",
-       arrow_scale=1.5,        # 50% longer arrows
-       arrow_threshold=0.2,    # Only show significant arrows
-       cmap="Viridis"         # Use perceptually uniform colormap
+       arrow_scale=1.5,           # 50% longer arrows
+       arrow_threshold='auto',     # Auto threshold (10% of max)
+       cmap='Hot'                  # Hot colormap
    )
-   viz.show()
+   viz.run()
 
-Example 5: Dense Vector Field Visualization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example 5: Simplified Butterfly Plot
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # For datasets with many small vectors
+   # Show only mean and max in butterfly plot
    viz = EelbrainPlotly2DViz(
        display_mode="ortho",
-       arrow_scale=0.7,        # Shorter arrows to reduce overlap
-       arrow_threshold=0.3,    # Filter out weak vectors
-       cmap="Reds"
+       show_max_only=True,        # Hide individual traces
+       cmap='Viridis'
    )
-   viz.show()
+   viz.run()
 
 Example 6: Four-View Layout
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,12 +87,12 @@ Example 6: Four-View Layout
 
    # Comprehensive view with four perspectives
    viz = EelbrainPlotly2DViz(
-       display_mode="lyrz",      # Left, Y-axis, Right, Z-axis
-       layout_mode="horizontal", # Better for 4 views
+       display_mode="lyrz",       # Left, Coronal, Right, Axial
+       layout_mode="horizontal",   # Better for 4 views
        arrow_scale=1.0,
-       cmap="Blues"
+       cmap='YlOrRd'
    )
-   viz.show()
+   viz.run()
 
 Jupyter Notebook Examples
 --------------------------
@@ -112,9 +109,24 @@ Example 7: Basic Jupyter Usage
        display_mode="lyr",
        layout_mode="horizontal"
    )
-   viz.show_jupyter()
+   viz.show_in_jupyter(width=1200, height=900)
 
-Example 8: Multiple Visualizations in Notebook
+Example 8: Jupyter with run() Method
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   viz = EelbrainPlotly2DViz(display_mode="lr")
+   
+   # Inline mode
+   viz.run(mode='inline', width=1200, height=900)
+   
+   # Or JupyterLab tab mode
+   # viz.run(mode='jupyterlab', width=1400, height=1000)
+
+Example 9: Multiple Visualizations in Notebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
@@ -130,95 +142,217 @@ Example 8: Multiple Visualizations in Notebook
            display_mode=mode,
            layout_mode="horizontal"
        )
-       viz.show_jupyter()
+       viz.show_in_jupyter(width=1000, height=600)
 
-Research Examples
------------------
+Working with Eelbrain Data
+---------------------------
 
-Example 9: Time Series Analysis
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example 10: Using Eelbrain NDVar
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
+   from eelbrain import datasets
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Focus on temporal dynamics
-   viz = EelbrainPlotly2DViz(
-       display_mode="lr",        # Focus on hemispheres
-       layout_mode="vertical",   # Better for time series focus
-       arrow_scale=1.2,
-       arrow_threshold=0.15,
-       cmap="RdBu"              # Diverging colormap for activity changes
-   )
-   viz.show()
+   # Load Eelbrain data
+   data_ds = datasets.get_mne_sample(src='vol', ori='vector')
+   y = data_ds['src']  # NDVar format
    
-   # Users can click on butterfly plot to explore specific time points
+   # Visualize
+   viz = EelbrainPlotly2DViz(y=y, cmap='Hot')
+   viz.run()
 
-Example 10: Spatial Pattern Analysis
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example 11: Brain Region Filtering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Emphasize spatial patterns
+   # Apply parcellation to filter specific regions
    viz = EelbrainPlotly2DViz(
-       display_mode="ortho",     # Three orthogonal views
-       layout_mode="horizontal", # Better spatial layout
-       arrow_scale=1.0,
-       arrow_threshold=0.25,     # Show only strong patterns
-       cmap="Viridis"
+       y=None,                    # Use built-in sample data
+       region='aparc+aseg',       # Apply aparc+aseg parcellation
+       cmap='Viridis',
+       show_max_only=True
    )
-   viz.show()
+   viz.run()
 
-Example 11: Comparative Analysis
+Example 12: Custom Colormap with Region
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Custom colormap with parcellation
+   custom_cmap = [
+       [0, 'rgba(255,255,0,0.5)'],    # Yellow with 50% transparency
+       [0.5, 'rgba(255,165,0,0.8)'],  # Orange with 80% transparency
+       [1, 'rgba(255,0,0,1.0)']       # Red with full opacity
+   ]
+   
+   viz = EelbrainPlotly2DViz(
+       y=None,
+       region='aparc+aseg',
+       cmap=custom_cmap,
+       show_max_only=False,
+       arrow_threshold=0.1
+   )
+   viz.run()
+
+Export Examples
+---------------
+
+Example 13: Export Static Images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Create visualizations for comparison
-   conditions = ["baseline", "stimulus", "response"]
+   # Create visualization
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
    
-   for condition in conditions:
-       # Load data for each condition
-       # data = load_condition_data(condition)
-       
-       viz = EelbrainPlotly2DViz(
-           display_mode="lyr",
-           layout_mode="horizontal",
-           arrow_scale=1.0,
-           cmap="Reds"
+   # Export all views as PNG images
+   result = viz.export_images(
+       output_dir="./my_brain_plots",
+       time_idx=30,
+       format="png"
+   )
+   
+   if result["status"] == "success":
+       print("Exported files:")
+       for plot_type, filepath in result["files"].items():
+           print(f"  {plot_type}: {filepath}")
+   else:
+       print(f"Export failed: {result['message']}")
+
+Example 14: Export Different Formats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   viz = EelbrainPlotly2DViz(display_mode="ortho", cmap='Hot')
+   
+   # Export as different formats
+   for fmt in ['png', 'jpg', 'svg', 'pdf']:
+       result = viz.export_images(
+           output_dir=f"./output_{fmt}",
+           time_idx=20,
+           format=fmt
        )
-       viz.show()  # Each opens in a new browser tab
+       print(f"{fmt.upper()}: {result['status']}")
 
-Customization Examples
-----------------------
+Server Configuration Examples
+------------------------------
 
-Example 12: Custom Colormap
+Example 15: Custom Port
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
+   
+   # Run on specific port
+   viz.run(port=8888, debug=True)
+
+Example 16: Production Mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Try different colormaps for different purposes
-   colormaps = {
-       "activity": "Reds",      # For activity magnitude
-       "change": "RdBu",        # For bidirectional changes
-       "continuous": "Viridis"  # For continuous data
+   viz = EelbrainPlotly2DViz(
+       display_mode="lyr",
+       layout_mode="horizontal"
+   )
+   
+   # Run without debug mode (for production)
+   viz.run(port=8050, debug=False)
+
+Display Mode Examples
+---------------------
+
+Example 17: All Single View Modes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Demonstrate all single view modes
+   single_views = {
+       'x': 'Sagittal view (left-right)',
+       'y': 'Coronal view (front-back)',
+       'z': 'Axial view (top-bottom)',
+       'l': 'Left hemisphere',
+       'r': 'Right hemisphere'
    }
    
-   for purpose, cmap in colormaps.items():
-       print(f"{purpose}: {cmap}")
-       viz = EelbrainPlotly2DViz(
-           display_mode="lyr",
-           cmap=cmap
-       )
-       viz.show_jupyter()
+   for mode, description in single_views.items():
+       print(f"\n{mode}: {description}")
+       viz = EelbrainPlotly2DViz(display_mode=mode)
+       viz.show_in_jupyter(width=800, height=600)
 
-Example 13: Progressive Arrow Filtering
+Example 18: All Multi-View Modes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Demonstrate multi-view modes
+   multi_views = {
+       'ortho': 'Orthogonal views (x+y+z)',
+       'lr': 'Both hemispheres',
+       'lyr': 'Left + Coronal + Right',
+       'lzr': 'Left + Axial + Right',
+       'xz': 'Sagittal + Axial',
+       'yx': 'Coronal + Sagittal',
+       'yz': 'Coronal + Axial'
+   }
+   
+   for mode, description in multi_views.items():
+       print(f"\n{mode}: {description}")
+       viz = EelbrainPlotly2DViz(
+           display_mode=mode,
+           layout_mode="horizontal"
+       )
+       viz.show_in_jupyter(width=1200, height=700)
+
+Example 19: Four-View Modes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+   # Four-view comprehensive layouts
+   four_views = {
+       'lyrz': 'Left + Coronal + Right + Axial',
+       'lzry': 'Left + Axial + Right + Coronal'
+   }
+   
+   for mode, description in four_views.items():
+       print(f"\n{mode}: {description}")
+       viz = EelbrainPlotly2DViz(
+           display_mode=mode,
+           layout_mode="horizontal",  # Recommended for 4 views
+           arrow_scale=0.8            # Smaller arrows for clarity
+       )
+       viz.show_in_jupyter(width=1400, height=800)
+
+Customization Examples
+-----------------------
+
+Example 20: Progressive Arrow Threshold
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
@@ -226,194 +360,188 @@ Example 13: Progressive Arrow Filtering
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
    # Compare different threshold levels
-   thresholds = [0.0, 0.1, 0.2, 0.3]
+   thresholds = [None, 'auto', 0.1, 0.2, 0.3]
    
    for threshold in thresholds:
-       print(f"Threshold: {threshold}")
+       print(f"\nThreshold: {threshold}")
        viz = EelbrainPlotly2DViz(
            display_mode="lr",
            arrow_threshold=threshold,
            arrow_scale=1.0,
-           cmap="Reds"
+           cmap='Hot'
        )
-       viz.show_jupyter()
+       viz.show_in_jupyter(width=1000, height=600)
 
-Example 14: All Display Modes Demo
+Example 21: Arrow Scale Comparison
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Demonstrate all available display modes
-   single_views = ["l", "r", "x", "y", "z"]
-   multi_views = ["lr", "lyr", "lzr", "ortho"]
-   four_views = ["lyrz", "lzry"]
+   # Compare different arrow scales
+   scales = [0.5, 1.0, 1.5, 2.0]
    
-   all_modes = single_views + multi_views + four_views
-   
-   for mode in all_modes:
-       print(f"\nDisplay Mode: {mode}")
+   for scale in scales:
+       print(f"\nArrow Scale: {scale}")
        viz = EelbrainPlotly2DViz(
-           display_mode=mode,
-           layout_mode="horizontal" if len(mode) > 2 else "vertical"
+           display_mode="lyr",
+           arrow_scale=scale,
+           arrow_threshold='auto',
+           cmap='YlOrRd'
        )
-       viz.show_jupyter()
+       viz.show_in_jupyter(width=1200, height=700)
 
-Performance Examples
---------------------
-
-Example 15: Optimized for Large Datasets
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example 22: Colormap Comparison
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-   # Optimize for large, dense datasets
-   viz = EelbrainPlotly2DViz(
-       display_mode="lr",        # Fewer views = faster
-       arrow_threshold=0.4,      # Aggressive filtering
-       arrow_scale=0.8,          # Smaller arrows
-       bin_size=150,             # Lower resolution
-       cmap="Reds"
-   )
-   viz.show()
-
-Example 16: High-Quality Publication Mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
-
-   # High quality for publication figures
-   viz = EelbrainPlotly2DViz(
-       display_mode="lyr",
-       layout_mode="horizontal",
-       arrow_scale=1.0,
-       arrow_threshold=0.1,      # Balanced filtering
-       bin_size=250,             # Higher resolution
-       cmap="Viridis"           # Perceptually uniform
-   )
-   viz.show()
-
-Integration Examples
---------------------
-
-Example 17: With Custom Data Processing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   import numpy as np
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
-
-   # Custom data preprocessing
-   def preprocess_brain_data(raw_data):
-       # Apply custom filtering, normalization, etc.
-       processed = raw_data.copy()
-       # ... processing steps ...
-       return processed
+   # Compare different built-in colormaps
+   colormaps = ['YlOrRd', 'Hot', 'Viridis', 'OrRd', 'Reds']
    
-   # Load and process data
-   # raw_data = load_brain_data()
-   # processed_data = preprocess_brain_data(raw_data)
-   
-   # Visualize
-   viz = EelbrainPlotly2DViz(
-       display_mode="lyr",
-       layout_mode="horizontal"
-   )
-   viz.show()
+   for cmap in colormaps:
+       print(f"\nColormap: {cmap}")
+       viz = EelbrainPlotly2DViz(
+           display_mode="lyr",
+           cmap=cmap,
+           show_max_only=True
+       )
+       viz.show_in_jupyter(width=1200, height=700)
 
-Example 18: Batch Processing
+Complete Example Scripts
+-------------------------
+
+Example 23: Full Analysis Workflow
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   #!/usr/bin/env python3
+   """
+   Complete workflow for LiveNeuron brain visualization.
+   """
+   
+   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+   
+   def main():
+       print("🧠 Creating LiveNeuron Brain Visualization...")
+       
+       # Step 1: Basic visualization
+       print("\n1. Basic visualization with sample data:")
+       viz1 = EelbrainPlotly2DViz()
+       
+       # Step 2: Custom visualization
+       print("\n2. Custom visualization with Hot colormap:")
+       viz2 = EelbrainPlotly2DViz(
+           y=None,
+           region=None,
+           cmap='Hot',
+           show_max_only=True,
+           arrow_threshold='auto'
+       )
+       
+       # Step 3: With parcellation
+       print("\n3. With parcellation (aparc+aseg):")
+       viz3 = EelbrainPlotly2DViz(
+           y=None,
+           region='aparc+aseg',
+           cmap='Viridis',
+           show_max_only=False,
+           arrow_threshold=0.1
+       )
+       
+       # Step 4: Export images
+       print("\n📷 Exporting images...")
+       result = viz3.export_images(
+           output_dir="./example_output", 
+           time_idx=20,
+           format="png"
+       )
+       
+       if result["status"] == "success":
+           print("✅ Export successful!")
+           for plot_type, filepath in result["files"].items():
+               print(f"  {plot_type}: {filepath}")
+       
+       # Step 5: Run interactive visualization
+       print("\n🌐 Starting interactive visualization...")
+       print("The server will start on a random port.")
+       print("Check the console for the exact URL.")
+       viz3.run()
+   
+   if __name__ == "__main__":
+       main()
+
+Tips and Best Practices
+------------------------
+
+Tip 1: Choosing Display Mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   import time
-
-   # Process multiple subjects
-   subjects = ["sub01", "sub02", "sub03"]
+   # For hemisphere comparison (recommended):
+   viz = EelbrainPlotly2DViz(display_mode="lyr")
    
-   for subject in subjects:
-       print(f"Processing {subject}...")
-       
-       # Load subject data
-       # data = load_subject_data(subject)
-       
-       # Create visualization
-       viz = EelbrainPlotly2DViz(
-           display_mode="lyr",
-           layout_mode="horizontal",
-           arrow_scale=1.0,
-           cmap="Reds"
-       )
-       
-       # Save or display
-       viz.show()
-       time.sleep(2)  # Allow time to view
+   # For comprehensive anatomical view:
+   viz = EelbrainPlotly2DViz(display_mode="ortho")
+   
+   # For focused single view:
+   viz = EelbrainPlotly2DViz(display_mode="l")
 
-Tips and Tricks
----------------
-
-Tip 1: Finding the Right Arrow Scale
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Start with default (1.0) and adjust based on visual density:
+Tip 2: Optimizing Arrow Display
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # If arrows are too crowded or unclear:
-   # - Increase arrow_threshold (0.2, 0.3, etc.)
-   # - Decrease arrow_scale (0.7, 0.5, etc.)
+   # For dense data with many small vectors:
+   viz = EelbrainPlotly2DViz(
+       arrow_scale=0.7,        # Smaller arrows
+       arrow_threshold='auto'   # Filter weak vectors
+   )
    
-   # If arrows are too sparse or small:
-   # - Decrease arrow_threshold (0.05, 0.0, etc.)
-   # - Increase arrow_scale (1.5, 2.0, etc.)
+   # For sparse data with strong vectors:
+   viz = EelbrainPlotly2DViz(
+       arrow_scale=1.5,        # Larger arrows
+       arrow_threshold=None     # Show all arrows
+   )
 
-Tip 2: Choosing Layout Mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tip 3: Layout Selection
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # Use vertical layout for:
+   # Vertical layout for:
    # - 1-2 views
-   # - Standard aspect ratio displays
-   # - Focus on temporal dynamics (butterfly plot prominent)
+   # - Standard displays
+   # - Focus on temporal dynamics
+   viz = EelbrainPlotly2DViz(
+       display_mode="lr",
+       layout_mode="vertical"
+   )
    
-   # Use horizontal layout for:
+   # Horizontal layout for:
    # - 3+ views
-   # - Wide displays or presentations
-   # - Focus on spatial patterns (brain views prominent)
+   # - Wide displays
+   # - Focus on spatial patterns
+   viz = EelbrainPlotly2DViz(
+       display_mode="lyrz",
+       layout_mode="horizontal"
+   )
 
-Tip 3: Colormap Selection
+Tip 4: Jupyter vs Browser
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # Sequential (for magnitude):
-   cmap = "Reds"      # Warm colors
-   cmap = "Blues"     # Cool colors
-   cmap = "Viridis"   # Perceptually uniform
+   # For interactive exploration in notebook:
+   viz.show_in_jupyter(width=1200, height=900)
    
-   # Diverging (for changes around zero):
-   cmap = "RdBu"      # Red-blue
-   cmap = "RdYlBu"    # Red-yellow-blue
-
-Tip 4: Interactive Exploration Workflow
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   # 1. Start with overview
-   viz = EelbrainPlotly2DViz(display_mode="ortho")
-   viz.show()
+   # For full-screen experience:
+   viz.run(mode='external')
    
-   # 2. Identify regions of interest from butterfly plot
-   # 3. Click on specific time points to explore spatial patterns
-   # 4. Hover over brain regions to see exact activity values
-   # 5. Zoom and pan to focus on specific brain regions
-
+   # For quick inline preview:
+   viz.run(mode='inline', width=1000, height=700)
