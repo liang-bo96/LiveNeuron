@@ -447,8 +447,14 @@ class EelbrainPlotly2DViz:
                 "butterfly_width": "35%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0px", "browser": "0px"},
-                "plot_height": {"jupyter": "300px", "browser": "450px"},      # Match brain figure height
-                "butterfly_height": {"jupyter": "300px", "browser": "500px"}, # Match butterfly figure height
+                "plot_height": {
+                    "jupyter": "300px",
+                    "browser": "450px",
+                },  # Match brain figure height
+                "butterfly_height": {
+                    "jupyter": "300px",
+                    "browser": "500px",
+                },  # Match butterfly figure height
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
                 "arrangement": "horizontal",
             },
