@@ -447,8 +447,8 @@ class EelbrainPlotly2DViz:
                 "butterfly_width": "35%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0px", "browser": "0px"},
-                "plot_height": {"jupyter": "300px", "browser": "350px"},
-                "butterfly_height": {"jupyter": "300px", "browser": "350px"},
+                "plot_height": {"jupyter": "300px", "browser": "450px"},      # Match brain figure height
+                "butterfly_height": {"jupyter": "300px", "browser": "500px"}, # Match butterfly figure height
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
                 "arrangement": "horizontal",
             },
@@ -794,7 +794,7 @@ class EelbrainPlotly2DViz:
                     + self._create_brain_view_containers_horizontal(
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
-                    style={"textAlign": "center", "marginBottom": "10px"},
+                    style={"textAlign": "center", "marginBottom": "0px"},
                 ),
                 # Horizontal colorbar below brain plots
                 html.Div(
@@ -809,7 +809,7 @@ class EelbrainPlotly2DViz:
                     style={
                         "width": "65%",
                         "marginLeft": "35%",
-                        "marginTop": "10px",
+                        "marginTop": "0px",  # Negative margin to pull colorbar closer
                         "textAlign": "center",
                     },
                 ),
@@ -1987,7 +1987,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
-            display_mode="lzry",
+            display_mode="lyr",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
