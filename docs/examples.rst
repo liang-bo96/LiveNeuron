@@ -109,7 +109,7 @@ Example 7: Basic Jupyter Usage
        display_mode="lyr",
        layout_mode="horizontal"
    )
-   viz.show_in_jupyter(width=1200, height=900)
+   viz.run(mode='inline', width=1200, height=900)
 
 Example 8: Jupyter with run() Method
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -142,7 +142,7 @@ Example 9: Multiple Visualizations in Notebook
            display_mode=mode,
            layout_mode="horizontal"
        )
-       viz.show_in_jupyter(width=1000, height=600)
+       viz.run(mode='inline', width=1000, height=600)
 
 Working with Eelbrain Data
 ---------------------------
@@ -299,7 +299,7 @@ Example 17: All Single View Modes
    for mode, description in single_views.items():
        print(f"\n{mode}: {description}")
        viz = EelbrainPlotly2DViz(display_mode=mode)
-       viz.show_in_jupyter(width=800, height=600)
+       viz.run(mode='inline', width=800, height=600)
 
 Example 18: All Multi-View Modes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -325,7 +325,7 @@ Example 18: All Multi-View Modes
            display_mode=mode,
            layout_mode="horizontal"
        )
-       viz.show_in_jupyter(width=1200, height=700)
+       viz.run(mode='inline', width=1200, height=700)
 
 Example 19: Four-View Modes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -347,7 +347,7 @@ Example 19: Four-View Modes
            layout_mode="horizontal",  # Recommended for 4 views
            arrow_scale=0.8            # Smaller arrows for clarity
        )
-       viz.show_in_jupyter(width=1400, height=800)
+       viz.run(mode='inline', width=1400, height=800)
 
 Customization Examples
 -----------------------
@@ -370,7 +370,7 @@ Example 20: Progressive Arrow Threshold
            arrow_scale=1.0,
            cmap='Hot'
        )
-       viz.show_in_jupyter(width=1000, height=600)
+       viz.run(mode='inline', width=1000, height=600)
 
 Example 21: Arrow Scale Comparison
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -390,7 +390,7 @@ Example 21: Arrow Scale Comparison
            arrow_threshold='auto',
            cmap='YlOrRd'
        )
-       viz.show_in_jupyter(width=1200, height=700)
+       viz.run(mode='inline', width=1200, height=700)
 
 Example 22: Colormap Comparison
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -409,7 +409,7 @@ Example 22: Colormap Comparison
            cmap=cmap,
            show_max_only=True
        )
-       viz.show_in_jupyter(width=1200, height=700)
+       viz.run(mode='inline', width=1200, height=700)
 
 Complete Example Scripts
 -------------------------
@@ -538,7 +538,7 @@ Tip 4: Jupyter vs Browser
 .. code-block:: python
 
    # For interactive exploration in notebook:
-   viz.show_in_jupyter(width=1200, height=900)
+   viz.run(mode='inline', width=1200, height=900)
    
    # For full-screen experience:
    viz.run(mode='external')

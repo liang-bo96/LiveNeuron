@@ -182,21 +182,13 @@ Using in Jupyter Notebook
        layout_mode="horizontal"
    )
    
-   # Display inline in notebook
-   viz.show_in_jupyter(width=1200, height=900)
-
-Alternative: Use run() method with mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   # Inline mode
+   # Display inline in notebook (embedded)
    viz.run(mode='inline', width=1200, height=900)
    
-   # JupyterLab tab mode
+   # Or open in JupyterLab tab
    viz.run(mode='jupyterlab', width=1400, height=1000)
    
-   # External browser (default)
+   # Or open in external browser (default)
    viz.run(mode='external')
 
 Working with Eelbrain Data

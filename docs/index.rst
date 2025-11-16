@@ -47,8 +47,8 @@ Basic Usage
    # Launch in browser (random port)
    viz.run()
 
-   # Or use in Jupyter
-   viz.show_in_jupyter(width=1200, height=900)
+# Or use in Jupyter (inline mode)
+viz.run(mode='inline', width=1200, height=900)
 
 .. toctree::
    :maxdepth: 2

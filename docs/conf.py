@@ -63,9 +63,9 @@ html_theme_options = {
 # Napoleon settings for Google/NumPy docstring style
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = True
+napoleon_include_init_with_doc = False  # Hide __init__, document in class docstring
 napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
+napoleon_include_special_with_doc = False  # Don't show special methods like __init__
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = False
@@ -77,9 +77,10 @@ napoleon_use_rtype = True
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "special-members": "__init__",
-    "undoc-members": True,
-    "exclude-members": "__weakref__",
+    "special-members": "",  # Don't show special members like __init__
+    "undoc-members": False,  # Only show documented members
+    "exclude-members": "__weakref__, __init__",  # Explicitly exclude __init__
+    "private-members": False,  # Don't show private methods (starting with _)
 }
 
 # Intersphinx mapping

@@ -7,9 +7,11 @@ Main Class
 ----------
 
 .. autoclass:: eelbrain_plotly_viz.viz_2d.EelbrainPlotly2DViz
-   :members:
-   :undoc-members:
+   :members: run, export_images
+   :exclude-members: __init__
    :show-inheritance:
+   
+   The main visualization class for interactive 2D brain projections with butterfly plots.
 
 Constructor
 -----------
@@ -160,35 +162,6 @@ Start the interactive Dash application.
    # Jupyter inline
    viz.run(mode='inline', width=1200, height=900)
 
-show_in_jupyter()
-^^^^^^^^^^^^^^^^^
-
-Display the visualization inline in Jupyter notebooks.
-
-.. code-block:: python
-
-   viz.show_in_jupyter(
-       width=1200,
-       height=900,
-       debug=False
-   )
-
-**Parameters:**
-
-* **width** (*int*): Display width in pixels (default: 1200).
-* **height** (*int*): Display height in pixels (default: 900).
-* **debug** (*bool*): Enable debug mode (default: False).
-
-**Returns:**
-  None
-
-**Example:**
-
-.. code-block:: python
-
-   viz = EelbrainPlotly2DViz(display_mode="lyr")
-   viz.show_in_jupyter(width=1400, height=1000)
-
 export_images()
 ^^^^^^^^^^^^^^^
 
@@ -228,44 +201,6 @@ Export current plots as image files.
    if result["status"] == "success":
        for plot_type, filepath in result["files"].items():
            print(f"{plot_type}: {filepath}")
-
-create_2d_brain_projections_plotly()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Generate 2D brain projection figures for a specific time point.
-
-.. code-block:: python
-
-   viz.create_2d_brain_projections_plotly(
-       time_idx,
-       source_idx=None
-   )
-
-**Parameters:**
-
-* **time_idx** (*int*): Time index to visualize.
-* **source_idx** (*int or None*): Optional source index for highlighting.
-
-**Returns:**
-  *dict*: Dictionary mapping view names to Plotly figures.
-
-create_butterfly_plot()
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Create the butterfly plot showing activity over time.
-
-.. code-block:: python
-
-   viz.create_butterfly_plot(
-       selected_time_idx=0
-   )
-
-**Parameters:**
-
-* **selected_time_idx** (*int*): Time index to highlight (default: 0).
-
-**Returns:**
-  *plotly.graph_objects.Figure*: Butterfly plot figure.
 
 Sample Data Module
 ------------------

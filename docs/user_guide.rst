@@ -423,17 +423,15 @@ Multiple options for Jupyter notebooks:
 
 .. code-block:: python
 
-   # Method 1: Dedicated method
-   viz.show_in_jupyter(width=1200, height=900)
+   # Inline display (embedded in notebook)
+   viz.run(mode='inline', width=1200, height=900)
    
-   # Method 2: Using run() with mode
-   viz.run(mode='inline', width=1200, height=900)       # Inline
-   viz.run(mode='jupyterlab', width=1400, height=1000)  # JupyterLab tab
+   # JupyterLab tab (opens in separate tab)
+   viz.run(mode='jupyterlab', width=1400, height=1000)
 
 **Comparison:**
 
-* ``show_in_jupyter()``: Simple, reliable, inline display
-* ``run(mode='inline')``: Same as above, more options
+* ``run(mode='inline')``: Inline display embedded in notebook
 * ``run(mode='jupyterlab')``: Opens in separate JupyterLab tab
 
 Exporting Images
