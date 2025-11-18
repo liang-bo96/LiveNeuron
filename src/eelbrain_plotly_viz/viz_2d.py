@@ -776,6 +776,24 @@ class EelbrainPlotly2DViz:
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
                 dcc.Store(id="selected-source-idx", data=None),
+                # Horizontal colorbar above brain plots
+                html.Div(
+                    [
+                        dcc.Graph(
+                            id="horizontal-colorbar",
+                            figure=colorbar_fig,
+                            style={"height": "80px"},
+                            config={"displayModeBar": False},
+                        )
+                    ],
+                    style={
+                        "width": "65%",
+                        "marginLeft": "35%",
+                        "marginTop": "0px",
+                        "marginBottom": "0px",
+                        "textAlign": "center",
+                    },
+                ),
                 # Main content - arranged horizontally
                 html.Div(
                     [
@@ -801,23 +819,6 @@ class EelbrainPlotly2DViz:
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
                     style={"textAlign": "center", "marginBottom": "0px"},
-                ),
-                # Horizontal colorbar below brain plots
-                html.Div(
-                    [
-                        dcc.Graph(
-                            id="horizontal-colorbar",
-                            figure=colorbar_fig,
-                            style={"height": "80px"},
-                            config={"displayModeBar": False},
-                        )
-                    ],
-                    style={
-                        "width": "65%",
-                        "marginLeft": "35%",
-                        "marginTop": "0px",  # Negative margin to pull colorbar closer
-                        "textAlign": "center",
-                    },
                 ),
                 # Status indicator
                 html.Div(
