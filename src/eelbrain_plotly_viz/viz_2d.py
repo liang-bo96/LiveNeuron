@@ -88,6 +88,10 @@ class EelbrainPlotly2DViz:
         - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
         - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
         Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
+    show_labels
+        If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
+        'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
+        cleaner visualization. Default is False.
 
     Notes
     -----
@@ -110,6 +114,7 @@ class EelbrainPlotly2DViz:
         realtime: bool = False,
         layout_mode: str = "vertical",
         display_mode: str = "lyr",
+        show_labels: bool = False,
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
@@ -131,6 +136,7 @@ class EelbrainPlotly2DViz:
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
         )  # Default state for real-time mode
+        self.show_labels: bool = show_labels  # Control titles and legends display
 
         # Validate and set layout mode
         valid_layouts = ["vertical", "horizontal"]
@@ -444,16 +450,16 @@ class EelbrainPlotly2DViz:
                 "arrangement": "vertical",
             },
             "horizontal": {
-                "butterfly_width": "35%",
+                "butterfly_width": "25%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0px", "browser": "0px"},
                 "plot_height": {
-                    "jupyter": "300px",
-                    "browser": "450px",
+                    "jupyter": "200px",
+                    "browser": "350px",
                 },  # Match brain figure height
                 "butterfly_height": {
-                    "jupyter": "300px",
-                    "browser": "500px",
+                    "jupyter": "200px",
+                    "browser": "350px",
                 },  # Match butterfly figure height
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
                 "arrangement": "horizontal",
@@ -506,20 +512,13 @@ class EelbrainPlotly2DViz:
             else:  # 3 or more views
                 return {"jupyter": "30%", "browser": "32%"}
         else:  # horizontal mode
-            # Pre-allocate space for butterfly plot and colorbar
+            # Pre-allocate space for butterfly plot
             # Total available: 100%
-            # - Butterfly plot: 35%
-            # - Colorbar space: 8% (reserved for the rightmost plot's colorbar)
-            # - Remaining for brain plots: 100% - 35% - 8% = 57%
+            # - Butterfly plot: 25%
+            # - Remaining for brain plots: 75%
 
-            butterfly_width = 35  # Butterfly占35%
-            colorbar_space = 8  # Colorbar预留8%
-            available_for_brains = 100 - butterfly_width - colorbar_space  # 57%
-
-            # Special case for 4-view modes (lzry, lyrz)
-            if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
-                butterfly_width = 25  # 4视图模式下butterfly更小
-                available_for_brains = 100 - butterfly_width - colorbar_space  # 67%
+            butterfly_width = 30  # Butterfly占25%
+            available_for_brains = 100 - butterfly_width  # 75%
 
             # Divide remaining space equally among all brain plots
             brain_width = available_for_brains / num_views
@@ -572,15 +571,22 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height},
+                        style={
+                            "height": brain_height,
+                            "width": "100%",
+                            "margin": "0",
+                            "padding": "0",
+                        },
+                        config={"displayModeBar": False},
                     )
                 ],
                 style={
                     "width": brain_width,
                     "display": "inline-block",
                     "verticalAlign": "top",
-                    "margin": brain_margin,
-                    "padding": "0px",
+                    "margin": "0",
+                    "padding": "0",
+                    "boxSizing": "border-box",
                 },
             )
             containers.append(container)
@@ -760,39 +766,52 @@ class EelbrainPlotly2DViz:
 
         self.app.layout = html.Div(
             [
-                html.H1(
-                    "Eelbrain Plotly 2D Brain Visualization - Horizontal Layout",
-                    style={"textAlign": "center", "margin": "10px 0"},
-                ),
-                # Real-time mode switch
-                dcc.Checklist(
-                    id="realtime-mode-switch",
-                    options=[
-                        {"label": "Real-time Update on Hover", "value": "realtime"}
-                    ],
-                    value=self.realtime_mode_default,
-                    style={"textAlign": "center", "margin": "10px 0"},
-                ),
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
                 dcc.Store(id="selected-source-idx", data=None),
-                # Horizontal colorbar above brain plots
+                # Top row: Realtime switch (left) and Colorbar (right)
                 html.Div(
                     [
-                        dcc.Graph(
-                            id="horizontal-colorbar",
-                            figure=colorbar_fig,
-                            style={"height": "80px"},
-                            config={"displayModeBar": False},
-                        )
+                        # Left: Real-time mode switch above butterfly plot area
+                        html.Div(
+                            [
+                                dcc.Checklist(
+                                    id="realtime-mode-switch",
+                                    options=[
+                                        {
+                                            "label": "Real-time Update on Hover",
+                                            "value": "realtime",
+                                        }
+                                    ],
+                                    value=self.realtime_mode_default,
+                                    style={"textAlign": "center", "marginTop": "20px"},
+                                )
+                            ],
+                            style={
+                                "width": "35%",
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                            },
+                        ),
+                        # Right: Horizontal colorbar above brain plots
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="horizontal-colorbar",
+                                    figure=colorbar_fig,
+                                    style={"height": "80px"},
+                                    config={"displayModeBar": False},
+                                )
+                            ],
+                            style={
+                                "width": "65%",
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "textAlign": "center",
+                            },
+                        ),
                     ],
-                    style={
-                        "width": "65%",
-                        "marginLeft": "35%",
-                        "marginTop": "0px",
-                        "marginBottom": "0px",
-                        "textAlign": "center",
-                    },
+                    style={"marginTop": "0px", "marginBottom": "0px"},
                 ),
                 # Main content - arranged horizontally
                 html.Div(
@@ -803,22 +822,32 @@ class EelbrainPlotly2DViz:
                                 dcc.Graph(
                                     id="butterfly-plot",
                                     figure=initial_butterfly,
-                                    style=butterfly_graph_style,
+                                    style={
+                                        "height": butterfly_graph_style["height"],
+                                        "width": "100%",
+                                        "margin": "0",
+                                        "padding": "0",
+                                    },
+                                    config={"displayModeBar": False},
                                 )
                             ],
                             style={
                                 "width": config["butterfly_width"],
                                 "display": "inline-block",
                                 "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
+                                "margin": "0",
+                                "padding": "0",
+                                "boxSizing": "border-box",
                             },
                         )
                     ]
                     + self._create_brain_view_containers_horizontal(
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
-                    style={"textAlign": "center", "marginBottom": "0px"},
+                    style={
+                        "marginBottom": "0px",
+                        "fontSize": "0",
+                    },
                 ),
                 # Status indicator
                 html.Div(
@@ -1074,7 +1103,8 @@ class EelbrainPlotly2DViz:
                         mode="lines",
                         name=f"Source {i}",
                         customdata=[i] * n_times,
-                        showlegend=(idx < 3),
+                        showlegend=(idx < 3)
+                        and self.show_labels,  # Only show if show_labels is True
                         opacity=0.6,
                         line=dict(width=1),
                         hoverinfo="skip",  # Don't show in hover
@@ -1090,7 +1120,7 @@ class EelbrainPlotly2DViz:
                 mode="lines",
                 name="Mean Activity",
                 line=dict(color="red", width=3),
-                showlegend=True,
+                showlegend=self.show_labels,
                 hovertemplate="Mean: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
@@ -1104,7 +1134,7 @@ class EelbrainPlotly2DViz:
                 mode="lines",
                 name="Max Activity",
                 line=dict(color="darkblue", width=3),
-                showlegend=True,
+                showlegend=self.show_labels,
                 hovertemplate="Max: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
@@ -1116,26 +1146,36 @@ class EelbrainPlotly2DViz:
                 x=selected_time, line_width=2, line_dash="dash", line_color="blue"
             )
 
-        # Update title based on display mode
-        if self.show_max_only:
-            title_text = (
-                f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
-            )
+        # Update title based on display mode and show_labels
+        if self.show_labels:
+            if self.show_max_only:
+                title_text = (
+                    f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
+                )
+            else:
+                title_text = (
+                    f"Source Activity Time Series (subset of {n_sources} sources)"
+                )
+            xaxis_title = "Time (s)"
+            yaxis_title = f"Activity{unit_suffix}"
         else:
-            title_text = f"Source Activity Time Series (subset of {n_sources} sources)"
+            title_text = None
+            xaxis_title = None
+            yaxis_title = None
 
         # Adjust layout based on mode
         if self.is_jupyter_mode:
-            height = 300
-            margin = dict(l=40, r=40, t=60, b=40)  # Reduced margins for Jupyter
+            height = 200
+            margin = dict(l=0, r=0, t=0, b=0)  # Tight margins for maximum space
         else:
-            height = 500
-            margin = dict(l=40, r=40, t=60, b=40)  # Standard margins
+            height = 350
+            margin = dict(l=40, r=20, t=10, b=40)  # Moderate margins for browser
 
         fig.update_layout(
             title=title_text,
-            xaxis_title="Time (s)",
-            yaxis_title=f"Activity{unit_suffix}",
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            autosize=True,  # Enable autosize to fill container
             xaxis=dict(
                 range=[self.time_values[0], self.time_values[-1]],
                 showspikes=True,  # Show vertical spike line at cursor
@@ -1147,7 +1187,7 @@ class EelbrainPlotly2DViz:
             hoverdistance=-1,  # Allow hover without nearby data points
             height=height,
             margin=margin,
-            showlegend=True,
+            showlegend=self.show_labels,  # Only show legend if show_labels is True
             # Enable clicking on the plot area
             clickmode="event+select",
         )
@@ -1316,7 +1356,7 @@ class EelbrainPlotly2DViz:
             if has_vector_data:
                 u_vectors = -active_vectors[:, 1]  # Negative Y components (flipped)
                 v_vectors = active_vectors[:, 2]  # Z components
-            title = "Left Hemisphere"
+            title = None
         elif (
             view_name == "right_hemisphere"
         ):  # Right hemisphere lateral view (Y vs Z, X >= 0)
@@ -1334,7 +1374,7 @@ class EelbrainPlotly2DViz:
             if has_vector_data:
                 u_vectors = active_vectors[:, 1]  # Y components
                 v_vectors = active_vectors[:, 2]  # Z components
-            title = "Right Hemisphere"
+            title = None
         else:
             # Fallback for unknown view types
             x_coords = active_coords[:, 0]
@@ -1556,11 +1596,11 @@ class EelbrainPlotly2DViz:
         # Update layout based on mode
         # Use consistent right margin for all plots to ensure uniform size
         if self.is_jupyter_mode:
-            height = 250
-            margin = dict(l=0, r=80, t=20, b=0)  # Consistent margins for tight layout
+            height = 200
+            margin = dict(l=0, r=0, t=0, b=0)  # Zero margins for maximum space
         else:
-            height = 450
-            margin = dict(l=0, r=0, t=30, b=0)  # Consistent margins for tight layout
+            height = 200
+            margin = dict(l=0, r=0, t=0, b=0)  # Zero margins for maximum space
 
         # Note: Right margin is the same for all plots (with or without colorbar)
         # to ensure uniform brain plot sizes. Colorbar is positioned outside at x=1.15
@@ -1579,6 +1619,8 @@ class EelbrainPlotly2DViz:
                 title="",
                 range=x_range,  # Fixed range to prevent size changes
                 domain=[0, 1],  # Use full width of plot area
+                showgrid=False,
+                zeroline=False,
             ),
             # Equal aspect ratio, hide labels
             yaxis=dict(
@@ -1586,8 +1628,12 @@ class EelbrainPlotly2DViz:
                 title="",
                 range=y_range,  # Fixed range to prevent size changes
                 domain=[0, 1],  # Use full height of plot area
+                showgrid=False,
+                zeroline=False,
             ),
             height=height,
+            width=None,  # Let width auto-adjust to container
+            autosize=True,  # Enable autosize to fill container
             margin=margin,
             showlegend=False,
             # plot_bgcolor="#2b2b2b",  # Dark background for brain plots
@@ -1788,7 +1834,7 @@ class EelbrainPlotly2DViz:
         self,
         port: Optional[int] = None,
         debug: bool = True,
-        mode: str = "external",
+        mode: str = "inline",
         width: int = 1200,
         height: int = 900,
     ) -> None:
@@ -1802,9 +1848,9 @@ class EelbrainPlotly2DViz:
             Enable debug mode. Default is True.
         mode
             Display mode. Options:
-            - 'external': Open in separate browser window (default)
-            - 'inline': Embed directly in Jupyter notebook (modern Dash)
+            - 'inline': Embed directly in Jupyter notebook (default, modern Dash)
             - 'jupyterlab': Open in JupyterLab tab (modern Dash)
+            - 'external': Open in separate browser window
         width
             Display width in pixels for Jupyter integration. Default is 1200.
         height
@@ -1818,6 +1864,15 @@ class EelbrainPlotly2DViz:
                 "\nStarting 2D Brain Visualization with modern Dash Jupyter integration..."
             )
             print(f"Mode: {mode}, Size: {width}x{height}px")
+
+            # Set Jupyter mode and rebuild layout with Jupyter-specific styles
+            self.is_jupyter_mode = True
+
+            # Unify view sizes for Jupyter mode to ensure consistent display
+            self._unify_view_sizes_for_jupyter()
+
+            # Rebuild layout with Jupyter styles
+            self._setup_layout()
 
             # Use modern Dash Jupyter integration
             self.app.run(debug=debug, port=port, mode=mode, width=width, height=height)
