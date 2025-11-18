@@ -74,7 +74,7 @@ def test_error_handling():
     viz_empty.time_values = None
 
     # Should handle gracefully
-    brain_plots_empty = viz_empty.create_2d_brain_projections_plotly()
+    brain_plots_empty = viz_empty._create_2d_brain_projections_plotly()
     assert isinstance(brain_plots_empty, dict)
 
 

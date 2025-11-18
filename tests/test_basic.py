@@ -113,7 +113,7 @@ def test_brain_projections():
 
     # Test with default display mode (lyr - hemisphere views)
     viz_default = EelbrainPlotly2DViz()
-    projections_default = viz_default.create_2d_brain_projections_plotly(time_idx=5)
+    projections_default = viz_default._create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections_default, dict)
     assert "left_hemisphere" in projections_default
