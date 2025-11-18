@@ -10,7 +10,7 @@ Basic Workflow
 ^^^^^^^^^^^^^^
 
 1. **Create** visualization object with desired parameters
-2. **Launch** with ``run()`` or ``show_in_jupyter()``
+2. **Launch** with ``run()``
 3. **Interact** with hover, click, and zoom
 4. **Export** static images if needed
 
@@ -22,7 +22,7 @@ Basic Workflow
    viz = EelbrainPlotly2DViz(display_mode="lyr")
    
    # Step 2: Launch
-   viz.run()  # or viz.show_in_jupyter()
+   viz.run()  # Use mode='inline' for Jupyter notebooks
    
    # Step 3: Interact (in browser/notebook)
    # Step 4: Export
