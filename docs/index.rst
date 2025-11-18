@@ -29,10 +29,30 @@ Quick Start
 Installation
 ^^^^^^^^^^^^
 
+**Method 1: Install from GitHub**
+
 .. code-block:: bash
 
-   # Install from GitHub
    pip install git+https://github.com/liang-bo96/LiveNeuron.git
+
+**Method 2: Download and Install from ZIP**
+
+.. code-block:: bash
+
+   # Download the ZIP file
+   wget https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
+   
+   # Or download manually from:
+   # https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
+   
+   # Unzip the file
+   unzip main.zip
+   
+   # Navigate to the directory
+   cd LiveNeuron-main
+   
+   # Install the package
+   pip install .
 
 Basic Usage
 ^^^^^^^^^^^
