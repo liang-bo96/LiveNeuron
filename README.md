@@ -101,7 +101,7 @@ from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
 # Create and display in notebook
 viz = EelbrainPlotly2DViz()
-viz.show_in_jupyter(width=1200, height=900)  # Interactive display in notebook
+viz.run(mode='inline', width=1200, height=900)  # Interactive display in notebook
 ```
 
 ### Using Sample Data Generator
@@ -388,38 +388,64 @@ if __name__ == "__main__":
 
 ### EelbrainPlotly2DViz Class
 
+The main visualization class providing interactive 2D brain projections with butterfly plots.
+
 #### Constructor
+
 ```python
 EelbrainPlotly2DViz(
-    y=None,                      # Data input (NDVar or None for sample data)
-    region=None,                 # Brain region ('aparc+aseg' or None for full brain)
-    cmap='YlOrRd',              # Colormap (string or custom list)
-    show_max_only=False,         # Butterfly plot mode (True: mean+max only)
-    arrow_threshold=None,        # Arrow display threshold (None, 'auto', or float)
-    arrow_scale=1.0,             # Arrow length scale (0.5=short, 1.0=default, 2.0=long)
-    realtime=False,              # Enable real-time hover updates (default: click mode)
-    layout_mode='vertical',      # Layout: 'vertical' or 'horizontal'
-    display_mode='lyr'           # Display mode: 'ortho', 'lyr', 'lyrz', etc.
+    y=None,                         # NDVar data input (or None for sample data)
+    region=None,                    # Brain region filter (e.g., 'aparc+aseg')
+    cmap='YlOrRd',                  # Colormap name or custom list
+    show_max_only=False,            # Butterfly plot mode (True: mean+max only)
+    arrow_threshold=None,           # Arrow display threshold (None/'auto'/float)
+    arrow_scale=1.0,                # Arrow length scale factor (default: 1.0)
+    realtime=False,                 # Enable real-time hover updates
+    layout_mode='vertical',         # Layout: 'vertical' or 'horizontal'
+    display_mode='lyr'              # View mode: 'ortho', 'lyr', 'lzry', etc.
 )
 ```
 
-#### Parameters
-- **y** (NDVar, optional): Input data with dimensions `([case,] time, source[, space])`. If None, uses MNE sample data.
-- **region** (str, optional): Brain region for parcellation (e.g., 'aparc+aseg'). If None, uses full brain.
-- **cmap** (str or list): Plotly colorscale name or custom colorscale list. Default: 'YlOrRd'.
-- **show_max_only** (bool): If True, butterfly plot shows only mean and max traces. Default: False.
-- **arrow_threshold** (None, 'auto', or float): Threshold for displaying arrows. 'auto' uses 10% of max magnitude.
-- **arrow_scale** (float): Relative arrow length multiplier. Default: 1.0. Range: 0.5-2.0.
-- **realtime** (bool): Enable real-time hover updates. Default: False (click mode).
-- **layout_mode** (str): 'vertical' (butterfly on top) or 'horizontal' (butterfly on left). Default: 'vertical'.
-- **display_mode** (str): Anatomical view configuration. Options: 'ortho', 'x', 'y', 'z', 'xz', 'yx', 'yz', 'l', 'r', 'lr', 'lyr', 'lzr', 'lyrz', 'lzry'. Default: 'lyr'.
+**Parameters:**
 
-#### Methods
-- `run(port=None, debug=True, mode='external', width=1200, height=900)` - Start interactive app
-- `show_in_jupyter(width=1200, height=900, debug=False)` - Display inline in Jupyter
-- `export_images(output_dir, time_idx=None, format='png')` - Export static images
-- `create_2d_brain_projections_plotly(time_idx, source_idx=None)` - Get projection figures
-- `create_butterfly_plot(selected_time_idx=0)` - Get butterfly plot figure
+- **y** (*NDVar, optional*): Data with dimensions ([case,] time, source[, space]). If None, uses MNE sample data.
+- **region** (*str, optional*): Brain region to load using aparc+aseg parcellation. If None, loads all regions.
+- **cmap** (*str or list*): Plotly colorscale. Built-in names like 'YlOrRd', 'Viridis', or custom list. Default: 'YlOrRd'.
+- **show_max_only** (*bool*): If True, butterfly plot shows only mean and max traces. Default: False.
+- **arrow_threshold** (*None, 'auto', or float*): Threshold for displaying arrows. None shows all, 'auto' uses 10% of max. Default: None.
+- **arrow_scale** (*float*): Relative scale factor for arrow length. Use 0.5 for shorter, 2.0 for longer arrows. Default: 1.0.
+- **realtime** (*bool*): Enable real-time updates on hover (not just click). Default: False.
+- **layout_mode** (*str*): Layout arrangement: 'vertical' (butterfly top, brains below) or 'horizontal' (butterfly left, brains right). Default: 'vertical'.
+- **display_mode** (*str*): Anatomical view mode. Options: 'ortho', 'x', 'y', 'z', 'xz', 'yx', 'yz', 'l', 'r', 'lr', 'lzr', 'lyr', 'lzry', 'lyrz'. Default: 'lyr'.
+
+#### Public Methods
+
+##### run()
+```python
+run(port=None, debug=True, mode='external', width=1200, height=900)
+```
+Start the interactive Dash application.
+
+**Parameters:**
+- **port** (*int, optional*): Server port number. If None, uses random port.
+- **debug** (*bool*): Enable debug mode. Default: True.
+- **mode** (*str*): Display mode - 'external' (browser), 'inline' (Jupyter), or 'jupyterlab'. Default: 'external'.
+- **width** (*int*): Display width in pixels for Jupyter modes. Default: 1200.
+- **height** (*int*): Display height in pixels for Jupyter modes. Default: 900.
+
+##### export_images()
+```python
+export_images(output_dir='./images', time_idx=None, format='png')
+```
+Export current plots as image files.
+
+**Parameters:**
+- **output_dir** (*str*): Directory to save images. Default: './images'.
+- **time_idx** (*int, optional*): Time index to export. If None, uses 0.
+- **format** (*str*): Image format - 'png', 'jpg', 'svg', or 'pdf'. Default: 'png'.
+
+**Returns:**
+- *dict*: Dictionary with status and exported file paths.
 
 ### Sample Data Functions
 

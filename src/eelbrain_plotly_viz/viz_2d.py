@@ -600,8 +600,8 @@ class EelbrainPlotly2DViz:
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode."""
         # Create initial figures
-        initial_butterfly = self.create_butterfly_plot(0)
-        initial_brain_plots = self.create_2d_brain_projections_plotly(0)
+        initial_butterfly = self._create_butterfly_plot(0)
+        initial_brain_plots = self._create_2d_brain_projections_plotly(0)
 
         # Get layout configuration
         config = self._get_layout_config()
@@ -848,7 +848,7 @@ class EelbrainPlotly2DViz:
         def update_butterfly(time_idx: int) -> go.Figure:
             if time_idx is None:
                 time_idx = 0
-            return self.create_butterfly_plot(time_idx)
+            return self._create_butterfly_plot(time_idx)
 
         # Dynamic brain plot outputs based on display_mode
         brain_outputs = [
@@ -866,7 +866,7 @@ class EelbrainPlotly2DViz:
                 time_idx = 0
 
             try:
-                brain_plots = self.create_2d_brain_projections_plotly(
+                brain_plots = self._create_2d_brain_projections_plotly(
                     time_idx, source_idx
                 )
                 return tuple(brain_plots[view_name] for view_name in self.brain_views)
@@ -1016,8 +1016,8 @@ class EelbrainPlotly2DViz:
             )
             return result
 
-    def create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
-        """Create butterfly plot figure."""
+    def _create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
+        """Create butterfly plot figure (internal method)."""
         fig = go.Figure()
 
         if self.butterfly_data is None or self.time_values is None:
@@ -1153,10 +1153,10 @@ class EelbrainPlotly2DViz:
 
         return fig
 
-    def create_2d_brain_projections_plotly(
+    def _create_2d_brain_projections_plotly(
         self, time_idx: int = 0, source_idx: Optional[int] = None
     ) -> Dict[str, go.Figure]:
-        """Create 2D brain projections using Plotly scatter plots."""
+        """Create 2D brain projections using Plotly scatter plots (internal method)."""
         if (
             self.glass_brain_data is None
             or self.source_coords is None
@@ -1831,10 +1831,10 @@ class EelbrainPlotly2DViz:
 
             self.app.run(debug=debug, port=port)
 
-    def show_in_jupyter(
+    def _show_in_jupyter(
         self, width: int = 1200, height: int = 900, debug: bool = False
     ) -> None:
-        """Convenience method to display the visualization inline in Jupyter notebooks.
+        """Convenience method to display the visualization inline in Jupyter notebooks (internal method).
 
         Parameters
         ----------
@@ -1849,10 +1849,10 @@ class EelbrainPlotly2DViz:
         --------
         Basic usage in Jupyter:
         >>> viz = EelbrainPlotly2DViz()
-        >>> viz.show_in_jupyter()
+        >>> viz._show_in_jupyter()
 
         Custom sizing:
-        >>> viz.show_in_jupyter(width=1400, height=1000)
+        >>> viz._show_in_jupyter(width=1400, height=1000)
         """
         if not JUPYTER_AVAILABLE:
             print("Warning: Jupyter environment not detected.")
@@ -1909,7 +1909,7 @@ class EelbrainPlotly2DViz:
 
         try:
             # Export butterfly plot
-            butterfly_fig = self.create_butterfly_plot(time_idx)
+            butterfly_fig = self._create_butterfly_plot(time_idx)
             butterfly_path = os.path.join(
                 output_dir, f"butterfly_plot_{timestamp}.{format}"
             )
@@ -1917,7 +1917,7 @@ class EelbrainPlotly2DViz:
             exported_files["butterfly_plot"] = butterfly_path
 
             # Export brain projections
-            brain_plots = self.create_2d_brain_projections_plotly(time_idx)
+            brain_plots = self._create_2d_brain_projections_plotly(time_idx)
 
             for view_name, fig in brain_plots.items():
                 brain_path = os.path.join(
@@ -2007,7 +2007,7 @@ if __name__ == "__main__":
         # print("Export result:", result)
 
         # For Jupyter notebooks, use:
-        # viz_2d.show_in_jupyter(width=1200, height=900)
+        # viz_2d._show_in_jupyter(width=1200, height=900)
 
         # For regular Python scripts or external browser:
         viz_2d.run()
