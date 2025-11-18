@@ -450,7 +450,7 @@ class EelbrainPlotly2DViz:
                 "arrangement": "vertical",
             },
             "horizontal": {
-                "butterfly_width": "25%",
+                "butterfly_width": "30%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
                 "brain_margin": {"jupyter": "0px", "browser": "0px"},
                 "plot_height": {
