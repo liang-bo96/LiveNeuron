@@ -786,10 +786,10 @@ class EelbrainPlotly2DViz:
                         ),
                     ]
                 ),
-                # Info panel
+                # Info panel (hidden)
                 html.Div(
                     id="info-panel",
-                    style={"clear": "both", "padding": "10px", "textAlign": "center"},
+                    style={"display": "none"},
                 ),
             ],
             style={"width": "100%", "height": "auto", "padding": container_padding},
@@ -951,16 +951,10 @@ class EelbrainPlotly2DViz:
                         "fontSize": "12px",
                     },
                 ),
-                # Info panel
+                # Info panel (hidden)
                 html.Div(
                     id="info-panel",
-                    style={
-                        "clear": "both",
-                        "padding": "5px",
-                        "margin": "0",
-                        "textAlign": "center",
-                        "fontSize": "12px",
-                    },
+                    style={"display": "none"},
                 ),
             ],
             style={
@@ -1100,35 +1094,16 @@ class EelbrainPlotly2DViz:
             Input("selected-time-idx", "data"),
         )
         def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
-            if (
-                time_idx is not None
-                and self.time_values is not None
-                and 0 <= time_idx < len(self.time_values)
-            ):
-                time_val = self.time_values[time_idx]
-                status_text = (
-                    f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
-                )
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "5px",
-                    "margin": "0",
-                    "fontStyle": "italic",
-                    "fontSize": "12px",
-                    "color": "#2E8B57",
-                    "backgroundColor": "#F0FFF0",
-                }
-            else:
-                status_text = "Click on butterfly plot to update brain views"
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "5px",
-                    "margin": "0",
-                    "fontStyle": "italic",
-                    "fontSize": "12px",
-                    "color": "#666",
-                }
-
+            # Always show the initial hint, don't show update messages
+            status_text = "Click on butterfly plot to update brain views"
+            status_style = {
+                "textAlign": "center",
+                "padding": "5px",
+                "margin": "0",
+                "fontStyle": "italic",
+                "fontSize": "12px",
+                "color": "#666",
+            }
             return status_text, status_style
 
         @self.app.callback(
