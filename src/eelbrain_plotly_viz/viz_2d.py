@@ -1233,8 +1233,7 @@ class EelbrainPlotly2DViz:
                         mode="lines",
                         name=f"Source {i}",
                         customdata=[i] * n_times,
-                        showlegend=(idx < 3)
-                        and self.show_labels,  # Only show if show_labels is True
+                        showlegend=(idx < 3) and self.show_labels,
                         opacity=0.6,
                         line=dict(width=1),
                         hoverinfo="skip",  # Don't show in hover
