@@ -537,19 +537,25 @@ class EelbrainPlotly2DViz:
 
         # Calculate total height based on actual layout structure
         if self.layout_mode == "vertical":
-            # Vertical: butterfly on top, brains below, stacked
+            # Vertical layout structure:
+            # - Title (H1): ~50px (text + margins)
+            # - Checklist: ~50px (checkbox + margins)
+            # - Butterfly plot: 300px
+            # - Brain plots: 250px
+            # - Status bar: ~30px (hidden but container exists)
+            # - Container padding: ~2px
             dynamic_height = (butterfly_height or 0) + (brain_height or 0)
-            static_offset = 80  # Status, padding, margins
+            static_offset = 132  # Title + Checklist + Status + Padding
             total_height = dynamic_height + static_offset
         else:
             # Horizontal layout actual structure:
             # - Colorbar row: ~120px (80px graph + 40px container padding/margins)
             # - Main content row: 200px (butterfly and brains side-by-side)
-            # - Status row: ~50px (text + padding)
+            # - Status row: ~30px (text + padding, status bar hidden but container exists)
             # - Container padding: 10px
             colorbar_row_height = 120
             main_content_height = max(butterfly_height or 0, brain_height or 0)
-            status_row_height = 50
+            status_row_height = 30  # Reduced since status bar is hidden
             container_padding_total = 10
 
             total_height = (
