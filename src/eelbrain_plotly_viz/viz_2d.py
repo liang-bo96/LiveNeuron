@@ -2036,7 +2036,7 @@ class EelbrainPlotly2DViz:
             Display width in pixels for Jupyter integration. Default is 1200.
         height
             Display height in pixels for Jupyter integration. Default is 900.
-            This is used when auto_height is False.
+            This is used when ``auto_height`` is False.
         auto_height
             When True (default), automatically calculates the Jupyter iframe height to
             match the combined butterfly + brain figure heights. Set to False if you
