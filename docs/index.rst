@@ -33,7 +33,7 @@ Installation
 
 .. code-block:: bash
 
-   pip install git+https://github.com/liang-bo96/LiveNeuron.git
+   pip install https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
 
 Basic Usage
 ^^^^^^^^^^^
@@ -45,7 +45,7 @@ Basic Usage
    # Create visualization with built-in sample data
    viz = EelbrainPlotly2DViz()
    
-   # Launch in browser (random port)
+   # Launch in interactive plot
    viz.run()
 
 .. toctree::
