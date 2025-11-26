@@ -18,7 +18,7 @@ Sample Data Module
 
 .. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
 
-**Note:** Direct dictionary input is not supported in current implementation. Use built-in MNE sample data or Eelbrain NDVar instead.
+**Note:** :func:`create_sample_brain_data` returns a minimal NDVar-like object that can be passed directly as ``y`` to :class:`EelbrainPlotly2DViz`.
 
 Data Format
 -----------

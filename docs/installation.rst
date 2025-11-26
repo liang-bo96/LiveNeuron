@@ -21,14 +21,7 @@ Install directly from GitHub:
 
 .. code-block:: bash
 
-   # Basic installation
    pip install git+https://github.com/liang-bo96/LiveNeuron.git
-
-   # With optional Eelbrain support
-   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[eelbrain]"
-
-   # Development installation
-   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[dev]"
 
 Local Development
 -----------------
@@ -44,19 +37,7 @@ To install from source for development:
 Development Installation
 ------------------------
 
-For development, install with additional dependencies:
-
-.. code-block:: bash
-
-   pip install -e ".[dev]"
-
-This includes:
-
-* pytest (testing)
-* black (code formatting)
-* flake8 (linting)
-* mypy (type checking)
-* pre-commit (git hooks)
+For development installation, clone the repo and install editable plus the extras you need.
 
 Verify Installation
 -------------------
@@ -97,4 +78,3 @@ Some features require Eelbrain. Install it with:
 .. code-block:: bash
 
    pip install eelbrain
-
