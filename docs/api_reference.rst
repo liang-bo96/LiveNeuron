@@ -30,7 +30,8 @@ EelbrainPlotly2DViz
        arrow_scale=1.0,
        realtime=False,
        layout_mode='vertical',
-       display_mode='lyr'
+       display_mode='lyr',
+       show_labels=False,
    )
 
 **Parameters:**
@@ -120,6 +121,10 @@ EelbrainPlotly2DViz
   * ``'lyrz'``: Left + Coronal + Right + Axial
   * ``'lzry'``: Left + Axial + Right + Coronal
 
+* **show_labels** (*bool*, default=False)
+  
+  Show plot titles and legends when True; hide them for a cleaner UI when False.
+
 Methods
 -------
 
@@ -132,19 +137,17 @@ Start the interactive Dash application.
 
    viz.run(
        port=None,
-       debug=True,
-       mode='external',
-       width=1200,
-       height=900
+       debug=False,
+       mode=None,
    )
 
 **Parameters:**
 
 * **port** (*int or None*): Port number for server. If None, uses random port.
-* **debug** (*bool*): Enable debug mode (default: True).
-* **mode** (*str*): Display mode - ``'external'``, ``'inline'``, or ``'jupyterlab'``.
-* **width** (*int*): Display width in pixels (default: 1200).
-* **height** (*int*): Display height in pixels (default: 900).
+* **debug** (*bool*): Enable debug mode (default: False for a clean UI).
+* **mode** (*str or None*): Display mode - ``'external'``, ``'inline'``, or ``'jupyterlab'``. ``None`` auto-selects inline for Jupyter and external otherwise.
+
+Display sizing is automatic in Jupyter and browser modes.
 
 **Returns:**
   None
@@ -159,8 +162,8 @@ Start the interactive Dash application.
    # Custom port
    viz.run(port=8888)
    
-   # Jupyter inline
-   viz.run(mode='inline', width=1200, height=900)
+   # Jupyter inline (auto mode/size)
+   viz.run()
 
 export_images()
 ^^^^^^^^^^^^^^^

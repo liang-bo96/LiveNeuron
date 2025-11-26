@@ -22,7 +22,7 @@ Basic Workflow
    viz = EelbrainPlotly2DViz(display_mode="lyr")
    
    # Step 2: Launch
-   viz.run()  # Use mode='inline' for Jupyter notebooks
+   viz.run()  # Auto inline in Jupyter; external browser otherwise
    
    # Step 3: Interact (in browser/notebook)
    # Step 4: Export
@@ -423,15 +423,15 @@ Multiple options for Jupyter notebooks:
 
 .. code-block:: python
 
-   # Inline display (embedded in notebook)
-   viz.run(mode='inline', width=1200, height=900)
+   # Inline display (embedded in notebook) - auto size
+   viz.run()
    
    # JupyterLab tab (opens in separate tab)
-   viz.run(mode='jupyterlab', width=1400, height=1000)
+   viz.run(mode='jupyterlab')
 
 **Comparison:**
 
-* ``run(mode='inline')``: Inline display embedded in notebook
+* ``run()``: Inline display embedded in notebook (auto size)
 * ``run(mode='jupyterlab')``: Opens in separate JupyterLab tab
 
 Exporting Images
@@ -574,7 +574,7 @@ For Interactive Exploration
        cmap='Viridis'
    )
    
-   viz.run(debug=True)  # Enable debug mode
+   viz.run()  # Enable debug with debug=True when troubleshooting
 
 Troubleshooting
 ---------------
@@ -632,7 +632,7 @@ Check:
 Debug Mode
 ^^^^^^^^^^
 
-Enable debug mode for troubleshooting:
+Debug mode is off by default for a clean UI. Enable it when troubleshooting:
 
 .. code-block:: python
 

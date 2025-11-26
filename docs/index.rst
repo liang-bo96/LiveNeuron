@@ -15,8 +15,8 @@ Key Features
 ------------
 
 * **Interactive 2D brain projections** - axial, sagittal, coronal, and hemisphere views
-* **Butterfly plots** for time series visualization
-* **453x faster arrow rendering** using optimized batch techniques
+* **Activity time-course plots** for time series visualization
+* **Optimized arrow rendering** for smoother interaction with dense vector fields
 * **Real-time controls** for time navigation and interaction
 * **Flexible data input** - supports Eelbrain NDVar, numpy arrays, and built-in MNE sample data
 * **Jupyter notebook support** for interactive development
@@ -35,25 +35,6 @@ Installation
 
    pip install git+https://github.com/liang-bo96/LiveNeuron.git
 
-**Method 2: Download and Install from ZIP**
-
-.. code-block:: bash
-
-   # Download the ZIP file
-   wget https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
-   
-   # Or download manually from:
-   # https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
-   
-   # Unzip the file
-   unzip main.zip
-   
-   # Navigate to the directory
-   cd LiveNeuron-main
-   
-   # Install the package
-   pip install .
-
 Basic Usage
 ^^^^^^^^^^^
 
@@ -66,9 +47,6 @@ Basic Usage
    
    # Launch in browser (random port)
    viz.run()
-
-# Or use in Jupyter (inline mode)
-viz.run(mode='inline', width=1200, height=900)
 
 .. toctree::
    :maxdepth: 2
@@ -87,4 +65,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

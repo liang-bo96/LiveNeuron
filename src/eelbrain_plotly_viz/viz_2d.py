@@ -1948,8 +1948,6 @@ class EelbrainPlotly2DViz:
         port: Optional[int] = None,
         debug: bool = False,
         mode: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
     ) -> None:
         """Run the Dash app with Jupyter integration support.
 
@@ -1965,13 +1963,6 @@ class EelbrainPlotly2DViz:
             - 'jupyterlab': Open in JupyterLab tab (modern Dash)
             - 'external': Open in separate browser window (default outside Jupyter)
             If None, automatically selects 'inline' in Jupyter, 'external' otherwise.
-        width
-            Display width in pixels for Jupyter integration. Default is 1200.
-            Only used in Jupyter modes.
-        height
-            Display height in pixels for Jupyter integration.
-            If None (default), automatically calculates based on content.
-            Only used in Jupyter modes.
         """
         if port is None:
             port = random.randint(8001, 9001)
@@ -1979,10 +1970,6 @@ class EelbrainPlotly2DViz:
         # Auto-detect mode based on environment
         if mode is None:
             mode = "inline" if JUPYTER_AVAILABLE else "external"
-
-        # Set default width if not specified
-        if width is None:
-            width = 1200
 
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
             # Set Jupyter mode and rebuild layout with Jupyter-specific styles
@@ -1994,18 +1981,15 @@ class EelbrainPlotly2DViz:
             # Rebuild layout with Jupyter styles
             self._setup_layout()
 
-            # Auto-calculate height if not specified
-            if height is None:
-                iframe_height = self._estimate_jupyter_iframe_height()
-                if iframe_height is None:
-                    iframe_height = 900  # Fallback default
-            else:
-                iframe_height = height
+            # Auto-calculate height
+            iframe_height = self._estimate_jupyter_iframe_height()
+            if iframe_height is None:
+                iframe_height = 900  # Fallback default
 
             print(
                 "\nStarting 2D Brain Visualization with modern Dash Jupyter integration..."
             )
-            print(f"Mode: {mode}, Size: {width}x{iframe_height}px")
+            print(f"Mode: {mode}, Auto height: {iframe_height}px")
 
             # Use modern Dash Jupyter integration
             self.app.run(
@@ -2023,16 +2007,12 @@ class EelbrainPlotly2DViz:
             self.app.run(debug=debug, port=port)
 
     def _show_in_jupyter(
-        self, width: int = 1200, height: int = 900, debug: bool = False
+        self, debug: bool = False
     ) -> None:
         """Convenience method to display the visualization inline in Jupyter notebooks (internal method).
 
         Parameters
         ----------
-        width
-            Display width in pixels. Default is 1200.
-        height
-            Display height in pixels. Default is 900.
         debug
             Enable debug mode. Default is False for cleaner output.
 
@@ -2041,9 +2021,6 @@ class EelbrainPlotly2DViz:
         Basic usage in Jupyter:
         >>> viz = EelbrainPlotly2DViz()
         >>> viz._show_in_jupyter()
-
-        Custom sizing:
-        >>> viz._show_in_jupyter(width=1400, height=1000)
         """
         if not JUPYTER_AVAILABLE:
             print("Warning: Jupyter environment not detected.")
@@ -2059,7 +2036,7 @@ class EelbrainPlotly2DViz:
 
         self._setup_layout()  # Rebuild layout with Jupyter styles
 
-        self.run(mode="inline", width=width, height=height, debug=debug)
+        self.run(mode="inline", debug=debug)
 
     def export_images(
         self,
@@ -2198,7 +2175,7 @@ if __name__ == "__main__":
         # print("Export result:", result)
 
         # For Jupyter notebooks, use:
-        # viz_2d._show_in_jupyter(width=1200, height=900)
+        # viz_2d._show_in_jupyter()
 
         # For regular Python scripts or external browser:
         viz_2d.run()

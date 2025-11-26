@@ -182,13 +182,13 @@ Using in Jupyter Notebook
        layout_mode="horizontal"
    )
    
-   # Display inline in notebook (embedded)
-   viz.run(mode='inline', width=1200, height=900)
+   # Display inline in notebook (embedded) - auto size
+   viz.run()
    
    # Or open in JupyterLab tab
-   viz.run(mode='jupyterlab', width=1400, height=1000)
+   viz.run(mode='jupyterlab')
    
-   # Or open in external browser (default)
+   # Or open in external browser (default outside Jupyter)
    viz.run(mode='external')
 
 Working with Eelbrain Data
@@ -248,7 +248,7 @@ Custom Server Configuration
 .. code-block:: python
 
    # Run on custom port
-   viz.run(port=8888, debug=True)
+   viz.run(port=8888)  # Enable debug=True only when troubleshooting
    
    # Run on random port (default)
    viz.run()  # Check console for URL

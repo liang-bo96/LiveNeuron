@@ -109,7 +109,7 @@ Example 7: Basic Jupyter Usage
        display_mode="lyr",
        layout_mode="horizontal"
    )
-   viz.run(mode='inline', width=1200, height=900)
+   viz.run()
 
 Example 8: Jupyter with run() Method
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,10 +121,10 @@ Example 8: Jupyter with run() Method
    viz = EelbrainPlotly2DViz(display_mode="lr")
    
    # Inline mode
-   viz.run(mode='inline', width=1200, height=900)
+   viz.run()
    
    # Or JupyterLab tab mode
-   # viz.run(mode='jupyterlab', width=1400, height=1000)
+   # viz.run(mode='jupyterlab')
 
 Example 9: Multiple Visualizations in Notebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -142,7 +142,7 @@ Example 9: Multiple Visualizations in Notebook
            display_mode=mode,
            layout_mode="horizontal"
        )
-       viz.run(mode='inline', width=1000, height=600)
+       viz.run()
 
 Working with Eelbrain Data
 ---------------------------
@@ -260,7 +260,7 @@ Example 15: Custom Port
    viz = EelbrainPlotly2DViz(display_mode="lyr")
    
    # Run on specific port
-   viz.run(port=8888, debug=True)
+   viz.run(port=8888)  # Add debug=True if you need verbose output
 
 Example 16: Production Mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -299,7 +299,7 @@ Example 17: All Single View Modes
    for mode, description in single_views.items():
        print(f"\n{mode}: {description}")
        viz = EelbrainPlotly2DViz(display_mode=mode)
-       viz.run(mode='inline', width=800, height=600)
+       viz.run()
 
 Example 18: All Multi-View Modes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -325,7 +325,7 @@ Example 18: All Multi-View Modes
            display_mode=mode,
            layout_mode="horizontal"
        )
-       viz.run(mode='inline', width=1200, height=700)
+       viz.run()
 
 Example 19: Four-View Modes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -347,7 +347,7 @@ Example 19: Four-View Modes
            layout_mode="horizontal",  # Recommended for 4 views
            arrow_scale=0.8            # Smaller arrows for clarity
        )
-       viz.run(mode='inline', width=1400, height=800)
+       viz.run()
 
 Customization Examples
 -----------------------
@@ -370,7 +370,7 @@ Example 20: Progressive Arrow Threshold
            arrow_scale=1.0,
            cmap='Hot'
        )
-       viz.run(mode='inline', width=1000, height=600)
+       viz.run()
 
 Example 21: Arrow Scale Comparison
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -390,7 +390,7 @@ Example 21: Arrow Scale Comparison
            arrow_threshold='auto',
            cmap='YlOrRd'
        )
-       viz.run(mode='inline', width=1200, height=700)
+       viz.run()
 
 Example 22: Colormap Comparison
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -409,7 +409,7 @@ Example 22: Colormap Comparison
            cmap=cmap,
            show_max_only=True
        )
-       viz.run(mode='inline', width=1200, height=700)
+       viz.run()
 
 Complete Example Scripts
 -------------------------
@@ -538,10 +538,10 @@ Tip 4: Jupyter vs Browser
 .. code-block:: python
 
    # For interactive exploration in notebook:
-   viz.run(mode='inline', width=1200, height=900)
+   viz.run()
    
    # For full-screen experience:
    viz.run(mode='external')
    
    # For quick inline preview:
-   viz.run(mode='inline', width=1000, height=700)
+   viz.run()
