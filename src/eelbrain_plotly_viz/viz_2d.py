@@ -88,6 +88,10 @@ class EelbrainPlotly2DViz:
         - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
         - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
         Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
+    show_labels
+        If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
+        'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
+        cleaner visualization. Default is False.
 
     Notes
     -----
@@ -110,10 +114,26 @@ class EelbrainPlotly2DViz:
         realtime: bool = False,
         layout_mode: str = "vertical",
         display_mode: str = "lyr",
+        show_labels: bool = False,
     ):
         """Initialize the visualization app and load data."""
         # Use regular Dash with modern Jupyter integration
-        self.app: dash.Dash = dash.Dash(__name__)
+        # Add external CSS to remove ALL default margins/padding from Dash containers
+        external_stylesheets = [
+            {
+                "href": "data:text/css;charset=utf-8,"
+                + "*{box-sizing:border-box;}"
+                + "html{margin:0!important;padding:0!important;height:auto!important;overflow:hidden;}"
+                + "body{margin:0!important;padding:0!important;height:auto!important;overflow:hidden;}"
+                + "#react-entry-point{margin:0!important;padding:0!important;height:auto!important;}"
+                + "#_dash-app-content{margin:0!important;padding:0!important;height:auto!important;}"
+                + "._dash-loading{margin:0!important;padding:0!important;}",
+                "rel": "stylesheet",
+            }
+        ]
+        self.app: dash.Dash = dash.Dash(
+            __name__, external_stylesheets=external_stylesheets
+        )
 
         # Initialize data attributes
         self.glass_brain_data: Optional[np.ndarray] = None  # (n_sources, 3, n_times)
@@ -131,6 +151,8 @@ class EelbrainPlotly2DViz:
         self.realtime_mode_default = (
             ["realtime"] if realtime else []
         )  # Default state for real-time mode
+        self.show_labels: bool = show_labels  # Control titles and legends display
+        self._current_layout_config: Optional[Dict[str, Any]] = None
 
         # Validate and set layout mode
         valid_layouts = ["vertical", "horizontal"]
@@ -153,6 +175,10 @@ class EelbrainPlotly2DViz:
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
         self._calculate_view_ranges()
+
+        # Unify view sizes to ensure all brain plots have consistent display size
+        # This is especially important in horizontal layout mode
+        self._unify_view_sizes_for_jupyter()
 
         # Calculate global colormap range across all time points for consistent visualization
         self._calculate_global_colormap_range()
@@ -440,11 +466,17 @@ class EelbrainPlotly2DViz:
                 "arrangement": "vertical",
             },
             "horizontal": {
-                "butterfly_width": "35%",
+                "butterfly_width": "30%",
                 "brain_width": self._get_brain_width_for_views(num_views, "horizontal"),
-                "brain_margin": {"jupyter": "0.3%", "browser": "0.3%"},
-                "plot_height": {"jupyter": "300px", "browser": "350px"},
-                "butterfly_height": {"jupyter": "300px", "browser": "350px"},
+                "brain_margin": {"jupyter": "0px", "browser": "0px"},
+                "plot_height": {
+                    "jupyter": "200px",
+                    "browser": "350px",
+                },  # Match brain figure height
+                "butterfly_height": {
+                    "jupyter": "200px",
+                    "browser": "350px",
+                },  # Match butterfly figure height
                 "container_padding": {"jupyter": "5px", "browser": "10px"},
                 "arrangement": "horizontal",
             },
@@ -472,17 +504,76 @@ class EelbrainPlotly2DViz:
             and self.display_mode in ["lzry", "lyrz"]
             and num_views == 4
         ):
-            config["brain_margin"] = "0.02%"  # Very small margin
+            config["brain_margin"] = "0px"  # No margin between brain plots
             config["butterfly_width"] = (
-                "25%"  # Smaller butterfly plot: 25% + 4*16% + margins = ~90%
+                "25%"  # Smaller butterfly plot: 25% + 4*16% = ~90%
             )
 
         return config
 
+    def _estimate_jupyter_iframe_height(self) -> Optional[int]:
+        """Estimate iframe height so plots fill the cell without stretching."""
+        if not self.is_jupyter_mode:
+            return None
+
+        config = getattr(self, "_current_layout_config", None)
+        if not config:
+            return None
+
+        def _to_pixels(value: Any) -> Optional[int]:
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return int(value)
+            if isinstance(value, str) and value.endswith("px"):
+                try:
+                    return int(float(value[:-2]))
+                except ValueError:
+                    return None
+            return None
+
+        butterfly_height = _to_pixels(config.get("butterfly_height"))
+        brain_height = _to_pixels(config.get("plot_height"))
+
+        # Calculate total height based on actual layout structure
+        if self.layout_mode == "vertical":
+            # Vertical layout structure:
+            # - Title (H1): ~50px (text + margins)
+            # - Checklist: ~50px (checkbox + margins)
+            # - Butterfly plot: 300px
+            # - Brain plots: 250px
+            # - Container padding: ~2px
+            dynamic_height = (butterfly_height or 0) + (brain_height or 0)
+            static_offset = 102  # Title + Checklist + Padding
+            total_height = dynamic_height + static_offset
+        else:
+            # Horizontal layout actual structure:
+            # - Colorbar row: ~120px (80px graph + 40px container padding/margins)
+            # - Main content row: 200px (butterfly and brains side-by-side)
+            # - Container padding: 10px
+            colorbar_row_height = 120
+            main_content_height = max(butterfly_height or 0, brain_height or 0)
+            container_padding_total = 10
+
+            total_height = (
+                colorbar_row_height + main_content_height + container_padding_total
+            )
+
+            # Skip the normal calculation for horizontal mode
+            dynamic_height = None
+            static_offset = None
+
+        # Ensure we reserve enough space even if parsing failed
+        return max(total_height, 200)
+
     def _get_brain_width_for_views(
         self, num_views: int, layout_mode: str
     ) -> Dict[str, str]:
-        """Calculate brain view width based on number of views and layout mode."""
+        """Calculate brain view width based on number of views and layout mode.
+
+        For horizontal mode, we pre-allocate space for butterfly plot and colorbar,
+        then divide the remaining space equally among brain plots to ensure uniform size.
+        """
         if layout_mode == "vertical":
             # In vertical mode, views are arranged horizontally below butterfly plot
             if num_views == 1:
@@ -492,19 +583,19 @@ class EelbrainPlotly2DViz:
             else:  # 3 or more views
                 return {"jupyter": "30%", "browser": "32%"}
         else:  # horizontal mode
-            # In horizontal mode, views share space with butterfly plot
-            # Special case for 4-view modes (lzry, lyrz) - arrange all in one row
-            if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
-                return {
-                    "jupyter": "16%",
-                    "browser": "16%",
-                }  # 4 views: 25% + 4*16% + small margins = ~90%
-            elif num_views == 1:
-                return {"jupyter": "60%", "browser": "60%"}
-            elif num_views == 2:
-                return {"jupyter": "30%", "browser": "30%"}
-            else:  # 3 views (like lyr, lzr)
-                return {"jupyter": "20%", "browser": "20%"}
+            # Pre-allocate space for butterfly plot
+            # Total available: 100%
+            # - Butterfly plot: 25%
+            # - Remaining for brain plots: 75%
+
+            butterfly_width = 30  # Butterfly takes 30%
+            available_for_brains = 100 - butterfly_width  # 75%
+
+            # Divide remaining space equally among all brain plots
+            brain_width = available_for_brains / num_views
+            brain_width_str = f"{brain_width:.2f}%"
+
+            return {"jupyter": brain_width_str, "browser": brain_width_str}
 
     def _create_brain_view_containers(
         self,
@@ -551,15 +642,22 @@ class EelbrainPlotly2DViz:
                     dcc.Graph(
                         id=f"brain-{view_name}-plot",
                         figure=brain_plots[view_name],
-                        style={"height": brain_height},
+                        style={
+                            "height": brain_height,
+                            "width": "100%",
+                            "margin": "0",
+                            "padding": "0",
+                        },
+                        config={"displayModeBar": False},
                     )
                 ],
                 style={
                     "width": brain_width,
                     "display": "inline-block",
                     "verticalAlign": "top",
-                    "margin": brain_margin,
-                    "padding": "0px",
+                    "margin": "0",
+                    "padding": "0",
+                    "boxSizing": "border-box",
                 },
             )
             containers.append(container)
@@ -578,12 +676,27 @@ class EelbrainPlotly2DViz:
 
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode."""
-        # Create initial figures
-        initial_butterfly = self._create_butterfly_plot(0)
-        initial_brain_plots = self._create_2d_brain_projections_plotly(0)
-
-        # Get layout configuration
+        # Get layout configuration first
         config = self._get_layout_config()
+        self._current_layout_config = config
+
+        # Extract butterfly height from config
+        butterfly_height = None
+        if "butterfly_height" in config:
+            butterfly_height_str = config["butterfly_height"]
+            if isinstance(butterfly_height_str, str) and butterfly_height_str.endswith(
+                "px"
+            ):
+                try:
+                    butterfly_height = int(float(butterfly_height_str[:-2]))
+                except ValueError:
+                    pass
+
+        # Create initial figures with configured height
+        initial_butterfly = self._create_butterfly_plot(
+            0, figure_height=butterfly_height
+        )
+        initial_brain_plots = self._create_2d_brain_projections_plotly(0)
 
         # Setup layout based on mode
         if self.layout_mode == "horizontal":
@@ -657,30 +770,61 @@ class EelbrainPlotly2DViz:
                                     ),
                                     style={"textAlign": "center"},
                                 ),
-                                # Status indicator
-                                html.Div(
-                                    id="update-status",
-                                    children="Click on butterfly plot to update brain views",
-                                    style={
-                                        "textAlign": "center",
-                                        "padding": "10px",
-                                        "fontStyle": "italic",
-                                        "color": "#666",
-                                    },
-                                ),
                             ],
                             style={"width": "100%"},
                         ),
                     ]
                 ),
-                # Info panel
+                # Info panel (hidden)
                 html.Div(
                     id="info-panel",
-                    style={"clear": "both", "padding": "10px", "textAlign": "center"},
+                    style={"display": "none"},
                 ),
             ],
-            style={"width": "100%", "height": "100%", "padding": container_padding},
+            style={"width": "100%", "height": "auto", "padding": container_padding},
         )
+
+    def _create_horizontal_colorbar(self) -> go.Figure:
+        """Create a standalone horizontal colorbar figure."""
+        fig = go.Figure()
+
+        # Add invisible scatter trace just for the colorbar
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="markers",
+                marker=dict(
+                    colorscale=self.cmap,
+                    showscale=True,
+                    cmin=self.global_vmin,
+                    cmax=self.global_vmax,
+                    colorbar=dict(
+                        thickness=20,
+                        len=0.8,
+                        x=0.5,
+                        xanchor="center",
+                        y=0.5,
+                        yanchor="middle",
+                        orientation="h",
+                    ),
+                ),
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+
+        # Minimal layout - just show the colorbar
+        fig.update_layout(
+            height=80,
+            margin=dict(l=0, r=0, t=0, b=0),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+        )
+
+        return fig
 
     def _setup_horizontal_layout(
         self, initial_butterfly, initial_brain_plots, config
@@ -692,24 +836,61 @@ class EelbrainPlotly2DViz:
         brain_margin = config["brain_margin"]
         container_padding = config["container_padding"]
 
+        # Create horizontal colorbar
+        colorbar_fig = self._create_horizontal_colorbar()
+
         self.app.layout = html.Div(
             [
-                html.H1(
-                    "Eelbrain Plotly 2D Brain Visualization - Horizontal Layout",
-                    style={"textAlign": "center", "margin": "10px 0"},
-                ),
-                # Real-time mode switch
-                dcc.Checklist(
-                    id="realtime-mode-switch",
-                    options=[
-                        {"label": "Real-time Update on Hover", "value": "realtime"}
-                    ],
-                    value=self.realtime_mode_default,
-                    style={"textAlign": "center", "margin": "10px 0"},
-                ),
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
                 dcc.Store(id="selected-source-idx", data=None),
+                # Top row: Realtime switch (left) and Colorbar (right)
+                html.Div(
+                    [
+                        # Left: Real-time mode switch above butterfly plot area
+                        html.Div(
+                            [
+                                dcc.Checklist(
+                                    id="realtime-mode-switch",
+                                    options=[
+                                        {
+                                            "label": "Real-time Update on Hover",
+                                            "value": "realtime",
+                                        }
+                                    ],
+                                    value=self.realtime_mode_default,
+                                    style={"textAlign": "center", "marginTop": "20px"},
+                                )
+                            ],
+                            style={
+                                "width": "35%",
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                            },
+                        ),
+                        # Right: Horizontal colorbar above brain plots
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id="horizontal-colorbar",
+                                    figure=colorbar_fig,
+                                    style={"height": "80px"},
+                                    config={"displayModeBar": False},
+                                )
+                            ],
+                            style={
+                                "width": "65%",
+                                "display": "inline-block",
+                                "verticalAlign": "top",
+                                "textAlign": "center",
+                            },
+                        ),
+                    ],
+                    style={
+                        "marginTop": "0px",
+                        "marginBottom": "0px",
+                    },
+                ),
                 # Main content - arranged horizontally
                 html.Div(
                     [
@@ -719,41 +900,47 @@ class EelbrainPlotly2DViz:
                                 dcc.Graph(
                                     id="butterfly-plot",
                                     figure=initial_butterfly,
-                                    style=butterfly_graph_style,
+                                    style={
+                                        "height": butterfly_graph_style["height"],
+                                        "width": "100%",
+                                        "margin": "0",
+                                        "padding": "0",
+                                    },
+                                    config={"displayModeBar": False},
                                 )
                             ],
                             style={
                                 "width": config["butterfly_width"],
                                 "display": "inline-block",
                                 "verticalAlign": "top",
-                                "margin": brain_margin,
-                                "padding": "0px",
+                                "margin": "0",
+                                "padding": "0",
+                                "boxSizing": "border-box",
                             },
                         )
                     ]
                     + self._create_brain_view_containers_horizontal(
                         initial_brain_plots, brain_height, brain_width, brain_margin
                     ),
-                    style={"textAlign": "center"},
-                ),
-                # Status indicator
-                html.Div(
-                    id="update-status",
-                    children="Click on butterfly plot to update brain views | Hover for real-time updates",
                     style={
-                        "textAlign": "center",
-                        "padding": "10px",
-                        "fontStyle": "italic",
-                        "color": "#666",
+                        "marginBottom": "0px",
+                        "fontSize": "0",
                     },
                 ),
-                # Info panel
+                # Info panel (hidden)
                 html.Div(
                     id="info-panel",
-                    style={"clear": "both", "padding": "10px", "textAlign": "center"},
+                    style={"display": "none"},
                 ),
             ],
-            style={"width": "100%", "height": "100%", "padding": container_padding},
+            style={
+                "width": "100%",
+                "height": "auto",
+                "maxHeight": "100%",
+                "padding": container_padding,
+                "margin": "0",
+                "overflow": "hidden",
+            },
         )
 
     def _setup_callbacks(self) -> None:
@@ -765,7 +952,19 @@ class EelbrainPlotly2DViz:
         def update_butterfly(time_idx: int) -> go.Figure:
             if time_idx is None:
                 time_idx = 0
-            return self._create_butterfly_plot(time_idx)
+            # Get butterfly height from current config
+            config = getattr(self, "_current_layout_config", None)
+            butterfly_height = None
+            if config and "butterfly_height" in config:
+                butterfly_height_str = config["butterfly_height"]
+                if isinstance(
+                    butterfly_height_str, str
+                ) and butterfly_height_str.endswith("px"):
+                    try:
+                        butterfly_height = int(float(butterfly_height_str[:-2]))
+                    except ValueError:
+                        pass
+            return self._create_butterfly_plot(time_idx, figure_height=butterfly_height)
 
         # Dynamic brain plot outputs based on display_mode
         brain_outputs = [
@@ -866,39 +1065,6 @@ class EelbrainPlotly2DViz:
             return dash.no_update, dash.no_update, dash.no_update
 
         @self.app.callback(
-            Output("update-status", "children"),
-            Output("update-status", "style"),
-            Input("selected-time-idx", "data"),
-        )
-        def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
-            if (
-                time_idx is not None
-                and self.time_values is not None
-                and 0 <= time_idx < len(self.time_values)
-            ):
-                time_val = self.time_values[time_idx]
-                status_text = (
-                    f"Brain views updated for time: {time_val:.3f}s (index {time_idx})"
-                )
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "10px",
-                    "fontStyle": "italic",
-                    "color": "#2E8B57",
-                    "backgroundColor": "#F0FFF0",
-                }
-            else:
-                status_text = "Click on butterfly plot to update brain views"
-                status_style = {
-                    "textAlign": "center",
-                    "padding": "10px",
-                    "fontStyle": "italic",
-                    "color": "#666",
-                }
-
-            return status_text, status_style
-
-        @self.app.callback(
             Output("info-panel", "children"),
             Input("selected-time-idx", "data"),
             Input("selected-source-idx", "data"),
@@ -933,8 +1099,18 @@ class EelbrainPlotly2DViz:
             )
             return result
 
-    def _create_butterfly_plot(self, selected_time_idx: int = 0) -> go.Figure:
-        """Create butterfly plot figure (internal method)."""
+    def _create_butterfly_plot(
+        self, selected_time_idx: int = 0, figure_height: Optional[int] = None
+    ) -> go.Figure:
+        """Create butterfly plot figure (internal method).
+
+        Parameters
+        ----------
+        selected_time_idx
+            Time index to highlight with vertical line.
+        figure_height
+            Optional figure height in pixels. If None, uses default based on mode.
+        """
         fig = go.Figure()
 
         if self.butterfly_data is None or self.time_values is None:
@@ -990,7 +1166,7 @@ class EelbrainPlotly2DViz:
                         mode="lines",
                         name=f"Source {i}",
                         customdata=[i] * n_times,
-                        showlegend=(idx < 3),
+                        showlegend=(idx < 3) and self.show_labels,
                         opacity=0.6,
                         line=dict(width=1),
                         hoverinfo="skip",  # Don't show in hover
@@ -1006,7 +1182,7 @@ class EelbrainPlotly2DViz:
                 mode="lines",
                 name="Mean Activity",
                 line=dict(color="red", width=3),
-                showlegend=True,
+                showlegend=self.show_labels,
                 hovertemplate="Mean: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
@@ -1020,7 +1196,7 @@ class EelbrainPlotly2DViz:
                 mode="lines",
                 name="Max Activity",
                 line=dict(color="darkblue", width=3),
-                showlegend=True,
+                showlegend=self.show_labels,
                 hovertemplate="Max: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
@@ -1032,26 +1208,56 @@ class EelbrainPlotly2DViz:
                 x=selected_time, line_width=2, line_dash="dash", line_color="blue"
             )
 
-        # Update title based on display mode
-        if self.show_max_only:
-            title_text = (
-                f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
-            )
+        # Update title based on display mode and show_labels
+        if self.show_labels:
+            if self.show_max_only:
+                title_text = (
+                    f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
+                )
+            else:
+                title_text = (
+                    f"Source Activity Time Series (subset of {n_sources} sources)"
+                )
+            xaxis_title = "Time (s)"
+            yaxis_title = f"Activity{unit_suffix}"
         else:
-            title_text = f"Source Activity Time Series (subset of {n_sources} sources)"
+            title_text = None
+            xaxis_title = None
+            yaxis_title = None
 
         # Adjust layout based on mode
-        if self.is_jupyter_mode:
-            height = 300
-            margin = dict(l=40, r=40, t=60, b=40)  # Reduced margins for Jupyter
+        if figure_height is not None:
+            # Use provided height
+            height = figure_height
         else:
-            height = 500
-            margin = dict(l=40, r=40, t=60, b=40)  # Standard margins
+            # Try to get height from current layout config
+            config = getattr(self, "_current_layout_config", None)
+            if config and "butterfly_height" in config:
+                butterfly_height_str = config["butterfly_height"]
+                if isinstance(
+                    butterfly_height_str, str
+                ) and butterfly_height_str.endswith("px"):
+                    try:
+                        height = int(float(butterfly_height_str[:-2]))
+                    except ValueError:
+                        # Fall back to mode-based defaults
+                        height = 200 if self.is_jupyter_mode else 350
+                else:
+                    height = 200 if self.is_jupyter_mode else 350
+            else:
+                # Fall back to mode-based defaults
+                height = 200 if self.is_jupyter_mode else 350
+
+        if self.is_jupyter_mode:
+            margin = dict(l=0, r=0, t=0, b=0)  # Tight margins for maximum space
+        else:
+            margin = dict(l=40, r=20, t=10, b=40)  # Moderate margins for browser
 
         fig.update_layout(
             title=title_text,
-            xaxis_title="Time (s)",
-            yaxis_title=f"Activity{unit_suffix}",
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            autosize=True,  # Enable autosize to fill container
             xaxis=dict(
                 range=[self.time_values[0], self.time_values[-1]],
                 showspikes=True,  # Show vertical spike line at cursor
@@ -1063,7 +1269,7 @@ class EelbrainPlotly2DViz:
             hoverdistance=-1,  # Allow hover without nearby data points
             height=height,
             margin=margin,
-            showlegend=True,
+            showlegend=self.show_labels,  # Only show legend if show_labels is True
             # Enable clicking on the plot area
             clickmode="event+select",
         )
@@ -1111,14 +1317,31 @@ class EelbrainPlotly2DViz:
             global_min = self.global_vmin
             global_max = self.global_vmax
 
+            # Get figure height from current layout config
+            config = getattr(self, "_current_layout_config", None)
+            figure_height = None
+            if config and "plot_height" in config:
+                plot_height_str = config["plot_height"]
+                if isinstance(plot_height_str, str) and plot_height_str.endswith("px"):
+                    try:
+                        figure_height = int(float(plot_height_str[:-2]))
+                    except ValueError:
+                        pass
+
             # Create brain projections
             brain_plots = {}
             views = self.brain_views
 
             for i, view_name in enumerate(views):
                 try:
-                    # Only show colorbar on the last view
-                    show_colorbar = i == len(views) - 1
+                    # Show colorbar on last view in vertical mode, hide in horizontal mode
+                    if self.layout_mode == "horizontal":
+                        show_colorbar = False  # Horizontal has separate colorbar
+                    else:
+                        show_colorbar = (
+                            i == len(views) - 1
+                        )  # Show on last view in vertical
+
                     brain_fig = self._create_plotly_brain_projection(
                         view_name,
                         self.source_coords,
@@ -1128,6 +1351,7 @@ class EelbrainPlotly2DViz:
                         show_colorbar=show_colorbar,
                         zmin=global_min,
                         zmax=global_max,
+                        figure_height=figure_height,
                     )
                     brain_plots[view_name] = brain_fig
                 except Exception:
@@ -1169,8 +1393,15 @@ class EelbrainPlotly2DViz:
         show_colorbar: bool = True,
         zmin: float = None,
         zmax: float = None,
+        figure_height: Optional[int] = None,
     ) -> go.Figure:
-        """Create a Plotly plot for a specific brain view with vector arrows."""
+        """Create a Plotly plot for a specific brain view with vector arrows.
+
+        Parameters
+        ----------
+        figure_height
+            Optional figure height in pixels. If None, uses default based on mode.
+        """
         # Show all data without filtering
         active_coords = coords
         active_activity = activity
@@ -1232,7 +1463,7 @@ class EelbrainPlotly2DViz:
             if has_vector_data:
                 u_vectors = -active_vectors[:, 1]  # Negative Y components (flipped)
                 v_vectors = active_vectors[:, 2]  # Z components
-            title = "Left Hemisphere"
+            title = None
         elif (
             view_name == "right_hemisphere"
         ):  # Right hemisphere lateral view (Y vs Z, X >= 0)
@@ -1250,7 +1481,7 @@ class EelbrainPlotly2DViz:
             if has_vector_data:
                 u_vectors = active_vectors[:, 1]  # Y components
                 v_vectors = active_vectors[:, 2]  # Z components
-            title = "Right Hemisphere"
+            title = None
         else:
             # Fallback for unknown view types
             x_coords = active_coords[:, 0]
@@ -1312,10 +1543,11 @@ class EelbrainPlotly2DViz:
                     colorbar=(
                         dict(
                             title="",
-                            thickness=15,  # Thinner colorbar
+                            thickness=12,  # Thinner colorbar for less space usage
                             len=0.7,  # Shorter colorbar (70% of plot height)
-                            x=1.02,  # Position slightly outside the plot area
+                            x=1.15,  # Position further outside to avoid squeezing brain plot
                             xanchor="left",  # Anchor to the left of the colorbar
+                            xpad=0,  # No padding between plot and colorbar
                         )
                         if show_colorbar
                         else None
@@ -1469,12 +1701,22 @@ class EelbrainPlotly2DViz:
             )
 
         # Update layout based on mode
-        if self.is_jupyter_mode:
-            height = 250
-            margin = dict(l=30, r=30, t=30, b=30)  # Reduced margins for Jupyter
+        # Use consistent right margin for all plots to ensure uniform size
+        if figure_height is not None:
+            # Use provided height
+            height = figure_height
+        elif self.is_jupyter_mode:
+            height = 200
         else:
-            height = 450
-            margin = dict(l=40, r=40, t=40, b=40)  # Standard margins
+            height = 450  # Larger height for external browser mode
+
+        if self.is_jupyter_mode:
+            margin = dict(l=0, r=0, t=0, b=0)  # Zero margins for maximum space
+        else:
+            margin = dict(l=10, r=10, t=10, b=10)  # Small margins for better layout
+
+        # Note: Right margin is the same for all plots (with or without colorbar)
+        # to ensure uniform brain plot sizes. Colorbar is positioned outside at x=1.15
 
         # Get fixed axis ranges for this view to prevent size changes across time
         axis_ranges = self.view_ranges.get(view_name, {})
@@ -1489,16 +1731,25 @@ class EelbrainPlotly2DViz:
                 showticklabels=False,
                 title="",
                 range=x_range,  # Fixed range to prevent size changes
+                domain=[0, 1],  # Use full width of plot area
+                showgrid=False,
+                zeroline=False,
             ),
             # Equal aspect ratio, hide labels
             yaxis=dict(
                 showticklabels=False,
                 title="",
                 range=y_range,  # Fixed range to prevent size changes
+                domain=[0, 1],  # Use full height of plot area
+                showgrid=False,
+                zeroline=False,
             ),
             height=height,
+            width=None,  # Let width auto-adjust to container
+            autosize=True,  # Enable autosize to fill container
             margin=margin,
             showlegend=False,
+            # plot_bgcolor="#2b2b2b",  # Dark background for brain plots
             hoverlabel=dict(
                 bgcolor="rgba(255, 255, 255, 0.7)",  # Semi-transparent white background
                 font=dict(color="black", size=10),
@@ -1608,14 +1859,8 @@ class EelbrainPlotly2DViz:
         x_ends = x_coords + u_vectors * arrow_scale
         y_ends = y_coords + v_vectors * arrow_scale
 
-        # Use activity values (3D magnitude) for hover if provided,
-        # otherwise calculate 2D projected magnitude
-        if activity_values is not None:
-            magnitudes = activity_values
-            hover_label = "Activity"
-        else:
-            magnitudes = np.sqrt(u_vectors**2 + v_vectors**2)
-            hover_label = "Vector magnitude"
+        # Note: activity_values parameter exists for API compatibility but is not used
+        # because annotations don't display hovertext (to avoid interfering with heatmap hover)
 
         # Create annotation objects using simple list comprehension
         # Note: No hovertext to avoid interfering with heatmap hover
@@ -1701,10 +1946,10 @@ class EelbrainPlotly2DViz:
     def run(
         self,
         port: Optional[int] = None,
-        debug: bool = True,
-        mode: str = "external",
-        width: int = 1200,
-        height: int = 900,
+        debug: bool = False,
+        mode: Optional[str] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
     ) -> None:
         """Run the Dash app with Jupyter integration support.
 
@@ -1713,28 +1958,59 @@ class EelbrainPlotly2DViz:
         port
             Port number for the server. If None, uses random port.
         debug
-            Enable debug mode. Default is True.
+            Enable debug mode. Default is False for cleaner UI.
         mode
             Display mode. Options:
-            - 'external': Open in separate browser window (default)
-            - 'inline': Embed directly in Jupyter notebook (modern Dash)
+            - 'inline': Embed directly in Jupyter notebook (default in Jupyter)
             - 'jupyterlab': Open in JupyterLab tab (modern Dash)
+            - 'external': Open in separate browser window (default outside Jupyter)
+            If None, automatically selects 'inline' in Jupyter, 'external' otherwise.
         width
             Display width in pixels for Jupyter integration. Default is 1200.
+            Only used in Jupyter modes.
         height
-            Display height in pixels for Jupyter integration. Default is 900.
+            Display height in pixels for Jupyter integration.
+            If None (default), automatically calculates based on content.
+            Only used in Jupyter modes.
         """
         if port is None:
             port = random.randint(8001, 9001)
 
+        # Auto-detect mode based on environment
+        if mode is None:
+            mode = "inline" if JUPYTER_AVAILABLE else "external"
+
+        # Set default width if not specified
+        if width is None:
+            width = 1200
+
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
+            # Set Jupyter mode and rebuild layout with Jupyter-specific styles
+            self.is_jupyter_mode = True
+
+            # Unify view sizes for Jupyter mode to ensure consistent display
+            self._unify_view_sizes_for_jupyter()
+
+            # Rebuild layout with Jupyter styles
+            self._setup_layout()
+
+            # Auto-calculate height if not specified
+            if height is None:
+                iframe_height = self._estimate_jupyter_iframe_height()
+                if iframe_height is None:
+                    iframe_height = 900  # Fallback default
+            else:
+                iframe_height = height
+
             print(
                 "\nStarting 2D Brain Visualization with modern Dash Jupyter integration..."
             )
-            print(f"Mode: {mode}, Size: {width}x{height}px")
+            print(f"Mode: {mode}, Size: {width}x{iframe_height}px")
 
             # Use modern Dash Jupyter integration
-            self.app.run(debug=debug, port=port, mode=mode, width=width, height=height)
+            self.app.run(
+                debug=debug, port=port, jupyter_mode=mode, jupyter_height=iframe_height
+            )
         else:
             print(f"\nStarting 2D Brain Visualization Dash app on port {port}...")
             print(f"Open http://127.0.0.1:{port}/ in your browser")
@@ -1908,7 +2184,7 @@ if __name__ == "__main__":
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
             layout_mode="horizontal",
-            display_mode="lyrz",
+            display_mode="lyr",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 

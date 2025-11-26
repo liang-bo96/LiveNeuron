@@ -99,7 +99,7 @@ def test_brain_projections():
 
     # Test with ortho display mode (3 orthogonal views)
     viz = EelbrainPlotly2DViz(display_mode="ortho")
-    projections = viz.create_2d_brain_projections_plotly(time_idx=5)
+    projections = viz._create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
     assert "axial" in projections
@@ -113,7 +113,7 @@ def test_brain_projections():
 
     # Test with default display mode (lyr - hemisphere views)
     viz_default = EelbrainPlotly2DViz()
-    projections_default = viz_default.create_2d_brain_projections_plotly(time_idx=5)
+    projections_default = viz_default._create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections_default, dict)
     assert "left_hemisphere" in projections_default
@@ -126,7 +126,7 @@ def test_butterfly_plot():
     from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
     viz = EelbrainPlotly2DViz()
-    butterfly_fig = viz.create_butterfly_plot()
+    butterfly_fig = viz._create_butterfly_plot()
 
     assert hasattr(butterfly_fig, "data")
     assert hasattr(butterfly_fig, "layout")
@@ -167,11 +167,11 @@ def test_show_max_only_option():
 
     # Test with show_max_only=True
     viz1 = EelbrainPlotly2DViz(show_max_only=True)
-    butterfly_fig1 = viz1.create_butterfly_plot()
+    butterfly_fig1 = viz1._create_butterfly_plot()
 
     # Test with show_max_only=False
     viz2 = EelbrainPlotly2DViz(show_max_only=False)
-    butterfly_fig2 = viz2.create_butterfly_plot()
+    butterfly_fig2 = viz2._create_butterfly_plot()
 
     # Both should create valid figures
     assert hasattr(butterfly_fig1, "data")
