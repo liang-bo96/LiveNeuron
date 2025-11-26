@@ -13,6 +13,7 @@ LiveNeuron requires:
 * Matplotlib >= 3.3.0
 * SciPy >= 1.7.0
 * Eelbrain (optional, for full functionality)
+* macOS only: libomp (for eelbrain OpenMP extensions) – install via ``brew install libomp`` and ensure the library path is visible (e.g., ``export DYLD_LIBRARY_PATH=/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH``)
 
 Install from GitHub
 -------------------
