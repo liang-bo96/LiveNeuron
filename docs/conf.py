@@ -30,6 +30,20 @@ extensions = [
     "myst_parser",
 ]
 
+autodoc_mock_imports = [
+    "dash",
+    "dash.dcc",
+    "dash.html",
+    "plotly",
+    "plotly.figure_factory",
+    "plotly.graph_objects",
+    "matplotlib",
+    "matplotlib.pyplot",
+    "scipy",
+    "scipy.stats",
+    "eelbrain",
+]
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
@@ -105,5 +119,4 @@ myst_enable_extensions = [
     "substitution",
     "tasklist",
 ]
-
 
