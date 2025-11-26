@@ -64,7 +64,7 @@ Basic Usage
    # Create visualization with built-in sample data
    viz = EelbrainPlotly2DViz()
    
-   # Launch in browser (random port)
+   # Launch in interactive plot
    viz.run()
 
 # Or use in Jupyter (inline mode)
