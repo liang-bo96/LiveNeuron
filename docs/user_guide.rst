@@ -265,9 +265,9 @@ Shows individual source traces plus statistics:
 
 **Displays:**
 
-* Individual source activity traces (gray)
-* Mean activity (black)
-* Maximum activity (red)
+* Individual source activity traces
+* Mean activity 
+* Maximum activity 
 
 Simplified Mode
 ^^^^^^^^^^^^^^^
@@ -280,8 +280,8 @@ Shows only summary statistics:
 
 **Displays:**
 
-* Mean activity (black)
-* Maximum activity (red)
+* Mean activity 
+* Maximum activity 
 
 **When to use:**
 
@@ -298,13 +298,11 @@ Hover Information
 **Brain Plots:**
 
 * Hover over any voxel to see activity value
-* Semi-transparent popup minimizes occlusion
 * Shows magnitude at current time point
 
 **Butterfly Plot:**
 
 * Hover over time axis shows max and min activity
-* Unified hover mode with vertical line
 * Displays values for all visible traces
 
 Time Navigation
@@ -316,10 +314,6 @@ Time Navigation
 * Brain views instantly update to that time point
 * Precise time selection with spike indicator
 
-**Visual Feedback:**
-
-* Spike line shows current time position
-* Smooth, responsive updates
 
 Zoom and Pan
 ^^^^^^^^^^^^
@@ -330,11 +324,6 @@ Zoom and Pan
 * **Click + Drag**: Pan the view
 * **Double-click**: Reset to original view
 
-**Features:**
-
-* Works independently for butterfly and brain plots
-* Brain plots maintain aspect ratio (no distortion)
-* Zoom preserved during time navigation
 
 Data Input
 ----------
@@ -397,7 +386,7 @@ Apply parcellation to focus on specific regions:
 Running the Application
 -----------------------
 
-Browser Mode (Default)
+Browser Mode 
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Opens in external browser:
@@ -410,13 +399,8 @@ Opens in external browser:
    # Or specify port
    viz.run(port=8888)
 
-**Features:**
 
-* Full-screen capability
-* Better performance
-* Persistent across browser sessions
-
-Jupyter Modes
+Jupyter Modes (Default)
 ^^^^^^^^^^^^^
 
 Multiple options for Jupyter notebooks:
