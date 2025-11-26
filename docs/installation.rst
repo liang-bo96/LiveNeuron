@@ -22,7 +22,7 @@ Install directly from GitHub:
 
 .. code-block:: bash
 
-   pip install git+https://github.com/liang-bo96/LiveNeuron.git
+   pip install https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
 
 Local Development
 -----------------
