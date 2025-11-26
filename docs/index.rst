@@ -29,7 +29,7 @@ Quick Start
 Installation
 ^^^^^^^^^^^^
 
-**Method 1: Install from GitHub**
+**Install from GitHub**
 
 .. code-block:: bash
 
