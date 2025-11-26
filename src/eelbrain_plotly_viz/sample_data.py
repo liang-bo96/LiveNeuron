@@ -106,16 +106,10 @@ def create_sample_brain_data(
 
     Returns
     -------
-    dict
-        Dictionary containing:
-
-        - data: numpy array of shape (n_sources, n_times, 3) for vector data,
-          or (n_sources, n_times) for scalar data
-        - coords: numpy array of shape (n_sources, 3) with source coordinates
-        - times: numpy array of shape (n_times,) with time values
-        - has_vector_data: bool indicating data type
-        - n_sources: int number of sources
-        - n_times: int number of time points
+    SampleDataNDVar
+        Minimal NDVar-like object with the fields EelbrainPlotly2DViz expects:
+        ``data`` (array), ``coords`` (array), ``times`` (array),
+        ``has_vector_data`` (bool), ``n_sources`` (int), ``n_times`` (int).
     """
     np.random.seed(random_seed)
 

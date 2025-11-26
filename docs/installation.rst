@@ -12,9 +12,7 @@ LiveNeuron requires:
 * Dash >= 2.0.0
 * Matplotlib >= 3.3.0
 * SciPy >= 1.7.0
-* Eelbrain (optional, for full functionality)
-* macOS only: libomp (for eelbrain OpenMP extensions) – install via ``brew install libomp`` and ensure the library path is visible (e.g., ``export DYLD_LIBRARY_PATH=/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH``)
-
+* Eelbrain – recommended install via mamba; see  https://eelbrain.readthedocs.io/en/stable/installing.html
 Install from GitHub
 -------------------
 
@@ -34,11 +32,6 @@ To install from source for development:
    git clone https://github.com/liang-bo96/LiveNeuron.git
    cd LiveNeuron
    pip install -e .
-
-Development Installation
-------------------------
-
-For development installation, clone the repo and install editable plus the extras you need.
 
 Verify Installation
 -------------------
@@ -62,7 +55,7 @@ Make sure you have installed the package correctly. Try:
 
 .. code-block:: bash
 
-   pip install --upgrade LiveNeuron
+   pip install --upgrade "https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip"
 
 **Plotly/Dash version conflicts**
 
@@ -74,8 +67,10 @@ If you encounter version conflicts, try:
 
 **Missing dependencies**
 
-Some features require Eelbrain. Install it with:
+Some features require Eelbrain.
 
 .. code-block:: bash
 
-   pip install eelbrain
+   mamba install -c conda-forge eelbrain
+
+See the official Eelbrain install guide for more details: https://eelbrain.readthedocs.io/en/stable/installing.html

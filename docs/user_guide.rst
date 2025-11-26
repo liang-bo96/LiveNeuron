@@ -17,16 +17,34 @@ Basic Workflow
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   
+
    # Step 1: Create
    viz = EelbrainPlotly2DViz(display_mode="lyr")
-   
+
    # Step 2: Launch
    viz.run()  # Auto inline in Jupyter; external browser otherwise
-   
+
    # Step 3: Interact (in browser/notebook)
    # Step 4: Export
    viz.export_images(output_dir="./plots", time_idx=30)
+
+Run Modes
+---------
+
+* **Interpreter / shell**: uses built-in MNE sample data if ``y`` is omitted; launches a browser on a random port.
+
+  .. code-block:: python
+
+     viz = EelbrainPlotly2DViz()
+     viz.run()
+
+* **Notebook**: renders inline by default; choose explicitly if needed.
+
+  .. code-block:: python
+
+     viz = EelbrainPlotly2DViz()
+     viz.run()      # classic notebooks
+     # viz.run(mode="jupyterlab")  # Lab tab
 
 Understanding Display Modes
 ----------------------------
@@ -64,12 +82,12 @@ Combine letters for multiple views:
 
    # Orthogonal views (special keyword)
    viz = EelbrainPlotly2DViz(display_mode="ortho")  # x + y + z
-   
+
    # Hemisphere combinations
    viz = EelbrainPlotly2DViz(display_mode="lr")     # Left + Right
    viz = EelbrainPlotly2DViz(display_mode="lyr")    # Left + Coronal + Right (default)
    viz = EelbrainPlotly2DViz(display_mode="lzr")    # Left + Axial + Right
-   
+
    # Axis combinations
    viz = EelbrainPlotly2DViz(display_mode="xz")     # Sagittal + Axial
    viz = EelbrainPlotly2DViz(display_mode="yx")     # Coronal + Sagittal
@@ -156,10 +174,10 @@ The ``arrow_scale`` parameter (default: 1.0) controls arrow length:
 
    # Short arrows for dense data
    viz = EelbrainPlotly2DViz(arrow_scale=0.5)
-   
+
    # Default balanced length
    viz = EelbrainPlotly2DViz(arrow_scale=1.0)
-   
+
    # Long arrows for sparse data
    viz = EelbrainPlotly2DViz(arrow_scale=2.0)
 
@@ -178,10 +196,10 @@ The ``arrow_threshold`` parameter filters arrows by magnitude:
 
    # Show all arrows
    viz = EelbrainPlotly2DViz(arrow_threshold=None)
-   
+
    # Auto threshold (10% of maximum magnitude)
    viz = EelbrainPlotly2DViz(arrow_threshold='auto')
-   
+
    # Custom threshold
    viz = EelbrainPlotly2DViz(arrow_threshold=0.15)
 
@@ -203,7 +221,7 @@ For best results, combine both parameters:
        arrow_scale=0.7,
        arrow_threshold='auto'
    )
-   
+
    # Sparse data with clear patterns
    viz = EelbrainPlotly2DViz(
        arrow_scale=1.5,
@@ -242,7 +260,7 @@ Create custom colorscales with transparency:
        [0.5, 'rgba(255,165,0,0.8)'],  # Orange, 80% opaque
        [1, 'rgba(255,0,0,1.0)']       # Red, fully opaque
    ]
-   
+
    viz = EelbrainPlotly2DViz(cmap=custom_cmap)
 
 **Color Range:**
@@ -266,8 +284,8 @@ Shows individual source traces plus statistics:
 **Displays:**
 
 * Individual source activity traces
-* Mean activity 
-* Maximum activity 
+* Mean activity
+* Maximum activity
 
 Simplified Mode
 ^^^^^^^^^^^^^^^
@@ -280,8 +298,8 @@ Shows only summary statistics:
 
 **Displays:**
 
-* Mean activity 
-* Maximum activity 
+* Mean activity
+* Maximum activity
 
 **When to use:**
 
@@ -354,11 +372,11 @@ For your own data:
 
    from eelbrain import datasets
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   
+
    # Load Eelbrain data
    data_ds = datasets.get_mne_sample(src='vol', ori='vector')
    y = data_ds['src']  # NDVar with dimensions (case, time, source, space)
-   
+
    # Visualize
    viz = EelbrainPlotly2DViz(y=y)
 
@@ -386,7 +404,7 @@ Apply parcellation to focus on specific regions:
 Running the Application
 -----------------------
 
-Browser Mode 
+Browser Mode
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Opens in external browser:
@@ -395,7 +413,7 @@ Opens in external browser:
 
    viz = EelbrainPlotly2DViz()
    viz.run()  # Random port, check console for URL
-   
+
    # Or specify port
    viz.run(port=8888)
 
@@ -409,7 +427,7 @@ Multiple options for Jupyter notebooks:
 
    # Inline display (embedded in notebook) - auto size
    viz.run()
-   
+
    # JupyterLab tab (opens in separate tab)
    viz.run(mode='jupyterlab')
 
@@ -433,7 +451,7 @@ Export current view as static image:
        time_idx=30,
        format="png"
    )
-   
+
    if result["status"] == "success":
        for plot_type, filepath in result["files"].items():
            print(f"{plot_type}: {filepath}")
@@ -451,13 +469,13 @@ Supported Formats
 
    # PNG (default, best for presentations)
    viz.export_images(format="png")
-   
+
    # JPEG (smaller file size)
    viz.export_images(format="jpg")
-   
+
    # SVG (vector, scalable)
    viz.export_images(format="svg")
-   
+
    # PDF (publication quality)
    viz.export_images(format="pdf")
 
@@ -470,25 +488,25 @@ For Large Datasets
 1. **Use arrow threshold**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(arrow_threshold='auto')
 
 2. **Simplify butterfly plot**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(show_max_only=True)
 
 3. **Reduce arrow scale**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(arrow_scale=0.7)
 
 4. **Use focused display modes**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(display_mode="lr")  # Fewer views
 
 Combined Optimization
@@ -522,7 +540,7 @@ For Presentations
        show_max_only=True,         # Focus on patterns
        cmap='Hot'                  # High contrast
    )
-   
+
    viz.run(mode='external')  # Full screen
 
 For Publications
@@ -536,7 +554,7 @@ For Publications
        arrow_threshold='auto',
        cmap='YlOrRd'               # Publication-friendly
    )
-   
+
    # Export high-quality images
    viz.export_images(
        output_dir="./publication_figures",
@@ -557,7 +575,7 @@ For Interactive Exploration
        show_max_only=False,         # Full butterfly information
        cmap='Viridis'
    )
-   
+
    viz.run()  # Enable debug with debug=True when troubleshooting
 
 Troubleshooting

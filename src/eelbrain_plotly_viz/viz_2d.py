@@ -41,6 +41,9 @@ class EelbrainPlotly2DViz:
         If ``y`` has a case dimension, the mean is plotted.
         If ``y`` has a space dimension, the norm is plotted.
         If None, uses MNE sample data for demonstration.
+        pass an Eelbrain NDVar or the
+        :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
+        :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
     region
         Brain region to load using aparc+aseg parcellation.
         If None, loads all regions. Only used when y is None.
@@ -101,6 +104,8 @@ class EelbrainPlotly2DViz:
     - For scalar data: NDVar with dimensions ([case,] time, source)
     - If case dimension present: mean across cases is plotted
     - If space dimension present: norm across space is plotted for butterfly plot
+    - ``create_sample_brain_data`` returns a minimal NDVar-like object compatible
+      with the ``y`` parameter for quick demos
     """
 
     def __init__(

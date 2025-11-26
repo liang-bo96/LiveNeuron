@@ -18,8 +18,6 @@ Sample Data Module
 
 .. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
 
-**Note:** :func:`create_sample_brain_data` returns a minimal NDVar-like object that can be passed directly as ``y`` to :class:`EelbrainPlotly2DViz`.
-
 Data Format
 -----------
 
@@ -61,34 +59,3 @@ The library may raise the following exceptions:
 **RuntimeError**
   * Data processing errors
   * Visualization rendering errors
-
-Example error handling:
-
-.. code-block:: python
-
-   try:
-       viz = EelbrainPlotly2DViz(display_mode="invalid")
-   except ValueError as e:
-       print(f"Invalid display mode: {e}")
-   
-   try:
-       viz.run()
-   except RuntimeError as e:
-       print(f"Visualization error: {e}")
-
-Type Hints
-----------
-
-The library uses Python type hints for better IDE support:
-
-.. code-block:: python
-
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   from typing import Optional
-   from eelbrain import NDVar
-   
-   def create_viz(
-       data: Optional[NDVar] = None,
-       mode: str = "lyr"
-   ) -> EelbrainPlotly2DViz:
-       return EelbrainPlotly2DViz(y=data, display_mode=mode)
