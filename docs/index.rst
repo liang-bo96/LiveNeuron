@@ -48,12 +48,13 @@ Basic Usage
    # Launch in interactive plot
    viz.run()
 
+For a full walkthrough of layouts, controls, and examples, start with the :doc:`user_guide`.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    installation
-   quickstart
    user_guide
    api_reference
    examples
