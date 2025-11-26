@@ -3,6 +3,11 @@ Welcome to LiveNeuron's documentation!
 
 **LiveNeuron** is an interactive 2D brain visualization library using Plotly and Dash, designed for real-time exploration of neural activity data.
 
+.. image:: liveNeuron.png
+   :alt: LiveNeuron visualization overview
+   :align: center
+   :width: 720px
+
 .. image:: https://img.shields.io/badge/python-3.8%2B-blue
    :target: https://www.python.org/downloads/
    :alt: Python Version
