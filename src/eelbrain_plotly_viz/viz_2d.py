@@ -2006,9 +2006,7 @@ class EelbrainPlotly2DViz:
 
             self.app.run(debug=debug, port=port)
 
-    def _show_in_jupyter(
-        self, debug: bool = False
-    ) -> None:
+    def _show_in_jupyter(self, debug: bool = False) -> None:
         """Convenience method to display the visualization inline in Jupyter notebooks (internal method).
 
         Parameters
