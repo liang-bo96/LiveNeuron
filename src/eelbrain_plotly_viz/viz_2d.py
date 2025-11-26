@@ -542,27 +542,21 @@ class EelbrainPlotly2DViz:
             # - Checklist: ~50px (checkbox + margins)
             # - Butterfly plot: 300px
             # - Brain plots: 250px
-            # - Status bar: ~30px (hidden but container exists)
             # - Container padding: ~2px
             dynamic_height = (butterfly_height or 0) + (brain_height or 0)
-            static_offset = 132  # Title + Checklist + Status + Padding
+            static_offset = 102  # Title + Checklist + Padding
             total_height = dynamic_height + static_offset
         else:
             # Horizontal layout actual structure:
             # - Colorbar row: ~120px (80px graph + 40px container padding/margins)
             # - Main content row: 200px (butterfly and brains side-by-side)
-            # - Status row: ~30px (text + padding, status bar hidden but container exists)
             # - Container padding: 10px
             colorbar_row_height = 120
             main_content_height = max(butterfly_height or 0, brain_height or 0)
-            status_row_height = 30  # Reduced since status bar is hidden
             container_padding_total = 10
 
             total_height = (
-                colorbar_row_height
-                + main_content_height
-                + status_row_height
-                + container_padding_total
+                colorbar_row_height + main_content_height + container_padding_total
             )
 
             # Skip the normal calculation for horizontal mode
@@ -776,17 +770,6 @@ class EelbrainPlotly2DViz:
                                     ),
                                     style={"textAlign": "center"},
                                 ),
-                                # Status indicator
-                                html.Div(
-                                    id="update-status",
-                                    children="Click on butterfly plot to update brain views",
-                                    style={
-                                        "textAlign": "center",
-                                        "padding": "10px",
-                                        "fontStyle": "italic",
-                                        "color": "#666",
-                                    },
-                                ),
                             ],
                             style={"width": "100%"},
                         ),
@@ -944,19 +927,6 @@ class EelbrainPlotly2DViz:
                         "fontSize": "0",
                     },
                 ),
-                # Status indicator
-                html.Div(
-                    id="update-status",
-                    children="Click on butterfly plot to update brain views | Hover for real-time updates",
-                    style={
-                        "textAlign": "center",
-                        "padding": "5px",
-                        "margin": "0",
-                        "fontStyle": "italic",
-                        "color": "#666",
-                        "fontSize": "12px",
-                    },
-                ),
                 # Info panel (hidden)
                 html.Div(
                     id="info-panel",
@@ -1093,24 +1063,6 @@ class EelbrainPlotly2DViz:
                     return dash.no_update, dash.no_update, dash.no_update
 
             return dash.no_update, dash.no_update, dash.no_update
-
-        @self.app.callback(
-            Output("update-status", "children"),
-            Output("update-status", "style"),
-            Input("selected-time-idx", "data"),
-        )
-        def update_status(time_idx: int) -> tuple[str, Dict[str, str]]:
-            # Always show the initial hint, don't show update messages
-            status_text = "Click on butterfly plot to update brain views"
-            status_style = {
-                "textAlign": "center",
-                "padding": "5px",
-                "margin": "0",
-                "fontStyle": "italic",
-                "fontSize": "12px",
-                "color": "#666",
-            }
-            return status_text, status_style
 
         @self.app.callback(
             Output("info-panel", "children"),
@@ -1994,7 +1946,7 @@ class EelbrainPlotly2DViz:
     def run(
         self,
         port: Optional[int] = None,
-        debug: bool = True,
+        debug: bool = False,
         mode: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
@@ -2006,7 +1958,7 @@ class EelbrainPlotly2DViz:
         port
             Port number for the server. If None, uses random port.
         debug
-            Enable debug mode. Default is True.
+            Enable debug mode. Default is False for cleaner UI.
         mode
             Display mode. Options:
             - 'inline': Embed directly in Jupyter notebook (default in Jupyter)
