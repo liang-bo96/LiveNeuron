@@ -285,7 +285,7 @@ Shows individual source traces plus statistics:
 
 * Individual source activity traces
 * Mean activity
-* Maximum activity
+* Maximum activity across all sources
 
 Simplified Mode
 ^^^^^^^^^^^^^^^
