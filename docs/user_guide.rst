@@ -285,7 +285,7 @@ Shows a sampled set of source traces plus statistics (random subset for readabil
 
 * Random subset of source activity traces
 * Mean activity
-* Maximum activity
+* Maximum activity across all sources
 
 Simplified Mode
 ^^^^^^^^^^^^^^^
