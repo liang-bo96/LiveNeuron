@@ -268,6 +268,11 @@ Create custom colorscales with transparency:
 * Automatically scaled to data range (min to max)
 * Consistent across all views and time points
 * Unified colorbar shows current scaling
+* Override manually with ``vmin`` / ``vmax`` to lock the range
+
+.. code-block:: python
+
+   viz = EelbrainPlotly2DViz(vmin=-2.0, vmax=2.0)
 
 Butterfly Plot Modes
 --------------------

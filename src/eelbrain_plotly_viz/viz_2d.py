@@ -54,6 +54,12 @@ class EelbrainPlotly2DViz:
         Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
         background and doesn't obscure arrows. See
         https://plotly.com/python/builtin-colorscales/ for all available options.
+    vmin
+        Optional lower bound for the color range. If provided, locks the minimum
+        for all projections and time points.
+    vmax
+        Optional upper bound for the color range. If provided, locks the maximum
+        for all projections and time points.
     show_max_only
         If True, butterfly plot shows only mean and max traces.
         If False, butterfly plot shows individual source traces, mean, and max.
@@ -113,6 +119,8 @@ class EelbrainPlotly2DViz:
         y: Optional[NDVar] = None,
         region: Optional[str] = None,
         cmap: Union[str, List] = "YlOrRd",
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
         arrow_scale: float = 1.0,
@@ -147,6 +155,8 @@ class EelbrainPlotly2DViz:
         self.time_values: Optional[np.ndarray] = None  # (n_times,)
         self.region_of_brain: Optional[str] = region  # Region of brain to visualize
         self.cmap: Union[str, List] = cmap  # Colorscale for heatmaps
+        self.user_vmin: Optional[float] = vmin  # Optional user-specified color min
+        self.user_vmax: Optional[float] = vmax  # Optional user-specified color max
         self.show_max_only: bool = show_max_only  # Control butterfly plot display mode
         # Threshold for displaying arrows
         self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold
@@ -432,23 +442,25 @@ class EelbrainPlotly2DViz:
         This ensures consistent color mapping across time, making it easier to
         compare activity levels at different time points.
         """
-        if self.glass_brain_data is None:
-            self.global_vmin = 0.0
-            self.global_vmax = 1.0
-            return
+        data_min = 0.0
+        data_max = 1.0
 
-        # Calculate activity magnitude across all time points
-        if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
-            # Compute norm for each source at each time point
-            all_magnitudes = np.linalg.norm(
-                self.glass_brain_data, axis=1
-            )  # (n_sources, n_times)
-        else:  # Scalar data (n_sources, n_times)
-            all_magnitudes = self.glass_brain_data
+        if self.glass_brain_data is not None:
+            # Calculate activity magnitude across all time points
+            if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+                # Compute norm for each source at each time point
+                all_magnitudes = np.linalg.norm(
+                    self.glass_brain_data, axis=1
+                )  # (n_sources, n_times)
+            else:  # Scalar data (n_sources, n_times)
+                all_magnitudes = self.glass_brain_data
 
-        # Get global min/max across all sources and all time points
-        self.global_vmin = np.min(all_magnitudes)
-        self.global_vmax = np.max(all_magnitudes)
+            data_min = float(np.min(all_magnitudes))
+            data_max = float(np.max(all_magnitudes))
+
+        # Apply user overrides if provided
+        self.global_vmin = data_min if self.user_vmin is None else self.user_vmin
+        self.global_vmax = data_max if self.user_vmax is None else self.user_vmax
 
         # Ensure we have a valid range (avoid zero range)
         if self.global_vmax - self.global_vmin < 1e-10:
