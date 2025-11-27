@@ -12,7 +12,11 @@ LiveNeuron requires:
 * Dash >= 2.0.0
 * Matplotlib >= 3.3.0
 * SciPy >= 1.7.0
-* Eelbrain – recommended install via mamba; see  https://eelbrain.readthedocs.io/en/stable/installing.html
+* Eelbrain
+
+The recommended procedure is to create an environment through `mamba` 
+(see  https://eelbrain.readthedocs.io/en/stable/installing.html) 
+and then install LiveNeuron through `pip`.
 Install from GitHub
 -------------------
 
