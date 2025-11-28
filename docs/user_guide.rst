@@ -123,7 +123,7 @@ Vertical Layout (Default)
 
 * Detailed activity time course on top
 * Brain projections arranged beneath
-* Good for multiple projections while preserving vertical space
+* Good for multiple projections while preserving horizontal space
 
 .. code-block:: python
 
