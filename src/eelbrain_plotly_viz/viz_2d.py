@@ -515,6 +515,14 @@ class EelbrainPlotly2DViz:
             "brain_views": self.brain_views,
         }
 
+        # Keep all four views on a single row for lzry/lyrz in vertical mode
+        if (
+            self.layout_mode == "vertical"
+            and self.display_mode in ["lzry", "lyrz"]
+            and num_views == 4
+        ):
+            config["brain_margin"] = "0.5%"
+
         # Special adjustments for 4-view modes (lzry, lyrz) in horizontal layout
         if (
             self.layout_mode == "horizontal"
@@ -597,8 +605,11 @@ class EelbrainPlotly2DViz:
                 return {"jupyter": "98%", "browser": "98%"}
             elif num_views == 2:
                 return {"jupyter": "48%", "browser": "48%"}
-            else:  # 3 or more views
+            elif num_views == 3:
                 return {"jupyter": "30%", "browser": "32%"}
+            else:  # 4 views (lzry / lyrz) keep all in one row
+                # Tighten width so four plots + colorbar fit a single row in notebooks.
+                return {"jupyter": "24%", "browser": "24%"}
         else:  # horizontal mode
             # Pre-allocate space for butterfly plot
             # Total available: 100%
@@ -2175,8 +2186,8 @@ if __name__ == "__main__":
             cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
-            layout_mode="horizontal",
-            display_mode="lyr",
+            layout_mode="vertical",
+            display_mode="lzry",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
