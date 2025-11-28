@@ -56,7 +56,7 @@ class EelbrainPlotly2DViz:
         https://plotly.com/python/builtin-colorscales/ for all available options.
     vmin
         Optional lower bound for the color range. If provided, locks the minimum
-        for all projections and time points. Defaults to 0 when not set.
+        for all projections and time points. Always 0.
     vmax
         Optional upper bound for the color range. If provided, locks the maximum
         for all projections and time points.
