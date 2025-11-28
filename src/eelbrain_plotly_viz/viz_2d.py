@@ -442,7 +442,6 @@ class EelbrainPlotly2DViz:
         This ensures consistent color mapping across time, making it easier to
         compare activity levels at different time points.
         """
-        data_min = 0.0
         data_max = 1.0
 
         if self.glass_brain_data is not None:
@@ -455,7 +454,6 @@ class EelbrainPlotly2DViz:
             else:  # Scalar data (n_sources, n_times)
                 all_magnitudes = self.glass_brain_data
 
-            data_min = float(np.min(all_magnitudes))
             data_max = float(np.max(all_magnitudes))
 
         # Apply user overrides if provided
