@@ -41,6 +41,42 @@ cd LiveNeuron
 pip install -e .
 ```
 
+## macOS full setup (venv + env vars + Jupyter)
+
+Use the bundled macOS helper (`scripts/macos.sh`) so you can run Python/Jupyter anywhere without hand-setting env vars:
+
+```bash
+# Paths (edit to your locations)
+PROJECT_DIR="/path/to/LiveNeuronRelease"
+ENV_DIR="liveneuron-env"
+
+# Rebuild virtual env
+rm -rf "$ENV_DIR"
+python -m venv "$ENV_DIR"
+source "$ENV_DIR/bin/activate"
+
+# Install from zip (includes eelbrain extras)
+pip install "https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/OPT/updateStructure.zip"
+
+# One-shot dependency + import check (libomp, etc.)
+"$PROJECT_DIR/scripts/macos.sh" setup
+
+# Export required env vars to current shell
+source "$PROJECT_DIR/scripts/macos.sh" env
+
+# Jupyter support and kernel registration
+pip install ipykernel jupyter
+python -m ipykernel install --user --name liveneuron --display-name "Python (LiveNeuron)"
+
+# Launch Jupyter with env injected (or replace with jupyter notebook)
+"$PROJECT_DIR/scripts/macos.sh" run jupyter lab
+```
+
+Notes:
+- `scripts/macos.sh env` defaults caches/config to `${VIRTUAL_ENV:-$HOME}/.liveneuron`; override with `LIVENEURON_BASE`.
+- Each new terminal: `source "$ENV_DIR/bin/activate"` then `source "$PROJECT_DIR/scripts/macos.sh" env`, and run any `python`/`pytest`/`jupyter`.
+- The helper script subcommands: `setup` (install libomp + check), `env` (export vars), `run <cmd>` (run with env), `check` (import check), `help`.
+
 ## Quick Start
 
 ### Basic Usage with Sample Data
