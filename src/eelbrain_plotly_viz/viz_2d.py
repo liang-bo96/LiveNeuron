@@ -31,87 +31,87 @@ JUPYTER_AVAILABLE = _is_jupyter_environment()
 class EelbrainPlotly2DViz:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
-   Visualization for 3D vector field time series. Provides activity time course
-   with interactive 2D projections of brain volume vector data.
+    Visualization for 3D vector field time series. Provides activity time course
+    with interactive 2D projections of brain volume vector data.
 
-    Parameters
-    ----------
-    y
-        Data to plot ([case,] time, source[, space]).
-        If ``y`` has a case dimension, the mean is plotted.
-        If ``y`` has a space dimension, the norm is plotted.
-        If None, uses MNE sample data for demonstration.
-        pass an Eelbrain NDVar or the
-        :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
-        :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
-    region
-        Brain region to load using aparc+aseg parcellation.
-        If None, loads all regions. Only used when y is None.
-    cmap
-        Plotly colorscale for heatmaps. Can be:
-        - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
-        - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
-        Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
-        background and doesn't obscure arrows. See
-        https://plotly.com/python/builtin-colorscales/ for all available options.
-    vmin
-        Optional lower bound for the color range. If provided, locks the minimum
-        for all projections and time points. Always 0.
-    vmax
-        Optional upper bound for the color range. If provided, locks the maximum
-        for all projections and time points.
-    show_max_only
-        If True, butterfly plot shows only mean and max traces.
-        If False, butterfly plot shows individual source traces, mean, and max.
-        Default is False.
-    arrow_threshold
-        Threshold for displaying arrows in brain projections. Only arrows with
-        magnitude greater than this value will be displayed. If None, all arrows
-        are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
-        Default is None.
-    arrow_scale
-        Relative scale factor for arrow length in brain projections. The default
-        value of 1.0 provides a good balance for most datasets. Use 0.5 for half
-        the length, 2.0 for double the length, etc. Useful for adjusting
-        visualization clarity when vectors have large magnitudes or high density.
-        Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
-    layout_mode
-        Layout arrangement mode for the visualization interface. Options:
-        - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
-        - 'horizontal': Compact layout with butterfly plot on left, brain views on right
-        Default is 'vertical' for backward compatibility.
-    display_mode
-        Anatomical view mode for brain projections. Options:
-        - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
-        - 'x': Sagittal view only
-        - 'y': Coronal view only
-        - 'z': Axial view only
-        - 'xz': Sagittal + Axial views
-        - 'yx': Coronal + Sagittal views
-        - 'yz': Coronal + Axial views
-        - 'l': Left hemisphere view only
-        - 'r': Right hemisphere view only
-        - 'lr': Both hemisphere views (left + right)
-        - 'lzr': Left + Axial + Right hemispheres
-        - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
-        - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
-        - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
-        Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
-    show_labels
-        If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
-        'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
-        cleaner visualization. Default is False.
+     Parameters
+     ----------
+     y
+         Data to plot ([case,] time, source[, space]).
+         If ``y`` has a case dimension, the mean is plotted.
+         If ``y`` has a space dimension, the norm is plotted.
+         If None, uses MNE sample data for demonstration.
+         pass an Eelbrain NDVar or the
+         :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
+         :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
+     region
+         Brain region to load using aparc+aseg parcellation.
+         If None, loads all regions. Only used when y is None.
+     cmap
+         Plotly colorscale for heatmaps. Can be:
+         - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
+         - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
+         Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
+         background and doesn't obscure arrows. See
+         https://plotly.com/python/builtin-colorscales/ for all available options.
+     vmin
+         Optional lower bound for the color range. If provided, locks the minimum
+         for all projections and time points. Always 0.
+     vmax
+         Optional upper bound for the color range. If provided, locks the maximum
+         for all projections and time points.
+     show_max_only
+         If True, butterfly plot shows only mean and max traces.
+         If False, butterfly plot shows individual source traces, mean, and max.
+         Default is False.
+     arrow_threshold
+         Threshold for displaying arrows in brain projections. Only arrows with
+         magnitude greater than this value will be displayed. If None, all arrows
+         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
+         Default is None.
+     arrow_scale
+         Relative scale factor for arrow length in brain projections. The default
+         value of 1.0 provides a good balance for most datasets. Use 0.5 for half
+         the length, 2.0 for double the length, etc. Useful for adjusting
+         visualization clarity when vectors have large magnitudes or high density.
+         Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
+     layout_mode
+         Layout arrangement mode for the visualization interface. Options:
+         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
+         - 'horizontal': Compact layout with butterfly plot on left, brain views on right
+         Default is 'vertical' for backward compatibility.
+     display_mode
+         Anatomical view mode for brain projections. Options:
+         - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
+         - 'x': Sagittal view only
+         - 'y': Coronal view only
+         - 'z': Axial view only
+         - 'xz': Sagittal + Axial views
+         - 'yx': Coronal + Sagittal views
+         - 'yz': Coronal + Axial views
+         - 'l': Left hemisphere view only
+         - 'r': Right hemisphere view only
+         - 'lr': Both hemisphere views (left + right)
+         - 'lzr': Left + Axial + Right hemispheres
+         - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
+         - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
+         - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
+         Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
+     show_labels
+         If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
+         'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
+         cleaner visualization. Default is False.
 
-    Notes
-    -----
-    Expected input format
+     Notes
+     -----
+     Expected input format
 
-    - For vector data: NDVar with dimensions ([case,] time, source, space)
-    - For scalar data: NDVar with dimensions ([case,] time, source)
-    - If case dimension present: mean across cases is plotted
-    - If space dimension present: norm across space is plotted for butterfly plot
-    - ``create_sample_brain_data`` returns a minimal NDVar-like object compatible
-      with the ``y`` parameter for quick demos
+     - For vector data: NDVar with dimensions ([case,] time, source, space)
+     - For scalar data: NDVar with dimensions ([case,] time, source)
+     - If case dimension present: mean across cases is plotted
+     - If space dimension present: norm across space is plotted for butterfly plot
+     - ``create_sample_brain_data`` returns a minimal NDVar-like object compatible
+       with the ``y`` parameter for quick demos
     """
 
     def __init__(
