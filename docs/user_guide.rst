@@ -34,7 +34,7 @@ Run Modes
 .. note::
 
    In IPython shells (outside notebooks), explicitly pass ``mode="external"`` to
-   ``run()`` to open a browser.
+   ``run()`` to start a visualization that can be accessed in a browser.
 * **Interpreter / shell**: uses built-in MNE sample data if ``y`` is omitted; launches a server on a random port (explicit ``mode="external"`` recommended).
 
   .. code-block:: python
