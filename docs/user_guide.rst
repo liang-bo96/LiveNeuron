@@ -31,19 +31,23 @@ Basic Workflow
 Run Modes
 ---------
 
-* **Interpreter / shell**: uses built-in MNE sample data if ``y`` is omitted; launches a browser on a random port.
+.. note::
+
+   In IPython shells (outside notebooks), explicitly pass ``mode="external"`` to
+   ``run()`` to open a browser.
+* **Interpreter / shell**: uses built-in MNE sample data if ``y`` is omitted; launches a browser on a random port (explicit ``mode="external"`` recommended).
 
   .. code-block:: python
 
      viz = EelbrainPlotly2DViz()
-     viz.run()
+     viz.run(mode="external")
 
 * **Notebook**: auto-selects ``mode="inline"`` (embedded IFrame). Choose explicitly if you want a browser or a Lab tab.
 
   .. code-block:: python
 
      viz = EelbrainPlotly2DViz()
-     viz.run()                    # inline by default in IPython/Jupyter
+     viz.run()                    # inline by default in notebooks; use mode="external" for shells
      # viz.run(mode="jupyterlab")  # open in JupyterLab tab
      # viz.run(mode="external")    # force external browser
 
