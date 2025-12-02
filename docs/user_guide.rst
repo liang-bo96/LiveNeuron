@@ -10,23 +10,46 @@ Basic Workflow
 ^^^^^^^^^^^^^^
 
 1. **Create** visualization object with desired parameters
-2. **Launch** with ``run()`` or ``show_in_jupyter()``
+2. **Launch** with ``run()``
 3. **Interact** with hover, click, and zoom
 4. **Export** static images if needed
 
 .. code-block:: python
 
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   
+
    # Step 1: Create
    viz = EelbrainPlotly2DViz(display_mode="lyr")
-   
+
    # Step 2: Launch
-   viz.run()  # or viz.show_in_jupyter()
-   
+   viz.run()  # Auto inline in Jupyter; external browser otherwise
+
    # Step 3: Interact (in browser/notebook)
    # Step 4: Export
    viz.export_images(output_dir="./plots", time_idx=30)
+
+Run Modes
+---------
+
+.. note::
+
+   In IPython shells (outside notebooks), explicitly pass ``mode="external"`` to
+   ``run()`` to start a visualization that can be accessed in a browser.
+* **Interpreter / shell**: uses built-in MNE sample data if ``y`` is omitted; launches a server on a random port (explicit ``mode="external"`` recommended).
+
+  .. code-block:: python
+
+     viz = EelbrainPlotly2DViz()
+     viz.run(mode="external")
+
+* **Notebook**: auto-selects ``mode="inline"`` (embedded IFrame). Choose explicitly if you want a browser or a Lab tab.
+
+  .. code-block:: python
+
+     viz = EelbrainPlotly2DViz()
+     viz.run()                    # inline by default in notebooks; use mode="external" for shells
+     # viz.run(mode="jupyterlab")  # open in JupyterLab tab
+     # viz.run(mode="external")    # force external browser
 
 Understanding Display Modes
 ----------------------------
@@ -64,12 +87,12 @@ Combine letters for multiple views:
 
    # Orthogonal views (special keyword)
    viz = EelbrainPlotly2DViz(display_mode="ortho")  # x + y + z
-   
+
    # Hemisphere combinations
    viz = EelbrainPlotly2DViz(display_mode="lr")     # Left + Right
    viz = EelbrainPlotly2DViz(display_mode="lyr")    # Left + Coronal + Right (default)
    viz = EelbrainPlotly2DViz(display_mode="lzr")    # Left + Axial + Right
-   
+
    # Axis combinations
    viz = EelbrainPlotly2DViz(display_mode="xz")     # Sagittal + Axial
    viz = EelbrainPlotly2DViz(display_mode="yx")     # Coronal + Sagittal
@@ -86,7 +109,7 @@ For comprehensive anatomical coverage:
    viz = EelbrainPlotly2DViz(display_mode="lyrz")   # L + Coronal + R + Axial
    viz = EelbrainPlotly2DViz(display_mode="lzry")   # L + Axial + R + Coronal
 
-**Note:** Order of letters determines display order (left-to-right in horizontal layout, top-to-bottom in vertical layout).
+**Note:** Order of letters determines display order of anatomical projections (left-to-right).
 
 Layout Modes
 ------------
@@ -96,15 +119,15 @@ Vertical Layout (Default)
 
 **When to use:**
 
-* Standard displays
-* 1-2 views
-* When butterfly plot is the focus
+* General use, including 1–4 projections
+* When the detailed activity time course should be prominent
+* When you want more horizontal space per projection
 
 **Characteristics:**
 
-* Butterfly plot positioned on top
-* Brain views stacked vertically below
-* Good for time series analysis
+* Detailed activity time course on top
+* Brain projections arranged beneath
+* Good for multiple projections while preserving horizontal space
 
 .. code-block:: python
 
@@ -119,14 +142,13 @@ Horizontal Layout
 **When to use:**
 
 * Wide screens or presentations
-* 3+ views
-* When spatial patterns are the focus
+* When spatial layout (left-to-right comparison) is the focus
 
 **Characteristics:**
 
-* Butterfly plot positioned on left
-* Brain views arranged horizontally to the right
-* Better space utilization for multiple views
+* Detailed activity time course on the left
+* Brain projections arranged to the right
+
 
 .. code-block:: python
 
@@ -156,10 +178,10 @@ The ``arrow_scale`` parameter (default: 1.0) controls arrow length:
 
    # Short arrows for dense data
    viz = EelbrainPlotly2DViz(arrow_scale=0.5)
-   
+
    # Default balanced length
    viz = EelbrainPlotly2DViz(arrow_scale=1.0)
-   
+
    # Long arrows for sparse data
    viz = EelbrainPlotly2DViz(arrow_scale=2.0)
 
@@ -178,10 +200,10 @@ The ``arrow_threshold`` parameter filters arrows by magnitude:
 
    # Show all arrows
    viz = EelbrainPlotly2DViz(arrow_threshold=None)
-   
+
    # Auto threshold (10% of maximum magnitude)
    viz = EelbrainPlotly2DViz(arrow_threshold='auto')
-   
+
    # Custom threshold
    viz = EelbrainPlotly2DViz(arrow_threshold=0.15)
 
@@ -203,7 +225,7 @@ For best results, combine both parameters:
        arrow_scale=0.7,
        arrow_threshold='auto'
    )
-   
+
    # Sparse data with clear patterns
    viz = EelbrainPlotly2DViz(
        arrow_scale=1.5,
@@ -242,7 +264,7 @@ Create custom colorscales with transparency:
        [0.5, 'rgba(255,165,0,0.8)'],  # Orange, 80% opaque
        [1, 'rgba(255,0,0,1.0)']       # Red, fully opaque
    ]
-   
+
    viz = EelbrainPlotly2DViz(cmap=custom_cmap)
 
 **Color Range:**
@@ -250,14 +272,19 @@ Create custom colorscales with transparency:
 * Automatically scaled to data range (min to max)
 * Consistent across all views and time points
 * Unified colorbar shows current scaling
+* Override manually with ``vmin`` / ``vmax`` to lock the range
 
-Butterfly Plot Modes
+.. code-block:: python
+
+   viz = EelbrainPlotly2DViz(vmin=-2.0, vmax=2.0)
+
+Activity Time Course Plot Modes
 --------------------
 
 Full Mode (Default)
 ^^^^^^^^^^^^^^^^^^^
 
-Shows individual source traces plus statistics:
+Shows a sampled set of source traces plus statistics (random subset for readability):
 
 .. code-block:: python
 
@@ -265,9 +292,9 @@ Shows individual source traces plus statistics:
 
 **Displays:**
 
-* Individual source activity traces (gray)
-* Mean activity (black)
-* Maximum activity (red)
+* Random subset of source activity traces
+* Mean activity
+* Maximum activity across all sources
 
 Simplified Mode
 ^^^^^^^^^^^^^^^
@@ -280,14 +307,13 @@ Shows only summary statistics:
 
 **Displays:**
 
-* Mean activity (black)
-* Maximum activity (red)
+* Mean activity
+* Maximum activity
 
 **When to use:**
 
-* Large number of sources (cleaner visualization)
-* Focus on overall patterns rather than individual sources
-* Performance considerations
+* You want a clean summary without individual traces
+* Presentations or screenshots where mean/max is enough
 
 Interactive Features
 --------------------
@@ -298,13 +324,11 @@ Hover Information
 **Brain Plots:**
 
 * Hover over any voxel to see activity value
-* Semi-transparent popup minimizes occlusion
 * Shows magnitude at current time point
 
-**Butterfly Plot:**
+**Detailed activity time course:**
 
-* Hover over time axis shows max and min activity
-* Unified hover mode with vertical line
+* Hover over time axis to see max and min activity
 * Displays values for all visible traces
 
 Time Navigation
@@ -312,14 +336,10 @@ Time Navigation
 
 **Click to Navigate:**
 
-* Click anywhere on butterfly plot's time axis
+* Click anywhere on the time-course axis
 * Brain views instantly update to that time point
 * Precise time selection with spike indicator
 
-**Visual Feedback:**
-
-* Spike line shows current time position
-* Smooth, responsive updates
 
 Zoom and Pan
 ^^^^^^^^^^^^
@@ -327,14 +347,10 @@ Zoom and Pan
 **Mouse Controls:**
 
 * **Mouse Wheel**: Zoom in/out
-* **Click + Drag**: Pan the view
+* **Click + Drag**: Box zoom (default drag mode)
+* **Pan**: Select the pan tool in the toolbar, then drag to move the view
 * **Double-click**: Reset to original view
 
-**Features:**
-
-* Works independently for butterfly and brain plots
-* Brain plots maintain aspect ratio (no distortion)
-* Zoom preserved during time navigation
 
 Data Input
 ----------
@@ -354,7 +370,7 @@ Simplest option for testing and learning:
 * 1589 sources in volumetric source space
 * 76 time points (-100ms to 400ms)
 * Vector data (3D current dipoles)
-* No installation of Eelbrain required
+* Requires Eelbrain installed
 
 Using Eelbrain NDVar
 ^^^^^^^^^^^^^^^^^^^^^
@@ -365,11 +381,11 @@ For your own data:
 
    from eelbrain import datasets
    from eelbrain_plotly_viz import EelbrainPlotly2DViz
-   
+
    # Load Eelbrain data
    data_ds = datasets.get_mne_sample(src='vol', ori='vector')
    y = data_ds['src']  # NDVar with dimensions (case, time, source, space)
-   
+
    # Visualize
    viz = EelbrainPlotly2DViz(y=y)
 
@@ -379,25 +395,11 @@ For your own data:
 * Scalar data: ``([case,] time, source)``
 * If case dimension present: mean is computed automatically
 
-Brain Region Filtering
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Apply parcellation to focus on specific regions:
-
-.. code-block:: python
-
-   # Use parcellation (only works with built-in data)
-   viz = EelbrainPlotly2DViz(
-       y=None,                # Must be None to use region parameter
-       region='aparc+aseg'    # FreeSurfer parcellation
-   )
-
-**Note:** ``region`` parameter only works when ``y=None`` (built-in data).
 
 Running the Application
 -----------------------
 
-Browser Mode (Default)
+Browser Mode
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Opens in external browser:
@@ -405,36 +407,25 @@ Opens in external browser:
 .. code-block:: python
 
    viz = EelbrainPlotly2DViz()
-   viz.run()  # Random port, check console for URL
-   
+   viz.run(mode="external")  # Random port; defaults to inline in notebooks, external browser otherwise
+
    # Or specify port
-   viz.run(port=8888)
+   viz.run(port=8888, mode="external")  # Force browser if inline is detected
 
-**Features:**
 
-* Full-screen capability
-* Better performance
-* Persistent across browser sessions
-
-Jupyter Modes
+Jupyter Modes (Default)
 ^^^^^^^^^^^^^
 
 Multiple options for Jupyter notebooks:
 
 .. code-block:: python
 
-   # Method 1: Dedicated method
-   viz.show_in_jupyter(width=1200, height=900)
-   
-   # Method 2: Using run() with mode
-   viz.run(mode='inline', width=1200, height=900)       # Inline
-   viz.run(mode='jupyterlab', width=1400, height=1000)  # JupyterLab tab
+   # Inline display (embedded in notebook) - auto size
+   viz.run()
 
-**Comparison:**
+   # JupyterLab tab (opens in separate tab)
+   viz.run(mode='jupyterlab')
 
-* ``show_in_jupyter()``: Simple, reliable, inline display
-* ``run(mode='inline')``: Same as above, more options
-* ``run(mode='jupyterlab')``: Opens in separate JupyterLab tab
 
 Exporting Images
 ----------------
@@ -451,7 +442,7 @@ Export current view as static image:
        time_idx=30,
        format="png"
    )
-   
+
    if result["status"] == "success":
        for plot_type, filepath in result["files"].items():
            print(f"{plot_type}: {filepath}")
@@ -459,7 +450,7 @@ Export current view as static image:
 **Exports:**
 
 * All brain projection views
-* Butterfly plot
+* Activity Time Course plot
 * Separate files for each
 
 Supported Formats
@@ -469,13 +460,13 @@ Supported Formats
 
    # PNG (default, best for presentations)
    viz.export_images(format="png")
-   
+
    # JPEG (smaller file size)
    viz.export_images(format="jpg")
-   
+
    # SVG (vector, scalable)
    viz.export_images(format="svg")
-   
+
    # PDF (publication quality)
    viz.export_images(format="pdf")
 
@@ -488,25 +479,19 @@ For Large Datasets
 1. **Use arrow threshold**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(arrow_threshold='auto')
 
-2. **Simplify butterfly plot**:
+2. **Simplify detailed activity time course**:
 
    .. code-block:: python
-   
+
       viz = EelbrainPlotly2DViz(show_max_only=True)
 
-3. **Reduce arrow scale**:
+3. **Use focused display modes**:
 
    .. code-block:: python
-   
-      viz = EelbrainPlotly2DViz(arrow_scale=0.7)
 
-4. **Use focused display modes**:
-
-   .. code-block:: python
-   
       viz = EelbrainPlotly2DViz(display_mode="lr")  # Fewer views
 
 Combined Optimization
@@ -520,7 +505,7 @@ Combined Optimization
        layout_mode="horizontal",   # Better layout
        arrow_scale=0.7,            # Smaller arrows
        arrow_threshold='auto',     # Filter weak vectors
-       show_max_only=True,         # Simplified butterfly
+       show_max_only=True,         # Simplified time course
        cmap='Hot'
    )
 
@@ -540,7 +525,7 @@ For Presentations
        show_max_only=True,         # Focus on patterns
        cmap='Hot'                  # High contrast
    )
-   
+
    viz.run(mode='external')  # Full screen
 
 For Publications
@@ -554,7 +539,7 @@ For Publications
        arrow_threshold='auto',
        cmap='YlOrRd'               # Publication-friendly
    )
-   
+
    # Export high-quality images
    viz.export_images(
        output_dir="./publication_figures",
@@ -572,11 +557,11 @@ For Interactive Exploration
        layout_mode="horizontal",    # Better for exploration
        arrow_scale=1.0,
        arrow_threshold=None,        # See all vectors initially
-       show_max_only=False,         # Full butterfly information
+       show_max_only=False,         # Full time-course information
        cmap='Viridis'
    )
-   
-   viz.run(debug=True)  # Enable debug mode
+
+   viz.run()  # Enable debug with debug=True when troubleshooting
 
 Troubleshooting
 ---------------
@@ -603,7 +588,7 @@ Solution:
        arrow_threshold='auto'      # Filter weak ones
    )
 
-**Issue: Butterfly plot too cluttered**
+**Issue: Detailed activity time course too cluttered**
 
 Solution:
 
@@ -620,7 +605,7 @@ Solution:
    viz = EelbrainPlotly2DViz(
        display_mode="lr",          # Fewer views
        arrow_threshold='auto',     # Fewer arrows
-       show_max_only=True         # Simpler butterfly
+       show_max_only=True         # Simpler time course
    )
 
 **Issue: Export fails**
@@ -628,13 +613,13 @@ Solution:
 Check:
 
 1. Output directory exists or can be created
-2. Kaleido is installed (should be automatic with plotly)
+2. Kaleido is installed (install manually if prompted): ``pip install -U kaleido``
 3. Sufficient disk space
 
 Debug Mode
 ^^^^^^^^^^
 
-Enable debug mode for troubleshooting:
+Debug mode is off by default for a clean UI. Enable it when troubleshooting:
 
 .. code-block:: python
 

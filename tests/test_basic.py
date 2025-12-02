@@ -5,6 +5,29 @@ Basic tests for eelbrain_plotly_viz package.
 import pytest
 
 
+TEST_VIEW_CASES = [
+    # 1-view coverage (vertical + horizontal)
+    ("x", "vertical", ["sagittal"]),
+    ("y", "vertical", ["coronal"]),
+    ("l", "vertical", ["left_hemisphere"]),
+    ("z", "horizontal", ["axial"]),
+    ("r", "horizontal", ["right_hemisphere"]),
+    # 2-view coverage (vertical + horizontal)
+    ("yz", "vertical", ["coronal", "axial"]),
+    ("xz", "horizontal", ["sagittal", "axial"]),
+    ("yx", "horizontal", ["coronal", "sagittal"]),
+    ("lr", "horizontal", ["left_hemisphere", "right_hemisphere"]),
+    # 3-view coverage (vertical + horizontal)
+    ("lyr", "vertical", ["left_hemisphere", "coronal", "right_hemisphere"]),
+    ("ortho", "vertical", ["sagittal", "coronal", "axial"]),
+    ("ortho", "horizontal", ["sagittal", "coronal", "axial"]),
+    # 4-view coverage (vertical + horizontal)
+    ("lzry", "vertical", ["left_hemisphere", "axial", "right_hemisphere", "coronal"]),
+    ("lyrz", "vertical", ["left_hemisphere", "coronal", "right_hemisphere", "axial"]),
+    ("lzry", "horizontal", ["left_hemisphere", "axial", "right_hemisphere", "coronal"]),
+]
+
+
 def test_package_import():
     """Test that the package can be imported."""
     import eelbrain_plotly_viz
@@ -181,6 +204,42 @@ def test_show_max_only_option():
     # (show_max_only=True should have fewer traces)
     assert len(butterfly_fig1.data) > 0
     assert len(butterfly_fig2.data) > 0
+
+
+@pytest.mark.parametrize(
+    "display_mode,layout_mode,expected_views",
+    TEST_VIEW_CASES,
+)
+def test_brain_view_counts(display_mode, layout_mode, expected_views):
+    """Each display/layout combo should expose the correct brain view count."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+
+    viz = EelbrainPlotly2DViz(display_mode=display_mode, layout_mode=layout_mode)
+
+    assert viz.brain_views == expected_views
+
+    layout_config = viz._get_layout_config()
+    assert layout_config["num_views"] == len(expected_views)
+    assert layout_config["brain_views"] == expected_views
+
+    brain_plots = viz._create_2d_brain_projections_plotly(time_idx=0)
+    assert set(brain_plots.keys()) == set(expected_views)
+    assert len(brain_plots) == len(expected_views)
+
+    for fig in brain_plots.values():
+        assert hasattr(fig, "data")
+        assert hasattr(fig, "layout")
+
+
+def test_layout_view_count_coverage():
+    """Ensure we cover 1–4 brain views for both vertical and horizontal layouts."""
+    coverage = {(layout, len(views)) for _, layout, views in TEST_VIEW_CASES}
+    for layout in ("vertical", "horizontal"):
+        for count in (1, 2, 3, 4):
+            assert (
+                layout,
+                count,
+            ) in coverage, f"Missing coverage for {layout} layout with {count} view(s)"
 
 
 @pytest.mark.skipif(True, reason="eelbrain dependency not always available")

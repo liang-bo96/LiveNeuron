@@ -12,8 +12,11 @@ LiveNeuron requires:
 * Dash >= 2.0.0
 * Matplotlib >= 3.3.0
 * SciPy >= 1.7.0
-* Eelbrain (optional, for full functionality)
+* Eelbrain
 
+The recommended procedure is to create an environment through `mamba` 
+(see  https://eelbrain.readthedocs.io/en/stable/installing.html) 
+and then install LiveNeuron through `pip`.
 Install from GitHub
 -------------------
 
@@ -21,14 +24,7 @@ Install directly from GitHub:
 
 .. code-block:: bash
 
-   # Basic installation
-   pip install git+https://github.com/liang-bo96/LiveNeuron.git
-
-   # With optional Eelbrain support
-   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[eelbrain]"
-
-   # Development installation
-   pip install "git+https://github.com/liang-bo96/LiveNeuron.git[dev]"
+   pip install https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
 
 Local Development
 -----------------
@@ -40,23 +36,6 @@ To install from source for development:
    git clone https://github.com/liang-bo96/LiveNeuron.git
    cd LiveNeuron
    pip install -e .
-
-Development Installation
-------------------------
-
-For development, install with additional dependencies:
-
-.. code-block:: bash
-
-   pip install -e ".[dev]"
-
-This includes:
-
-* pytest (testing)
-* black (code formatting)
-* flake8 (linting)
-* mypy (type checking)
-* pre-commit (git hooks)
 
 Verify Installation
 -------------------
@@ -80,7 +59,7 @@ Make sure you have installed the package correctly. Try:
 
 .. code-block:: bash
 
-   pip install --upgrade LiveNeuron
+   pip install --upgrade "https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip"
 
 **Plotly/Dash version conflicts**
 
@@ -92,9 +71,10 @@ If you encounter version conflicts, try:
 
 **Missing dependencies**
 
-Some features require Eelbrain. Install it with:
+Some features require Eelbrain.
 
 .. code-block:: bash
 
-   pip install eelbrain
+   mamba install -c conda-forge eelbrain
 
+See the official Eelbrain install guide for more details: https://eelbrain.readthedocs.io/en/stable/installing.html

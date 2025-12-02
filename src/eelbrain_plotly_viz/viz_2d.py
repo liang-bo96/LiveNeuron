@@ -31,76 +31,87 @@ JUPYTER_AVAILABLE = _is_jupyter_environment()
 class EelbrainPlotly2DViz:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
-    Based on :class:`plot.GlassBrain`, provides interactive 2D projections of brain
-    volume data with butterfly plot and arrow visualization for vector data.
+    Visualization for 3D vector field time series. Provides activity time course
+    with interactive 2D projections of brain volume vector data.
 
-    Parameters
-    ----------
-    y
-        Data to plot ([case,] time, source[, space]).
-        If ``y`` has a case dimension, the mean is plotted.
-        If ``y`` has a space dimension, the norm is plotted.
-        If None, uses MNE sample data for demonstration.
-    region
-        Brain region to load using aparc+aseg parcellation.
-        If None, loads all regions. Only used when y is None.
-    cmap
-        Plotly colorscale for heatmaps. Can be:
-        - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
-        - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
-        Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
-        background and doesn't obscure arrows. See
-        https://plotly.com/python/builtin-colorscales/ for all available options.
-    show_max_only
-        If True, butterfly plot shows only mean and max traces.
-        If False, butterfly plot shows individual source traces, mean, and max.
-        Default is False.
-    arrow_threshold
-        Threshold for displaying arrows in brain projections. Only arrows with
-        magnitude greater than this value will be displayed. If None, all arrows
-        are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
-        Default is None.
-    arrow_scale
-        Relative scale factor for arrow length in brain projections. The default
-        value of 1.0 provides a good balance for most datasets. Use 0.5 for half
-        the length, 2.0 for double the length, etc. Useful for adjusting
-        visualization clarity when vectors have large magnitudes or high density.
-        Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
-    layout_mode
-        Layout arrangement mode for the visualization interface. Options:
-        - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
-        - 'horizontal': Compact layout with butterfly plot on left, brain views on right
-        Default is 'vertical' for backward compatibility.
-    display_mode
-        Anatomical view mode for brain projections. Options:
-        - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
-        - 'x': Sagittal view only
-        - 'y': Coronal view only
-        - 'z': Axial view only
-        - 'xz': Sagittal + Axial views
-        - 'yx': Coronal + Sagittal views
-        - 'yz': Coronal + Axial views
-        - 'l': Left hemisphere view only
-        - 'r': Right hemisphere view only
-        - 'lr': Both hemisphere views (left + right)
-        - 'lzr': Left + Axial + Right hemispheres
-        - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
-        - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
-        - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
-        Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
-    show_labels
-        If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
-        'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
-        cleaner visualization. Default is False.
+     Parameters
+     ----------
+     y
+         Data to plot ([case,] time, source[, space]).
+         If ``y`` has a case dimension, the mean is plotted.
+         If ``y`` has a space dimension, the norm is plotted.
+         If None, uses MNE sample data for demonstration.
+         pass an Eelbrain NDVar or the
+         :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
+         :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
+     region
+         Brain region to load using aparc+aseg parcellation.
+         If None, loads all regions. Only used when y is None.
+     cmap
+         Plotly colorscale for heatmaps. Can be:
+         - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
+         - Custom colorscale list (e.g., [[0, 'white'], [1, 'red']])
+         Default is 'YlOrRd' (Yellow-Orange-Red) which works well with white
+         background and doesn't obscure arrows. See
+         https://plotly.com/python/builtin-colorscales/ for all available options.
+     vmin
+         Optional lower bound for the color range. If provided, locks the minimum
+         for all projections and time points. Always 0.
+     vmax
+         Optional upper bound for the color range. If provided, locks the maximum
+         for all projections and time points.
+     show_max_only
+         If True, butterfly plot shows only mean and max traces.
+         If False, butterfly plot shows individual source traces, mean, and max.
+         Default is False.
+     arrow_threshold
+         Threshold for displaying arrows in brain projections. Only arrows with
+         magnitude greater than this value will be displayed. If None, all arrows
+         are shown. If 'auto', uses 10% of the maximum magnitude as threshold.
+         Default is None.
+     arrow_scale
+         Relative scale factor for arrow length in brain projections. The default
+         value of 1.0 provides a good balance for most datasets. Use 0.5 for half
+         the length, 2.0 for double the length, etc. Useful for adjusting
+         visualization clarity when vectors have large magnitudes or high density.
+         Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
+     layout_mode
+         Layout arrangement mode for the visualization interface. Options:
+         - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
+         - 'horizontal': Compact layout with butterfly plot on left, brain views on right
+         Default is 'vertical' for backward compatibility.
+     display_mode
+         Anatomical view mode for brain projections. Options:
+         - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
+         - 'x': Sagittal view only
+         - 'y': Coronal view only
+         - 'z': Axial view only
+         - 'xz': Sagittal + Axial views
+         - 'yx': Coronal + Sagittal views
+         - 'yz': Coronal + Axial views
+         - 'l': Left hemisphere view only
+         - 'r': Right hemisphere view only
+         - 'lr': Both hemisphere views (left + right)
+         - 'lzr': Left + Axial + Right hemispheres
+         - 'lyr': Left + Coronal + Right (GlassBrain default - best for hemisphere comparison)
+         - 'lzry': Left + Axial + Right + Coronal (4-view comprehensive)
+         - 'lyrz': Left + Coronal + Right + Axial (4-view comprehensive)
+         Default is 'lyr' (GlassBrain standard) for optimal hemisphere comparison.
+     show_labels
+         If True, shows plot titles and legends (e.g., 'Source Activity Time Series',
+         'Source 0', 'Source 1', etc.). If False, hides all titles and legends for a
+         cleaner visualization. Default is False.
 
-    Notes
-    -----
-    Expected input format follows the same pattern as :class:`plot.GlassBrain`:
+     Notes
+     -----
+     Expected input format
 
-    - For vector data: NDVar with dimensions ([case,] time, source, space)
-    - For scalar data: NDVar with dimensions ([case,] time, source)
-    - If case dimension present: mean across cases is plotted
-    - If space dimension present: norm across space is plotted for butterfly plot
+     - For vector data: NDVar with dimensions ([case,] time, source, space)
+     - For scalar data: NDVar with dimensions ([case,] time, source)
+     - If case dimension present: mean across cases is plotted
+     - If space dimension present: norm across space is plotted for butterfly plot
+     - ``create_sample_brain_data`` returns a minimal NDVar-like object compatible
+       with the ``y`` parameter for quick demos
     """
 
     def __init__(
@@ -108,6 +119,8 @@ class EelbrainPlotly2DViz:
         y: Optional[NDVar] = None,
         region: Optional[str] = None,
         cmap: Union[str, List] = "YlOrRd",
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
         show_max_only: bool = False,
         arrow_threshold: Optional[Union[float, str]] = None,
         arrow_scale: float = 1.0,
@@ -142,6 +155,8 @@ class EelbrainPlotly2DViz:
         self.time_values: Optional[np.ndarray] = None  # (n_times,)
         self.region_of_brain: Optional[str] = region  # Region of brain to visualize
         self.cmap: Union[str, List] = cmap  # Colorscale for heatmaps
+        self.user_vmin: Optional[float] = vmin  # Optional user-specified color min
+        self.user_vmax: Optional[float] = vmax  # Optional user-specified color max
         self.show_max_only: bool = show_max_only  # Control butterfly plot display mode
         # Threshold for displaying arrows
         self.arrow_threshold: Optional[Union[float, str]] = arrow_threshold
@@ -427,23 +442,23 @@ class EelbrainPlotly2DViz:
         This ensures consistent color mapping across time, making it easier to
         compare activity levels at different time points.
         """
-        if self.glass_brain_data is None:
-            self.global_vmin = 0.0
-            self.global_vmax = 1.0
-            return
+        data_max = 1.0
 
-        # Calculate activity magnitude across all time points
-        if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
-            # Compute norm for each source at each time point
-            all_magnitudes = np.linalg.norm(
-                self.glass_brain_data, axis=1
-            )  # (n_sources, n_times)
-        else:  # Scalar data (n_sources, n_times)
-            all_magnitudes = self.glass_brain_data
+        if self.glass_brain_data is not None:
+            # Calculate activity magnitude across all time points
+            if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+                # Compute norm for each source at each time point
+                all_magnitudes = np.linalg.norm(
+                    self.glass_brain_data, axis=1
+                )  # (n_sources, n_times)
+            else:  # Scalar data (n_sources, n_times)
+                all_magnitudes = self.glass_brain_data
 
-        # Get global min/max across all sources and all time points
-        self.global_vmin = np.min(all_magnitudes)
-        self.global_vmax = np.max(all_magnitudes)
+            data_max = float(np.max(all_magnitudes))
+
+        # Apply user overrides if provided
+        self.global_vmin = 0.0
+        self.global_vmax = data_max if self.user_vmax is None else self.user_vmax
 
         # Ensure we have a valid range (avoid zero range)
         if self.global_vmax - self.global_vmin < 1e-10:
@@ -497,6 +512,14 @@ class EelbrainPlotly2DViz:
             "num_views": num_views,
             "brain_views": self.brain_views,
         }
+
+        # Keep all four views on a single row for lzry/lyrz in vertical mode
+        if (
+            self.layout_mode == "vertical"
+            and self.display_mode in ["lzry", "lyrz"]
+            and num_views == 4
+        ):
+            config["brain_margin"] = "0.5%"
 
         # Special adjustments for 4-view modes (lzry, lyrz) in horizontal layout
         if (
@@ -580,8 +603,11 @@ class EelbrainPlotly2DViz:
                 return {"jupyter": "98%", "browser": "98%"}
             elif num_views == 2:
                 return {"jupyter": "48%", "browser": "48%"}
-            else:  # 3 or more views
+            elif num_views == 3:
                 return {"jupyter": "30%", "browser": "32%"}
+            else:  # 4 views (lzry / lyrz) keep all in one row
+                # Tighten width so four plots + colorbar fit a single row in notebooks.
+                return {"jupyter": "24%", "browser": "24%"}
         else:  # horizontal mode
             # Pre-allocate space for butterfly plot
             # Total available: 100%
@@ -1948,8 +1974,6 @@ class EelbrainPlotly2DViz:
         port: Optional[int] = None,
         debug: bool = False,
         mode: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
     ) -> None:
         """Run the Dash app with Jupyter integration support.
 
@@ -1965,13 +1989,6 @@ class EelbrainPlotly2DViz:
             - 'jupyterlab': Open in JupyterLab tab (modern Dash)
             - 'external': Open in separate browser window (default outside Jupyter)
             If None, automatically selects 'inline' in Jupyter, 'external' otherwise.
-        width
-            Display width in pixels for Jupyter integration. Default is 1200.
-            Only used in Jupyter modes.
-        height
-            Display height in pixels for Jupyter integration.
-            If None (default), automatically calculates based on content.
-            Only used in Jupyter modes.
         """
         if port is None:
             port = random.randint(8001, 9001)
@@ -1979,10 +1996,6 @@ class EelbrainPlotly2DViz:
         # Auto-detect mode based on environment
         if mode is None:
             mode = "inline" if JUPYTER_AVAILABLE else "external"
-
-        # Set default width if not specified
-        if width is None:
-            width = 1200
 
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
             # Set Jupyter mode and rebuild layout with Jupyter-specific styles
@@ -1994,18 +2007,15 @@ class EelbrainPlotly2DViz:
             # Rebuild layout with Jupyter styles
             self._setup_layout()
 
-            # Auto-calculate height if not specified
-            if height is None:
-                iframe_height = self._estimate_jupyter_iframe_height()
-                if iframe_height is None:
-                    iframe_height = 900  # Fallback default
-            else:
-                iframe_height = height
+            # Auto-calculate height
+            iframe_height = self._estimate_jupyter_iframe_height()
+            if iframe_height is None:
+                iframe_height = 900  # Fallback default
 
             print(
                 "\nStarting 2D Brain Visualization with modern Dash Jupyter integration..."
             )
-            print(f"Mode: {mode}, Size: {width}x{iframe_height}px")
+            print(f"Mode: {mode}, Auto height: {iframe_height}px")
 
             # Use modern Dash Jupyter integration
             self.app.run(
@@ -2022,17 +2032,11 @@ class EelbrainPlotly2DViz:
 
             self.app.run(debug=debug, port=port)
 
-    def _show_in_jupyter(
-        self, width: int = 1200, height: int = 900, debug: bool = False
-    ) -> None:
+    def _show_in_jupyter(self, debug: bool = False) -> None:
         """Convenience method to display the visualization inline in Jupyter notebooks (internal method).
 
         Parameters
         ----------
-        width
-            Display width in pixels. Default is 1200.
-        height
-            Display height in pixels. Default is 900.
         debug
             Enable debug mode. Default is False for cleaner output.
 
@@ -2041,9 +2045,6 @@ class EelbrainPlotly2DViz:
         Basic usage in Jupyter:
         >>> viz = EelbrainPlotly2DViz()
         >>> viz._show_in_jupyter()
-
-        Custom sizing:
-        >>> viz._show_in_jupyter(width=1400, height=1000)
         """
         if not JUPYTER_AVAILABLE:
             print("Warning: Jupyter environment not detected.")
@@ -2059,7 +2060,7 @@ class EelbrainPlotly2DViz:
 
         self._setup_layout()  # Rebuild layout with Jupyter styles
 
-        self.run(mode="inline", width=width, height=height, debug=debug)
+        self.run(mode="inline", debug=debug)
 
     def export_images(
         self,
@@ -2183,8 +2184,8 @@ if __name__ == "__main__":
             cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows
-            layout_mode="horizontal",
-            display_mode="lyr",
+            layout_mode="vertical",
+            display_mode="lzry",
             arrow_scale=0.5,  # Shorter arrows for better visibility
         )
 
@@ -2198,7 +2199,7 @@ if __name__ == "__main__":
         # print("Export result:", result)
 
         # For Jupyter notebooks, use:
-        # viz_2d._show_in_jupyter(width=1200, height=900)
+        # viz_2d._show_in_jupyter()
 
         # For regular Python scripts or external browser:
         viz_2d.run()

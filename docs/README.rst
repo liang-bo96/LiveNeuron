@@ -46,10 +46,8 @@ Documentation Structure
 
 * ``index.rst``: Main documentation page
 * ``installation.rst``: Installation instructions
-* ``quickstart.rst``: Quick start guide
-* ``user_guide.rst``: Comprehensive user guide
+* ``user_guide.rst``: Comprehensive user guide (recommended starting point)
 * ``api_reference.rst``: Complete API reference
-* ``examples.rst``: Practical examples
 * ``changelog.rst``: Version history and release notes
 
 Rebuilding
@@ -68,6 +66,4 @@ For other formats:
 
    make latexpdf  # PDF via LaTeX
    make epub      # EPUB ebook format
-
-
 

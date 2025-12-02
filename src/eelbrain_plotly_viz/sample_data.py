@@ -9,12 +9,87 @@ import numpy as np
 from typing import Tuple, Dict, Any, Optional
 
 
+class _SampleTimeDim:
+    def __init__(self, times: np.ndarray):
+        self.times = times
+
+
+class _SampleSourceDim:
+    def __init__(self, coordinates: np.ndarray, parc: Optional[Any] = None):
+        self.coordinates = coordinates
+        self.parc = parc
+
+
+class SampleDataNDVar(dict):
+    """
+    Minimal NDVar-like wrapper around sample data to work with EelbrainPlotly2DViz.
+
+    Behaves like a dict for backward compatibility and implements the subset of
+    NDVar API that viz_2d consumes.
+    """
+
+    def __init__(
+        self,
+        data: np.ndarray,
+        coords: np.ndarray,
+        times: np.ndarray,
+        has_vector_data: bool,
+    ):
+        super().__init__(
+            data=data,
+            coords=coords,
+            times=times,
+            has_vector_data=has_vector_data,
+            n_sources=coords.shape[0],
+            n_times=times.shape[0],
+        )
+        self._data = data
+        self._coords = coords
+        self._times = times
+        self.has_vector_data = has_vector_data
+        self.has_case = False  # sample data has no case dimension
+        self.time = _SampleTimeDim(times)
+        self.source = _SampleSourceDim(coords)
+
+    def mean(self, *_, **__):
+        # No case dimension; return self
+        return self
+
+    def has_dim(self, name: str) -> bool:
+        if name == "space":
+            return self.has_vector_data
+        return name in {"source", "time"}
+
+    def get_dim(self, name: str):
+        if name == "source":
+            return self.source
+        if name == "time":
+            return self.time
+        raise ValueError(f"Unknown dimension '{name}'")
+
+    def get_data(self, order: Tuple[str, ...]):
+        # Expected orders:
+        # - ("source", "space", "time") for vector data
+        # - ("source", "time") for scalar data
+        if self.has_vector_data:
+            # Stored as (n_sources, n_times, 3); transpose if needed
+            if order == ("source", "space", "time"):
+                return np.transpose(self._data, (0, 2, 1))
+            if order == ("source", "time", "space"):
+                return self._data
+            raise ValueError(f"Unsupported order {order} for vector data")
+        else:
+            if order == ("source", "time"):
+                return self._data
+            raise ValueError(f"Unsupported order {order} for scalar data")
+
+
 def create_sample_brain_data(
     n_sources: int = 200,
     n_times: int = 50,
     has_vector_data: bool = True,
     random_seed: int = 42,
-) -> Dict[str, Any]:
+) -> SampleDataNDVar:
     """
     Create synthetic brain data for visualization testing.
 
@@ -31,13 +106,10 @@ def create_sample_brain_data(
 
     Returns
     -------
-    data_dict : dict
-        Dictionary containing:
-        - 'data': numpy array of shape (n_sources, n_times, 3) for vector data
-                 or (n_sources, n_times) for scalar data
-        - 'coords': numpy array of shape (n_sources, 3) with source coordinates
-        - 'times': numpy array of shape (n_times,) with time values
-        - 'has_vector_data': bool indicating data type
+    SampleDataNDVar
+        Minimal NDVar-like object with the fields EelbrainPlotly2DViz expects:
+        ``data`` (array), ``coords`` (array), ``times`` (array),
+        ``has_vector_data`` (bool), ``n_sources`` (int), ``n_times`` (int).
     """
     np.random.seed(random_seed)
 
@@ -55,14 +127,9 @@ def create_sample_brain_data(
         # Create scalar data (n_sources, n_times)
         data = _create_scalar_brain_activity(n_sources, n_times, coords, times)
 
-    return {
-        "data": data,
-        "coords": coords,
-        "times": times,
-        "has_vector_data": has_vector_data,
-        "n_sources": n_sources,
-        "n_times": n_times,
-    }
+    return SampleDataNDVar(
+        data=data, coords=coords, times=times, has_vector_data=has_vector_data
+    )
 
 
 def _create_brain_coordinates(n_sources: int) -> np.ndarray:
