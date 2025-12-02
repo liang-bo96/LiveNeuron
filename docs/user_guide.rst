@@ -121,7 +121,7 @@ Vertical Layout (Default)
 
 * General use, including 1–4 projections
 * When the detailed activity time course should be prominent
-* When you want more vertical space per projection
+* When you want more horizontal space per projection
 
 **Characteristics:**
 
