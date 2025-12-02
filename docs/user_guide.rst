@@ -278,7 +278,7 @@ Create custom colorscales with transparency:
 
    viz = EelbrainPlotly2DViz(vmin=-2.0, vmax=2.0)
 
-Butterfly Plot Modes
+Activity Time Course Plot Modes
 --------------------
 
 Full Mode (Default)
@@ -450,7 +450,7 @@ Export current view as static image:
 **Exports:**
 
 * All brain projection views
-* Butterfly plot
+* Activity Time Course plot
 * Separate files for each
 
 Supported Formats
