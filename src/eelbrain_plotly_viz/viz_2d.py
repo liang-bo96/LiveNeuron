@@ -31,8 +31,8 @@ JUPYTER_AVAILABLE = _is_jupyter_environment()
 class EelbrainPlotly2DViz:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
-    Based on :class:`plot.GlassBrain`, provides interactive 2D projections of brain
-    volume data with butterfly plot and arrow visualization for vector data.
+   Visualization for 3D vector field time series. Provides activity time course
+   with interactive 2D projections of brain volume vector data.
 
     Parameters
     ----------
@@ -104,7 +104,7 @@ class EelbrainPlotly2DViz:
 
     Notes
     -----
-    Expected input format follows the same pattern as :class:`plot.GlassBrain`:
+    Expected input format
 
     - For vector data: NDVar with dimensions ([case,] time, source, space)
     - For scalar data: NDVar with dimensions ([case,] time, source)
