@@ -18,6 +18,34 @@ Sample Data Module
 
 .. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
 
+Layout System
+-------------
+
+Custom layouts can be created by inheriting from ``LayoutBuilder``:
+
+.. code-block:: python
+
+   from eelbrain_plotly_viz import LayoutBuilder, register_layout
+
+   class MyLayout(LayoutBuilder):
+       def build(self, app):
+           # Custom layout implementation
+           pass
+
+   register_layout("my_layout", MyLayout())
+
+**LayoutBuilder**
+  Abstract base class for layout strategies. Implement ``build(app)`` method.
+
+**register_layout(name, builder)**
+  Register a custom layout strategy.
+
+**get_layout_builder(name)**
+  Retrieve a layout builder by name.
+
+**LAYOUTS**
+  Dictionary of registered layout strategies. Contains ``'vertical'`` and ``'horizontal'`` by default.
+
 Data Format
 -----------
 
@@ -49,7 +77,7 @@ The library may raise the following exceptions:
 
 **ValueError**
   * Invalid ``display_mode`` string
-  * Invalid ``layout_mode`` (not "vertical" or "horizontal")
+  * Invalid ``layout_mode`` (not "vertical" or "horizontal" and not registered in LAYOUTS)
   * Invalid parameter values
 
 **ImportError**

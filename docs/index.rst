@@ -16,6 +16,10 @@ Welcome to LiveNeuron's documentation!
    :target: https://opensource.org/licenses/MIT
    :alt: License
 
+.. image:: https://img.shields.io/badge/docs-ReadTheDocs-blue
+   :target: https://liveneuron.readthedocs.io/en/latest/index.html
+   :alt: Documentation
+
 Key Features
 ------------
 

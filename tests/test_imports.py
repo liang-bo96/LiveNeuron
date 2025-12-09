@@ -14,11 +14,35 @@ def test_all_imports_together():
         EelbrainPlotly2DViz,
         BrainPlotly2DViz,
         create_sample_brain_data,
+        # Mixins for extensibility
+        DataLoaderMixin,
+        PlotFactoryMixin,
+        LayoutBuilderMixin,
+        AppControllerMixin,
+        # Layout strategy pattern
+        LayoutBuilder,
+        VerticalLayout,
+        HorizontalLayout,
+        LAYOUTS,
+        register_layout,
+        get_layout_builder,
     )
 
     assert EelbrainPlotly2DViz is not None
     assert BrainPlotly2DViz is not None
     assert create_sample_brain_data is not None
+    # Test mixin imports
+    assert DataLoaderMixin is not None
+    assert PlotFactoryMixin is not None
+    assert LayoutBuilderMixin is not None
+    assert AppControllerMixin is not None
+    # Test layout strategy imports
+    assert LayoutBuilder is not None
+    assert VerticalLayout is not None
+    assert HorizontalLayout is not None
+    assert LAYOUTS is not None
+    assert register_layout is not None
+    assert get_layout_builder is not None
 
 
 def test_direct_module_imports():
@@ -52,9 +76,23 @@ def test_package_all_attribute():
 
     assert hasattr(eelbrain_plotly_viz, "__all__")
     expected_items = {
+        # Main class
         "EelbrainPlotly2DViz",
         "BrainPlotly2DViz",
+        # Sample data
         "create_sample_brain_data",
+        # Mixins for extensibility
+        "DataLoaderMixin",
+        "PlotFactoryMixin",
+        "LayoutBuilderMixin",
+        "AppControllerMixin",
+        # Layout strategy pattern (Open/Closed Principle)
+        "LayoutBuilder",
+        "VerticalLayout",
+        "HorizontalLayout",
+        "LAYOUTS",
+        "register_layout",
+        "get_layout_builder",
     }
     assert set(eelbrain_plotly_viz.__all__) == expected_items
 
