@@ -167,7 +167,9 @@ class VerticalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._create_butterfly_plot(0, figure_height=butterfly_height)
+        initial_butterfly = app._create_butterfly_plot(
+            0, figure_height=butterfly_height
+        )
         initial_brain_plots = app._create_2d_brain_projections_plotly(0)
 
         # Build layout
@@ -320,7 +322,9 @@ class HorizontalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._create_butterfly_plot(0, figure_height=butterfly_height)
+        initial_butterfly = app._create_butterfly_plot(
+            0, figure_height=butterfly_height
+        )
         initial_brain_plots = app._create_2d_brain_projections_plotly(0)
 
         # Build layout
@@ -558,7 +562,11 @@ class HorizontalLayout(LayoutBuilder):
                         )
                     ]
                     + self._create_brain_view_containers_horizontal(
-                        app, initial_brain_plots, brain_height, brain_width, brain_margin
+                        app,
+                        initial_brain_plots,
+                        brain_height,
+                        brain_width,
+                        brain_margin,
                     ),
                     style={
                         "marginBottom": "0px",

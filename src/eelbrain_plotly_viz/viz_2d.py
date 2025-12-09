@@ -123,7 +123,7 @@ class EelbrainPlotly2DViz(
     - If space dimension present: norm across space is plotted for butterfly plot
     - ``create_sample_brain_data`` returns a minimal NDVar-like object compatible
       with the ``y`` parameter for quick demos
-   """
+    """
 
     def __init__(
         self,
