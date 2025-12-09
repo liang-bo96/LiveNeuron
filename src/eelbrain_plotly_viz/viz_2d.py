@@ -20,7 +20,7 @@ from eelbrain import NDVar
 
 from .data_loader_mixin import DataLoaderMixin
 from .plot_factory_mixin import PlotFactoryMixin
-from .layout_builder_mixin import LayoutBuilderMixin
+from .layout_builder_mixin import LayoutBuilderMixin, LAYOUTS
 from .app_controller_mixin import AppControllerMixin
 
 
@@ -187,8 +187,8 @@ class EelbrainPlotly2DViz(
         self.global_vmin: float = 0.0
         self.global_vmax: float = 1.0
 
-        # Validate and set layout mode
-        valid_layouts = ["vertical", "horizontal"]
+        # Validate and set layout mode (allow registered custom layouts)
+        valid_layouts = list(LAYOUTS.keys())
         if layout_mode not in valid_layouts:
             raise ValueError(
                 f"layout_mode must be one of {valid_layouts}, got '{layout_mode}'"

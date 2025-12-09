@@ -13,6 +13,7 @@ LiveNeuron requires:
 * Matplotlib >= 3.3.0
 * SciPy >= 1.7.0
 * Eelbrain
+* Kaleido >= 0.2.0 (for image export)
 
 The recommended procedure is to create an environment through `mamba` 
 (see  https://eelbrain.readthedocs.io/en/stable/installing.html) 

@@ -46,6 +46,7 @@ dependencies = [
     "matplotlib>=3.3.0",
     "scipy>=1.7.0",
     "eelbrain",
+    "kaleido>=0.2.0",  # Required for image export
 ]
 
 [project.optional-dependencies]

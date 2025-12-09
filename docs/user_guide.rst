@@ -630,7 +630,7 @@ Solution:
 Check:
 
 1. Output directory exists or can be created
-2. Kaleido is installed (install manually if prompted): ``pip install -U kaleido``
+2. Kaleido is installed (included in dependencies, upgrade if needed): ``pip install -U kaleido``
 3. Sufficient disk space
 
 Debug Mode
