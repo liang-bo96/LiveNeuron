@@ -18,6 +18,21 @@ Sample Data Module
 
 .. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
 
+Mixins
+------
+
+.. autoclass:: eelbrain_plotly_viz.data_loader_mixin.DataLoaderMixin
+   :show-inheritance:
+
+.. autoclass:: eelbrain_plotly_viz.plot_factory_mixin.PlotFactoryMixin
+   :show-inheritance:
+
+.. autoclass:: eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilderMixin
+   :show-inheritance:
+
+.. autoclass:: eelbrain_plotly_viz.app_controller_mixin.AppControllerMixin
+   :show-inheritance:
+
 Layout System
 -------------
 
@@ -34,17 +49,13 @@ Custom layouts can be created by inheriting from ``LayoutBuilder``:
 
    register_layout("my_layout", MyLayout())
 
-**LayoutBuilder**
-  Abstract base class for layout strategies. Implement ``build(app)`` method.
+.. autoclass:: eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilder
+   :members:
+   :show-inheritance:
 
-**register_layout(name, builder)**
-  Register a custom layout strategy.
-
-**get_layout_builder(name)**
-  Retrieve a layout builder by name.
-
-**LAYOUTS**
-  Dictionary of registered layout strategies. Contains ``'vertical'`` and ``'horizontal'`` by default.
+.. autofunction:: eelbrain_plotly_viz.layout_builder_mixin.register_layout
+.. autofunction:: eelbrain_plotly_viz.layout_builder_mixin.get_layout_builder
+.. autodata:: eelbrain_plotly_viz.layout_builder_mixin.LAYOUTS
 
 Data Format
 -----------

@@ -11,17 +11,8 @@ through mixin composition:
 - LayoutBuilderMixin: Arranges UI components (uses Strategy pattern)
 - AppControllerMixin: Controls user interaction and application behavior
 
-Custom layouts can be created by inheriting from LayoutBuilder:
-
->>> from eelbrain_plotly_viz import LayoutBuilder, register_layout
->>>
->>> class MyCustomLayout(LayoutBuilder):
-...     def build(self, app):
-...         # Custom layout implementation
-...         pass
->>>
->>> register_layout("custom", MyCustomLayout())
->>> viz = EelbrainPlotly2DViz(layout_mode="custom")
+Custom layouts can be created by inheriting from LayoutBuilder and registering
+them via register_layout; see the documentation for a complete example.
 """
 
 __version__ = "1.0.0"

@@ -160,18 +160,13 @@ Horizontal Layout
 Custom Layouts
 ^^^^^^^^^^^^^^
 
-Create custom layouts by inheriting from ``LayoutBuilder``:
+Create custom layouts by inheriting from :class:`~eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilder` and registering them with :func:`~eelbrain_plotly_viz.layout_builder_mixin.register_layout`.
+See the *Layout System* section in the API reference for a complete example.
+
+Once registered, you can select your layout with ``layout_mode``:
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz import LayoutBuilder, register_layout, EelbrainPlotly2DViz
-   from dash import dcc, html
-
-   class MyCustomLayout(LayoutBuilder):
-       def build(self, app):
-
-   # Register and use
-   register_layout("custom", MyCustomLayout())
    viz = EelbrainPlotly2DViz(layout_mode="custom")
 
 Arrow Visualization
