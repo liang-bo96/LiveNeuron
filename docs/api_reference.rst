@@ -18,21 +18,6 @@ Sample Data Module
 
 .. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
 
-Mixins
-------
-
-.. autoclass:: eelbrain_plotly_viz.data_loader_mixin.DataLoaderMixin
-   :show-inheritance:
-
-.. autoclass:: eelbrain_plotly_viz.plot_factory_mixin.PlotFactoryMixin
-   :show-inheritance:
-
-.. autoclass:: eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilderMixin
-   :show-inheritance:
-
-.. autoclass:: eelbrain_plotly_viz.app_controller_mixin.AppControllerMixin
-   :show-inheritance:
-
 Layout System
 -------------
 

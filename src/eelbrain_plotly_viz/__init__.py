@@ -20,12 +20,7 @@ __author__ = "LiveNeuron Team"
 
 from .viz_2d import EelbrainPlotly2DViz
 from .sample_data import create_sample_brain_data
-
-# Export mixins for extensibility
-from .data_loader_mixin import DataLoaderMixin
-from .plot_factory_mixin import PlotFactoryMixin
 from .layout_builder_mixin import (
-    LayoutBuilderMixin,
     # Layout strategy classes and registry
     LayoutBuilder,
     VerticalLayout,
@@ -34,7 +29,6 @@ from .layout_builder_mixin import (
     register_layout,
     get_layout_builder,
 )
-from .app_controller_mixin import AppControllerMixin
 
 # Create alias for backward compatibility
 BrainPlotly2DViz = EelbrainPlotly2DViz
@@ -45,11 +39,6 @@ __all__ = [
     "BrainPlotly2DViz",  # Alias for compatibility
     # Sample data
     "create_sample_brain_data",
-    # Mixins for extensibility
-    "DataLoaderMixin",
-    "PlotFactoryMixin",
-    "LayoutBuilderMixin",
-    "AppControllerMixin",
     # Layout strategy pattern (Open/Closed Principle)
     "LayoutBuilder",  # Abstract base class for custom layouts
     "VerticalLayout",  # Built-in vertical layout
