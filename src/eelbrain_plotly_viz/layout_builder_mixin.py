@@ -62,8 +62,6 @@ class LayoutBuilder(ABC):
     ...         # Access app._create_butterfly_plot() for butterfly figure
     ...         # Access app._create_2d_brain_projections_plotly() for brain figures
     ...         pass
-    >>>
-    >>> register_layout("compact", CompactLayout())
     """
 
     @abstractmethod
@@ -648,13 +646,8 @@ def register_layout(name: str, builder: LayoutBuilder) -> None:
 
     Example
     -------
-    >>> class GridLayout(LayoutBuilder):
-    ...     def build(self, app):
-    ...         # Custom layout implementation
-    ...         pass
-    >>>
-    >>> register_layout("grid", GridLayout())
-    >>> viz = EelbrainPlotly2DViz(layout_mode="grid")
+    >>> register_layout("compact", CompactLayout())
+    >>> viz = EelbrainPlotly2DViz(layout_mode="compact")
     """
     LAYOUTS[name] = builder
 

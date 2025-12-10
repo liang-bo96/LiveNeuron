@@ -23,17 +23,6 @@ Layout System
 
 Custom layouts can be created by inheriting from ``LayoutBuilder``:
 
-.. code-block:: python
-
-   from eelbrain_plotly_viz import LayoutBuilder, register_layout
-
-   class MyLayout(LayoutBuilder):
-       def build(self, app):
-           # Custom layout implementation
-           pass
-
-   register_layout("my_layout", MyLayout())
-
 .. autoclass:: eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilder
    :members:
    :show-inheritance:
