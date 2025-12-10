@@ -48,6 +48,7 @@ class DataLoaderHelper:
     global_vmax : float
         Global maximum value for colormap.
     """
+
     def __init__(self, viz: Any):
         """Initialize the data loader helper.
 
