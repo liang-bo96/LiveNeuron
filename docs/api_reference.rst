@@ -23,13 +23,13 @@ Layout System
 
 Custom layouts can be created by inheriting from ``LayoutBuilder``:
 
-.. autoclass:: eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilder
+.. autoclass:: eelbrain_plotly_viz.layout_builder_helper.LayoutBuilder
    :members:
    :show-inheritance:
 
-.. autofunction:: eelbrain_plotly_viz.layout_builder_mixin.register_layout
-.. autofunction:: eelbrain_plotly_viz.layout_builder_mixin.get_layout_builder
-.. autodata:: eelbrain_plotly_viz.layout_builder_mixin.LAYOUTS
+.. autofunction:: eelbrain_plotly_viz.layout_builder_helper.register_layout
+.. autofunction:: eelbrain_plotly_viz.layout_builder_helper.get_layout_builder
+.. autodata:: eelbrain_plotly_viz.layout_builder_helper.LAYOUTS
 
 Data Format
 -----------

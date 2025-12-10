@@ -5,11 +5,11 @@ Interactive 2D brain visualization using Plotly and Dash.
 Supports Eelbrain NDVar data format with built-in MNE sample data.
 
 The EelbrainPlotly2DViz class demonstrates the Single Responsibility Principle
-through mixin composition:
-- DataLoaderMixin: Handles data ingestion and normalization
-- PlotFactoryMixin: Constructs all visualization figures
-- LayoutBuilderMixin: Arranges UI components (uses Strategy pattern)
-- AppControllerMixin: Controls user interaction and application behavior
+by delegating to internal helper components:
+- Data loading and normalization
+- Figure construction
+- Layout composition (Strategy pattern)
+- Application control and interaction
 
 Custom layouts can be created by inheriting from LayoutBuilder and registering
 them via register_layout; see the documentation for a complete example.
@@ -20,7 +20,7 @@ __author__ = "LiveNeuron Team"
 
 from .viz_2d import EelbrainPlotly2DViz
 from .sample_data import create_sample_brain_data
-from .layout_builder_mixin import (
+from .layout_builder_helper import (
     # Layout strategy classes and registry
     LayoutBuilder,
     VerticalLayout,

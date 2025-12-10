@@ -5,11 +5,12 @@ This module provides the EelbrainPlotly2DViz class, an interactive 2D visualizat
 interface for Eelbrain's NDVar data structures. It transforms neuroscience data
 into explorable brain maps and time-series plots.
 
-The class follows the Single Responsibility Principle by composing four mixins:
-- DataLoaderMixin: Handles data ingestion and normalization
-- PlotFactoryMixin: Constructs all visualization figures
-- LayoutBuilderMixin: Arranges UI components
-- AppControllerMixin: Controls user interaction and application behavior
+The class follows the Single Responsibility Principle by delegating to four
+internal helper components:
+- DataLoaderHelper: Handles data ingestion and normalization
+- PlotFactoryHelper: Constructs all visualization figures
+- LayoutBuilderHelper: Arranges UI components
+- AppControllerHelper: Controls user interaction and application behavior
 """
 
 from typing import Optional, Union, List, Dict, Any
@@ -18,32 +19,27 @@ import dash
 import numpy as np
 from eelbrain import NDVar
 
-from .data_loader_mixin import DataLoaderMixin
-from .plot_factory_mixin import PlotFactoryMixin
-from .layout_builder_mixin import LayoutBuilderMixin, LAYOUTS
-from .app_controller_mixin import AppControllerMixin
+from .data_loader_helper import DataLoaderHelper
+from .plot_factory_helper import PlotFactoryHelper
+from .layout_builder_helper import LayoutBuilderHelper, LAYOUTS
+from .app_controller_helper import AppControllerHelper
 
 
-class EelbrainPlotly2DViz(
-    DataLoaderMixin,
-    PlotFactoryMixin,
-    LayoutBuilderMixin,
-    AppControllerMixin,
-):
+class EelbrainPlotly2DViz:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
     Visualization for 3D vector field time series. Provides activity time course
     with interactive 2D projections of brain volume vector data.
 
-    This class demonstrates the Single Responsibility Principle through mixin
-    composition:
-    - DataLoaderMixin: Responsible for all data ingestion logic
-    - PlotFactoryMixin: Responsible for constructing all visualization figures
-    - LayoutBuilderMixin: Responsible for arranging UI components
-    - AppControllerMixin: Responsible for user interaction logic
+    This class demonstrates the Single Responsibility Principle by delegating
+    to four internal helper components:
+    - DataLoaderHelper: Responsible for all data ingestion logic
+    - PlotFactoryHelper: Responsible for constructing all visualization figures
+    - LayoutBuilderHelper: Responsible for arranging UI components
+    - AppControllerHelper: Responsible for user interaction logic
 
-    The main class orchestrates these mixins to provide a complete visualization
-    experience.
+    The main class orchestrates these helpers to provide a complete
+    visualization experience.
 
     Parameters
     ----------
@@ -187,6 +183,12 @@ class EelbrainPlotly2DViz(
         self.global_vmin: float = 0.0
         self.global_vmax: float = 1.0
 
+        # Internal helper components (composition instead of mixins)
+        self._data_loader = DataLoaderHelper(self)
+        self._plot_factory = PlotFactoryHelper(self)
+        self._layout_helper = LayoutBuilderHelper(self)
+        self._app_controller = AppControllerHelper(self)
+
         # Validate and set layout mode (allow registered custom layouts)
         valid_layouts = list(LAYOUTS.keys())
         if layout_mode not in valid_layouts:
@@ -198,28 +200,49 @@ class EelbrainPlotly2DViz(
         # Set display mode and parse required views
         self.display_mode: str = display_mode
         # Parse display mode to determine required views (includes validation)
-        self.brain_views = self._parse_display_mode(display_mode)
+        self.brain_views = self._data_loader._parse_display_mode(display_mode)
 
-        # Load data (DataLoaderMixin responsibility)
+        # Load data (data loader helper responsibility)
         if y is not None:
-            self._load_ndvar_data(y)
+            self._data_loader._load_ndvar_data(y)
         else:
-            self._load_source_data(region)
+            self._data_loader._load_source_data(region)
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
-        self._calculate_view_ranges()
+        self._data_loader._calculate_view_ranges()
 
         # Unify view sizes to ensure all brain plots have consistent display size
         # This is especially important in horizontal layout mode
-        self._unify_view_sizes_for_jupyter()
+        self._data_loader._unify_view_sizes_for_jupyter()
 
         # Calculate global colormap range across all time points for consistent visualization
-        self._calculate_global_colormap_range()
+        self._data_loader._calculate_global_colormap_range()
 
-        # Setup app (LayoutBuilderMixin responsibility)
-        self._setup_layout()
-        # Setup callbacks (AppControllerMixin responsibility)
-        self._setup_callbacks()
+        # Setup app (layout helper responsibility)
+        self._layout_helper._setup_layout()
+        # Setup callbacks (app controller helper responsibility)
+        self._app_controller._setup_callbacks()
+
+    def run(
+        self,
+        port: Optional[int] = None,
+        debug: bool = False,
+        mode: Optional[str] = None,
+    ) -> None:
+        self._app_controller.run(port=port, debug=debug, mode=mode)
+
+    def _show_in_jupyter(self, debug: bool = False) -> None:
+        self._app_controller._show_in_jupyter(debug=debug)
+
+    def export_images(
+        self,
+        output_dir: str = "./images",
+        time_idx: Optional[int] = None,
+        format: str = "png",
+    ):
+        return self._app_controller.export_images(
+            output_dir=output_dir, time_idx=time_idx, format=format
+        )
 
 
 # Run the app when script is executed directly

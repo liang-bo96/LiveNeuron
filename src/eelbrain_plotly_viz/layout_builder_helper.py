@@ -2,7 +2,7 @@
 Layout Builder Module - Responsible for arranging UI components.
 
 This module provides the LayoutBuilder interface, concrete layout strategies,
-and the LayoutBuilderMixin following the Open/Closed Principle.
+and the LayoutBuilderHelper following the Open/Closed Principle.
 
 New layout strategies can be added by:
 1. Inheriting from LayoutBuilder and implementing the build() method
@@ -59,8 +59,8 @@ class LayoutBuilder(ABC):
     >>> class CompactLayout(LayoutBuilder):
     ...     def build(self, app):
     ...         # Access app.app.layout to set Dash layout
-    ...         # Access app._create_butterfly_plot() for butterfly figure
-    ...         # Access app._create_2d_brain_projections_plotly() for brain figures
+    ...         # Access app._plot_factory._create_butterfly_plot() for butterfly figure
+    ...         # Access app._plot_factory._create_2d_brain_projections_plotly() for brain figures
     ...         pass
     """
 
@@ -165,10 +165,10 @@ class VerticalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._create_butterfly_plot(
+        initial_butterfly = app._plot_factory._create_butterfly_plot(
             0, figure_height=butterfly_height
         )
-        initial_brain_plots = app._create_2d_brain_projections_plotly(0)
+        initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
 
         # Build layout
         self._setup_vertical_layout(app, initial_butterfly, initial_brain_plots, config)
@@ -320,10 +320,10 @@ class HorizontalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._create_butterfly_plot(
+        initial_butterfly = app._plot_factory._create_butterfly_plot(
             0, figure_height=butterfly_height
         )
-        initial_brain_plots = app._create_2d_brain_projections_plotly(0)
+        initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
 
         # Build layout
         self._setup_horizontal_layout(
@@ -653,18 +653,14 @@ def register_layout(name: str, builder: LayoutBuilder) -> None:
 
 
 # =============================================================================
-# LayoutBuilderMixin - Mixin for the main visualization class
-# =============================================================================
+class LayoutBuilderHelper:
+    """Helper responsible for arranging UI components.
 
-
-class LayoutBuilderMixin:
-    """Mixin responsible for arranging UI components.
-
-    This mixin has a single responsibility: layout composition. It delegates
+    This helper has a single responsibility: layout composition. It delegates
     the actual layout construction to LayoutBuilder strategies, following
     the Strategy pattern and Open/Closed Principle.
 
-    The mixin provides:
+    The helper provides:
     - _setup_layout(): Delegates to the appropriate LayoutBuilder
     - _get_layout_config(): Returns layout configuration for callbacks
     - _estimate_jupyter_iframe_height(): Calculates Jupyter display height
@@ -676,7 +672,7 @@ class LayoutBuilderMixin:
     3. Using the custom layout_mode in EelbrainPlotly2DViz
     """
 
-    # Declare expected attributes from other mixins/main class
+    # Declare expected attributes from the main class
     app: Any  # dash.Dash
     layout_mode: str
     display_mode: str
@@ -688,6 +684,27 @@ class LayoutBuilderMixin:
     global_vmax: float
     _current_layout_config: Optional[Dict[str, Any]]
 
+    def __init__(self, viz: Any):
+        """Initialize the layout builder helper.
+
+        Parameters
+        ----------
+        viz
+            The EelbrainPlotly2DViz instance this helper operates on.
+        """
+        self._viz = viz
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the parent visualization instance."""
+        return getattr(self._viz, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Delegate state changes to the parent visualization instance."""
+        if name == "_viz":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._viz, name, value)
+
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode.
 
@@ -696,8 +713,8 @@ class LayoutBuilderMixin:
         """
         # Get layout builder from registry
         builder = get_layout_builder(self.layout_mode)
-        # Delegate layout construction to the builder
-        builder.build(self)
+        # Delegate layout construction to the builder using the parent viz
+        builder.build(self._viz)
 
     def _get_layout_config(self) -> Dict[str, Any]:
         """Get layout configuration based on layout_mode, display_mode and environment.

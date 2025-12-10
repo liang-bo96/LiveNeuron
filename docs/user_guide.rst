@@ -160,7 +160,7 @@ Horizontal Layout
 Custom Layouts
 ^^^^^^^^^^^^^^
 
-Create custom layouts by inheriting from :class:`~eelbrain_plotly_viz.layout_builder_mixin.LayoutBuilder` and registering them with :func:`~eelbrain_plotly_viz.layout_builder_mixin.register_layout`.
+Create custom layouts by inheriting from :class:`~eelbrain_plotly_viz.layout_builder_helper.LayoutBuilder` and registering them with :func:`~eelbrain_plotly_viz.layout_builder_helper.register_layout`.
 See the *Layout System* section in the API reference for a complete example.
 
 Once registered, you can select your layout with ``layout_mode``:

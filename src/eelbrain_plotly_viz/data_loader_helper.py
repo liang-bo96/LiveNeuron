@@ -1,7 +1,7 @@
 """
-Data Loader Mixin - Responsible for all data ingestion logic.
+Data Loader Helper - Responsible for all data ingestion logic.
 
-This mixin's single responsibility is to handle data loading - reading NDVar
+This helper's single responsibility is to handle data loading - reading NDVar
 or sample data and normalizing it into a consistent internal format.
 Loading and normalization are both part of one cohesive responsibility:
 preparing data for visualization.
@@ -13,10 +13,10 @@ import numpy as np
 from eelbrain import set_parc, NDVar, datasets
 
 
-class DataLoaderMixin:
-    """Mixin responsible for data ingestion and normalization.
+class DataLoaderHelper:
+    """Helper responsible for data ingestion and normalization.
 
-    This mixin has a single responsibility: preparing data for visualization.
+    This helper has a single responsibility: preparing data for visualization.
     It handles:
     - Loading NDVar data directly
     - Loading MNE sample data with optional region filtering
@@ -48,21 +48,26 @@ class DataLoaderMixin:
     global_vmax : float
         Global maximum value for colormap.
     """
+    def __init__(self, viz: Any):
+        """Initialize the data loader helper.
 
-    # Declare expected attributes for type checking
-    glass_brain_data: Optional[np.ndarray]
-    butterfly_data: Optional[np.ndarray]
-    source_coords: Optional[np.ndarray]
-    time_values: Optional[np.ndarray]
-    region_of_brain: Optional[str]
-    source_space: Any
-    parcellation: Optional[Any]
-    view_ranges: Dict[str, Dict[str, List[float]]]
-    brain_views: List[str]
-    user_vmin: Optional[float]
-    user_vmax: Optional[float]
-    global_vmin: float
-    global_vmax: float
+        Parameters
+        ----------
+        viz
+            The EelbrainPlotly2DViz instance this helper operates on.
+        """
+        self._viz = viz
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the parent visualization instance."""
+        return getattr(self._viz, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Delegate state changes to the parent visualization instance."""
+        if name == "_viz":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._viz, name, value)
 
     def _load_source_data(self, region: Optional[str] = None) -> None:
         """Load MNE sample data and prepare for 2D brain visualization.

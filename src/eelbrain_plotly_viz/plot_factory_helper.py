@@ -1,7 +1,7 @@
 """
-Plot Factory Mixin - Responsible for constructing all visualization figures.
+Plot Factory Helper - Responsible for constructing all visualization figures.
 
-This mixin's single responsibility is to build plots - whether butterfly plots
+This helper's single responsibility is to build plots - whether butterfly plots
 or brain projection heatmaps, they all fall under the unified goal of figure
 creation.
 """
@@ -17,10 +17,10 @@ import plotly.figure_factory as ff
 from scipy.stats import binned_statistic_2d
 
 
-class PlotFactoryMixin:
-    """Mixin responsible for creating all visualization figures.
+class PlotFactoryHelper:
+    """Helper responsible for creating all visualization figures.
 
-    This mixin has a single responsibility: figure creation. It handles:
+    This helper has a single responsibility: figure creation. It handles:
     - Creating butterfly plots (time series visualization)
     - Creating 2D brain projections (heatmaps with arrows)
     - Creating colorbars for horizontal layout
@@ -47,6 +47,27 @@ class PlotFactoryMixin:
     global_vmin: float
     global_vmax: float
     _current_layout_config: Optional[Dict[str, Any]]
+
+    def __init__(self, viz: Any):
+        """Initialize the plot factory helper.
+
+        Parameters
+        ----------
+        viz
+            The EelbrainPlotly2DViz instance this helper operates on.
+        """
+        self._viz = viz
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the parent visualization instance."""
+        return getattr(self._viz, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Delegate state changes to the parent visualization instance."""
+        if name == "_viz":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._viz, name, value)
 
     def _create_butterfly_plot(
         self, selected_time_idx: int = 0, figure_height: Optional[int] = None

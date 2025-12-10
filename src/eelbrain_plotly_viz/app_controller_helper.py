@@ -1,7 +1,7 @@
 """
-App Controller Mixin - Responsible for user interaction logic.
+App Controller Helper - Responsible for user interaction logic.
 
-This mixin's single responsibility is controlling application behavior -
+This helper's single responsibility is controlling application behavior -
 handling callbacks, hover/click events, and export functionality.
 """
 
@@ -28,10 +28,10 @@ def _is_jupyter_environment():
 JUPYTER_AVAILABLE = _is_jupyter_environment()
 
 
-class AppControllerMixin:
-    """Mixin responsible for user interaction and application control.
+class AppControllerHelper:
+    """Helper responsible for user interaction and application control.
 
-    This mixin has a single responsibility: controlling application behavior.
+    This helper has a single responsibility: controlling application behavior.
     It handles:
     - Registering and managing Dash callbacks
     - Processing hover and click events on plots
@@ -50,6 +50,27 @@ class AppControllerMixin:
     is_jupyter_mode: bool
     layout_mode: str
     _current_layout_config: Optional[Dict[str, Any]]
+
+    def __init__(self, viz: Any):
+        """Initialize the app controller helper.
+
+        Parameters
+        ----------
+        viz
+            The EelbrainPlotly2DViz instance this helper operates on.
+        """
+        self._viz = viz
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the parent visualization instance."""
+        return getattr(self._viz, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Delegate state changes to the parent visualization instance."""
+        if name == "_viz":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._viz, name, value)
 
     def _setup_callbacks(self) -> None:
         """Setup all Dash callbacks."""
@@ -72,7 +93,9 @@ class AppControllerMixin:
                         butterfly_height = int(float(butterfly_height_str[:-2]))
                     except ValueError:
                         pass
-            return self._create_butterfly_plot(time_idx, figure_height=butterfly_height)
+            return self._plot_factory._create_butterfly_plot(
+                time_idx, figure_height=butterfly_height
+            )
 
         # Dynamic brain plot outputs based on display_mode
         brain_outputs = [
@@ -90,7 +113,7 @@ class AppControllerMixin:
                 time_idx = 0
 
             try:
-                brain_plots = self._create_2d_brain_projections_plotly(
+                brain_plots = self._plot_factory._create_2d_brain_projections_plotly(
                     time_idx, source_idx
                 )
                 return tuple(brain_plots[view_name] for view_name in self.brain_views)
@@ -240,13 +263,13 @@ class AppControllerMixin:
             self.is_jupyter_mode = True
 
             # Unify view sizes for Jupyter mode to ensure consistent display
-            self._unify_view_sizes_for_jupyter()
+            self._data_loader._unify_view_sizes_for_jupyter()
 
             # Rebuild layout with Jupyter styles
-            self._setup_layout()
+            self._layout_helper._setup_layout()
 
             # Auto-calculate height
-            iframe_height = self._estimate_jupyter_iframe_height()
+            iframe_height = self._layout_helper._estimate_jupyter_iframe_height()
             if iframe_height is None:
                 iframe_height = 900  # Fallback default
 
@@ -294,9 +317,9 @@ class AppControllerMixin:
         self.is_jupyter_mode = True
 
         # Unify view sizes for Jupyter mode to ensure consistent display
-        self._unify_view_sizes_for_jupyter()
+        self._data_loader._unify_view_sizes_for_jupyter()
 
-        self._setup_layout()  # Rebuild layout with Jupyter styles
+        self._layout_helper._setup_layout()  # Rebuild layout with Jupyter styles
 
         self.run(mode="inline", debug=debug)
 
@@ -339,7 +362,7 @@ class AppControllerMixin:
 
         try:
             # Export butterfly plot
-            butterfly_fig = self._create_butterfly_plot(time_idx)
+            butterfly_fig = self._plot_factory._create_butterfly_plot(time_idx)
             butterfly_path = os.path.join(
                 output_dir, f"butterfly_plot_{timestamp}.{format}"
             )
@@ -347,7 +370,9 @@ class AppControllerMixin:
             exported_files["butterfly_plot"] = butterfly_path
 
             # Export brain projections
-            brain_plots = self._create_2d_brain_projections_plotly(time_idx)
+            brain_plots = self._plot_factory._create_2d_brain_projections_plotly(
+                time_idx
+            )
 
             for view_name, fig in brain_plots.items():
                 brain_path = os.path.join(
