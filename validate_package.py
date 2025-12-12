@@ -52,13 +52,9 @@ def test_package_imports():
         import eelbrain_plotly_viz
         print("✅ Main package imports successfully")
         
-        # Test specific imports (using alias for compatibility)
-        from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz, create_sample_brain_data
+        # Test specific imports
+        from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
         print("✅ Core classes import successfully")
-        
-        # Test that alias works
-        assert BrainPlotly2DViz is EelbrainPlotly2DViz
-        print("✅ Class alias works correctly")
         
         # Test package metadata
         if hasattr(eelbrain_plotly_viz, '__version__'):
