@@ -12,7 +12,7 @@ import dash
 import numpy as np
 from eelbrain import NDVar
 
-from ._data_loader_helper import DataLoaderHelper
+from ._data_loader_helper import BrainData, DataLoaderHelper
 from ._plot_factory_helper import PlotFactoryHelper
 from ._layout_helper import LayoutBuilderHelper, LAYOUTS
 from ._app_controller_helper import AppControllerHelper
@@ -34,9 +34,6 @@ class EelbrainPlotly2DViz:
         pass an Eelbrain NDVar or the
         :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
         :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
-    region
-        Brain region to load using aparc+aseg parcellation.
-        If None, loads all regions. Only used when y is None.
     cmap
         Plotly colorscale for heatmaps. Can be:
         - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
@@ -107,7 +104,6 @@ class EelbrainPlotly2DViz:
     def __init__(
         self,
         y: Optional[NDVar] = None,
-        region: Optional[str] = None,
         cmap: Union[str, List] = "YlOrRd",
         vmin: Optional[float] = None,
         vmax: Optional[float] = None,
@@ -143,7 +139,6 @@ class EelbrainPlotly2DViz:
         self.butterfly_data: Optional[np.ndarray] = None  # (n_sources, n_times)
         self.source_coords: Optional[np.ndarray] = None  # (n_sources, 3)
         self.time_values: Optional[np.ndarray] = None  # (n_times,)
-        self.region_of_brain: Optional[str] = region  # Region of brain to visualize
         self.cmap: Union[str, List] = cmap  # Colorscale for heatmaps
         self.user_vmin: Optional[float] = vmin  # Optional user-specified color min
         self.user_vmax: Optional[float] = vmax  # Optional user-specified color max
@@ -166,8 +161,11 @@ class EelbrainPlotly2DViz:
         self.global_vmin: float = 0.0
         self.global_vmax: float = 1.0
 
+        # Internal data model (populated during initialization)
+        self._brain_data: Optional[BrainData] = None
+
         # Internal helper components
-        self._data_loader = DataLoaderHelper(self)
+        self._data_loader = DataLoaderHelper()
         self._plot_factory = PlotFactoryHelper(self)
         self._layout_helper = LayoutBuilderHelper(self)
         self._app_controller = AppControllerHelper(self)
@@ -187,24 +185,58 @@ class EelbrainPlotly2DViz:
 
         # Load data (data loader helper responsibility)
         if y is not None:
-            self._data_loader._load_ndvar_data(y)
+            brain_data = self._data_loader._load_ndvar_data(y)
         else:
-            self._data_loader._load_source_data(region)
+            brain_data = self._data_loader._load_source_data()
+
+        # Store data model and mirror key attributes for backward compatibility
+        self._brain_data = brain_data
+        self.glass_brain_data = brain_data.glass_brain_data
+        self.butterfly_data = brain_data.butterfly_data
+        self.source_coords = brain_data.source_coords
+        self.time_values = brain_data.time_values
+        self.source_space = brain_data.source_space
+        self.parcellation = brain_data.parcellation
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
-        self._data_loader._calculate_view_ranges()
+        self.view_ranges = self._data_loader._calculate_view_ranges(
+            self.source_coords, self.brain_views
+        )
 
         # Unify view sizes to ensure all brain plots have consistent display size
         # This is especially important in horizontal layout mode
-        self._data_loader._unify_view_sizes_for_jupyter()
+        self.view_ranges = self._data_loader._unify_view_sizes_for_jupyter(
+            self.view_ranges
+        )
 
         # Calculate global colormap range across all time points for consistent visualization
-        self._data_loader._calculate_global_colormap_range()
+        self.global_vmin, self.global_vmax = self._data_loader._calculate_global_colormap_range(
+            self.glass_brain_data, self.user_vmax
+        )
 
-        # Setup app (layout helper responsibility)
-        self._layout_helper._setup_layout()
-        # Setup callbacks (app controller helper responsibility)
+        # Setup app layout and callbacks
+        self._rebuild_layout()
         self._app_controller._setup_callbacks()
+
+    def _rebuild_layout(self) -> None:
+        """Rebuild Dash layout and update current layout config."""
+        layout_info = self._layout_helper._setup_layout()
+        config = layout_info.get("config")
+        layout = layout_info.get("layout")
+        if config is not None:
+            self._current_layout_config = config
+        if layout is not None:
+            self.app.layout = layout
+
+    def _prepare_for_jupyter(self) -> None:
+        """Prepare visualization for Jupyter display (layout + sizing)."""
+        self.is_jupyter_mode = True
+        # Unify view sizes for Jupyter mode to ensure consistent display
+        self.view_ranges = self._data_loader._unify_view_sizes_for_jupyter(
+            self.view_ranges
+        )
+        # Rebuild layout with Jupyter-specific styles
+        self._rebuild_layout()
 
     def run(
         self,
@@ -274,9 +306,8 @@ if __name__ == "__main__":
         #     arrow_threshold='auto'  # Only show significant arrows
         # )
 
-        # Method 2: Use default MNE sample data with region filtering
+        # Method 2: Use default MNE sample data with custom options
         viz_2d = EelbrainPlotly2DViz(
-            region="aparc+aseg",
             cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows

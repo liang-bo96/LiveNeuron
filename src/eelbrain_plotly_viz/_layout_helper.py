@@ -65,16 +65,22 @@ class LayoutBuilder(ABC):
     """
 
     @abstractmethod
-    def build(self, app: "EelbrainPlotly2DViz") -> None:
-        """Build and apply layout to the visualization application.
+    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+        """Build layout configuration and Dash layout components.
 
         Parameters
         ----------
         app
             The EelbrainPlotly2DViz instance to configure layout for.
-            Access app.app.layout to set the Dash layout.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing:
+            - ``config``: layout configuration dict
+            - ``layout``: Dash layout component (e.g., html.Div)
         """
-        pass
+        raise NotImplementedError
 
     def _get_layout_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
         """Get base layout configuration.
@@ -150,16 +156,20 @@ class VerticalLayout(LayoutBuilder):
     at the top and brain projections arranged horizontally below.
     """
 
-    def build(self, app: "EelbrainPlotly2DViz") -> None:
+    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
         """Build vertical layout for the visualization app.
 
         Parameters
         ----------
         app
             The EelbrainPlotly2DViz instance to configure.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary with ``config`` and ``layout`` keys.
         """
         config = self._get_vertical_config(app)
-        app._current_layout_config = config
 
         # Extract butterfly height from config
         butterfly_height = self._parse_height(config.get("butterfly_height"))
@@ -171,7 +181,10 @@ class VerticalLayout(LayoutBuilder):
         initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
 
         # Build layout
-        self._setup_vertical_layout(app, initial_butterfly, initial_brain_plots, config)
+        layout = self._setup_vertical_layout(
+            app, initial_butterfly, initial_brain_plots, config
+        )
+        return {"config": config, "layout": layout}
 
     def _get_vertical_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
         """Get configuration for vertical layout."""
@@ -225,8 +238,14 @@ class VerticalLayout(LayoutBuilder):
         initial_butterfly: go.Figure,
         initial_brain_plots: Dict[str, go.Figure],
         config: Dict[str, Any],
-    ) -> None:
-        """Setup traditional vertical layout (butterfly top, brain views below)."""
+    ) -> html.Div:
+        """Setup traditional vertical layout (butterfly top, brain views below).
+
+        Returns
+        -------
+        html.Div
+            Root Dash layout component for the app.
+        """
         butterfly_style = {
             "width": config["butterfly_width"],
             "margin-bottom": "10px" if app.is_jupyter_mode else "20px",
@@ -238,7 +257,7 @@ class VerticalLayout(LayoutBuilder):
         brain_margin = config["brain_margin"]
         container_padding = config["container_padding"]
 
-        app.app.layout = html.Div(
+        layout = html.Div(
             [
                 html.H1(
                     "Eelbrain Plotly 2D Brain Visualization",
@@ -296,6 +315,7 @@ class VerticalLayout(LayoutBuilder):
             ],
             style={"width": "100%", "height": "auto", "padding": container_padding},
         )
+        return layout
 
 
 class HorizontalLayout(LayoutBuilder):
@@ -305,16 +325,20 @@ class HorizontalLayout(LayoutBuilder):
     with brain projections arranged on the right side.
     """
 
-    def build(self, app: "EelbrainPlotly2DViz") -> None:
+    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
         """Build horizontal layout for the visualization app.
 
         Parameters
         ----------
         app
             The EelbrainPlotly2DViz instance to configure.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary with ``config`` and ``layout`` keys.
         """
         config = self._get_horizontal_config(app)
-        app._current_layout_config = config
 
         # Extract butterfly height from config
         butterfly_height = self._parse_height(config.get("butterfly_height"))
@@ -326,9 +350,10 @@ class HorizontalLayout(LayoutBuilder):
         initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
 
         # Build layout
-        self._setup_horizontal_layout(
+        layout = self._setup_horizontal_layout(
             app, initial_butterfly, initial_brain_plots, config
         )
+        return {"config": config, "layout": layout}
 
     def _get_horizontal_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
         """Get configuration for horizontal layout."""
@@ -468,8 +493,14 @@ class HorizontalLayout(LayoutBuilder):
         initial_butterfly: go.Figure,
         initial_brain_plots: Dict[str, go.Figure],
         config: Dict[str, Any],
-    ) -> None:
-        """Setup horizontal layout (butterfly left, brain views right)."""
+    ) -> html.Div:
+        """Setup horizontal layout (butterfly left, brain views right).
+
+        Returns
+        -------
+        html.Div
+            Root Dash layout component for the app.
+        """
         butterfly_graph_style = {"height": config["butterfly_height"]}
         brain_height = config["plot_height"]
         brain_width = config["brain_width"]
@@ -479,7 +510,7 @@ class HorizontalLayout(LayoutBuilder):
         # Create horizontal colorbar
         colorbar_fig = self._create_horizontal_colorbar(app)
 
-        app.app.layout = html.Div(
+        layout = html.Div(
             [
                 # Hidden stores for state management
                 dcc.Store(id="selected-time-idx", data=0),
@@ -587,6 +618,8 @@ class HorizontalLayout(LayoutBuilder):
             },
         )
 
+        return layout
+
 
 # =============================================================================
 # Layout Strategy Registry - supports Open/Closed Principle
@@ -682,7 +715,7 @@ class LayoutBuilderHelper:
         """
         self._viz = viz
 
-    def _setup_layout(self) -> None:
+    def _setup_layout(self) -> Dict[str, Any]:
         """Setup the Dash app layout based on layout_mode.
 
         This method delegates to the appropriate LayoutBuilder strategy
@@ -691,7 +724,8 @@ class LayoutBuilderHelper:
         # Get layout builder from registry
         builder = get_layout_builder(self._viz.layout_mode)
         # Delegate layout construction to the builder using the parent viz
-        builder.build(self._viz)
+        result = builder.build(self._viz)
+        return result
 
     def _get_layout_config(self) -> Dict[str, Any]:
         """Get layout configuration based on layout_mode, display_mode and environment.

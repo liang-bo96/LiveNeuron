@@ -86,7 +86,6 @@ def test_basic_functionality():
         # Test different parameter combinations
         viz2 = EelbrainPlotly2DViz(
             y=None,
-            region=None,
             cmap='Viridis',
             show_max_only=True,
             arrow_threshold='auto'
@@ -264,9 +263,9 @@ def test_eelbrain_integration():
         viz = EelbrainPlotly2DViz(y=y)
         print("✅ Eelbrain NDVar integration works")
         
-        # Test parcellation
-        viz_parc = EelbrainPlotly2DViz(y=None, region='aparc+aseg')
-        print("✅ Eelbrain parcellation works")
+        # Additional visualization with different options
+        viz_parc = EelbrainPlotly2DViz(y=None, cmap='Viridis', show_max_only=True)
+        print("✅ Additional visualization with eelbrain options works")
         
         return True
         

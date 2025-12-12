@@ -52,7 +52,6 @@ Input Data Expectations
 * 1589 sources in volumetric source space
 * 76 time points (-100ms to 400ms)
 * Vector data (3D current dipoles)
-* Optional brain region filtering
 
 Exceptions
 ----------

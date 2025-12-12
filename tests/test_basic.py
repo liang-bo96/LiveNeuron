@@ -80,7 +80,6 @@ def test_viz_creation_with_sample_data():
     assert viz.glass_brain_data is not None
     assert viz.source_coords is not None
     assert viz.time_values is not None
-    assert hasattr(viz, "region_of_brain")
     assert hasattr(viz, "cmap")
     assert hasattr(viz, "show_max_only")
     assert hasattr(viz, "arrow_threshold")
@@ -92,7 +91,7 @@ def test_viz_creation_with_options():
 
     # Test with different parameters
     viz = EelbrainPlotly2DViz(
-        y=None, region=None, cmap="Viridis", show_max_only=True, arrow_threshold="auto"
+        y=None, cmap="Viridis", show_max_only=True, arrow_threshold="auto"
     )
 
     assert viz.glass_brain_data is not None

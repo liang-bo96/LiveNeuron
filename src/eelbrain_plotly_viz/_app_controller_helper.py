@@ -243,14 +243,8 @@ class AppControllerHelper:
             mode = "inline" if JUPYTER_AVAILABLE else "external"
 
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
-            # Set Jupyter mode and rebuild layout with Jupyter-specific styles
-            self._viz.is_jupyter_mode = True
-
-            # Unify view sizes for Jupyter mode to ensure consistent display
-            self._viz._data_loader._unify_view_sizes_for_jupyter()
-
-            # Rebuild layout with Jupyter styles
-            self._viz._layout_helper._setup_layout()
+            # Prepare visualization for Jupyter (layout + sizing)
+            self._viz._prepare_for_jupyter()
 
             # Auto-calculate height
             iframe_height = self._viz._layout_helper._estimate_jupyter_iframe_height()
@@ -291,13 +285,8 @@ class AppControllerHelper:
             self.run(debug=debug)
             return
 
-        # Set Jupyter mode and rebuild layout with Jupyter-specific styles
-        self._viz.is_jupyter_mode = True
-
-        # Unify view sizes for Jupyter mode to ensure consistent display
-        self._viz._data_loader._unify_view_sizes_for_jupyter()
-
-        self._viz._layout_helper._setup_layout()  # Rebuild layout with Jupyter styles
+        # Prepare visualization for Jupyter (layout + sizing)
+        self._viz._prepare_for_jupyter()
 
         self.run(mode="inline", debug=debug)
 

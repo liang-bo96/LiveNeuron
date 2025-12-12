@@ -27,7 +27,6 @@ def example_1_sample_data():
     # Create visualization with default sample data
     viz = EelbrainPlotly2DViz(
         y=None,  # Use built-in sample data
-        region=None,  # Use full brain
         cmap='Hot',
         show_max_only=False,
         arrow_threshold='auto'
@@ -37,29 +36,26 @@ def example_1_sample_data():
     print(f"   Time points: {len(viz.time_values)}")
     print(f"   Vector data: {viz.glass_brain_data.ndim == 3}")
     print(f"   Time range: {viz.time_values[0]:.3f}s to {viz.time_values[-1]:.3f}s")
-    print(f"   Brain region: {viz.region_of_brain}")
     
     return viz
 
 
 def example_2_region_filtering():
-    """Example 2: Using specific brain region."""
-    print("\n📊 Example 2: Using specific brain region")
+    """Example 2: Using different visualization options."""
+    print("\n📊 Example 2: Using different visualization options")
     print("-" * 50)
     
-    # Create visualization with specific brain region
+    # Create visualization with different colormap and options
     viz = EelbrainPlotly2DViz(
         y=None,
-        region='aparc+aseg',  # Use parcellation
         cmap='Viridis',
         show_max_only=True,  # Show only mean and max traces
         arrow_threshold=0.5
     )
     
-    print(f"✅ Created visualization with region filtering:")
+    print(f"✅ Created visualization with custom options:")
     print(f"   Sources: {viz.glass_brain_data.shape[0]}")
     print(f"   Time points: {len(viz.time_values)}")
-    print(f"   Brain region: {viz.region_of_brain}")
     print(f"   Colormap: {viz.cmap}")
     
     return viz
@@ -114,7 +110,6 @@ def example_4_custom_colormap():
     
     viz = EelbrainPlotly2DViz(
         y=None,
-        region=None,
         cmap=custom_cmap,
         show_max_only=True,
         arrow_threshold=None  # Show all arrows
@@ -213,7 +208,7 @@ def example_8_different_options():
     vizs = []
     for i, option in enumerate(options):
         print(f"   Creating visualization {i+1}: {option['name']}")
-        viz = EelbrainPlotly2DViz(y=None, region=None, **option['params'])
+        viz = EelbrainPlotly2DViz(y=None, **option['params'])
         vizs.append(viz)
     
     print(f"✅ Created {len(vizs)} visualizations with different options")
