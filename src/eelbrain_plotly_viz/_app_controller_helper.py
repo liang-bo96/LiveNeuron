@@ -93,10 +93,14 @@ class AppControllerHelper:
                 time_idx = 0
 
             try:
-                brain_plots = self._viz._plot_factory._create_2d_brain_projections_plotly(
-                    time_idx, source_idx
+                brain_plots = (
+                    self._viz._plot_factory._create_2d_brain_projections_plotly(
+                        time_idx, source_idx
+                    )
                 )
-                return tuple(brain_plots[view_name] for view_name in self._viz.brain_views)
+                return tuple(
+                    brain_plots[view_name] for view_name in self._viz.brain_views
+                )
             except Exception:
                 # Return empty plots on error
                 empty_fig = go.Figure()

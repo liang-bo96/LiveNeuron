@@ -724,7 +724,9 @@ class LayoutBuilderHelper:
             },
         }
 
-        base_config = layout_configs.get(self._viz.layout_mode, layout_configs["vertical"])
+        base_config = layout_configs.get(
+            self._viz.layout_mode, layout_configs["vertical"]
+        )
         env = "jupyter" if self._viz.is_jupyter_mode else "browser"
 
         config = {

@@ -249,7 +249,9 @@ class PlotFactoryHelper:
 
             # Get activity at this time point
             if self._viz.glass_brain_data.ndim == 3:  # (n_sources, 3, n_times)
-                time_activity = self._viz.glass_brain_data[:, :, time_idx]  # (n_sources, 3)
+                time_activity = self._viz.glass_brain_data[
+                    :, :, time_idx
+                ]  # (n_sources, 3)
                 activity_magnitude = np.linalg.norm(
                     time_activity, axis=1
                 )  # (n_sources,)

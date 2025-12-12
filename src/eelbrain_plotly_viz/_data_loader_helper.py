@@ -112,7 +112,9 @@ class DataLoaderHelper:
                 ("source", "space", "time")
             )  # (n_sources, 3, n_times)
             # Compute norm for butterfly plot
-            self._viz.butterfly_data = np.linalg.norm(self._viz.glass_brain_data, axis=1)
+            self._viz.butterfly_data = np.linalg.norm(
+                self._viz.glass_brain_data, axis=1
+            )
         else:
             # Scalar data - no space dimension
             self._viz.glass_brain_data = y.get_data(
@@ -282,7 +284,9 @@ class DataLoaderHelper:
 
         if self._viz.glass_brain_data is not None:
             # Calculate activity magnitude across all time points
-            if self._viz.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+            if (
+                self._viz.glass_brain_data.ndim == 3
+            ):  # Vector data (n_sources, 3, n_times)
                 # Compute norm for each source at each time point
                 all_magnitudes = np.linalg.norm(
                     self._viz.glass_brain_data, axis=1
@@ -294,7 +298,9 @@ class DataLoaderHelper:
 
         # Apply user overrides if provided
         self._viz.global_vmin = 0.0
-        self._viz.global_vmax = data_max if self._viz.user_vmax is None else self._viz.user_vmax
+        self._viz.global_vmax = (
+            data_max if self._viz.user_vmax is None else self._viz.user_vmax
+        )
 
         # Ensure we have a valid range (avoid zero range)
         if self._viz.global_vmax - self._viz.global_vmin < 1e-10:
