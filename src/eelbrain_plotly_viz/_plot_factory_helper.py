@@ -8,13 +8,16 @@ creation.
 
 import base64
 import io
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 from scipy.stats import binned_statistic_2d
+
+if TYPE_CHECKING:
+    from ._viz_2d import EelbrainPlotly2DViz
 
 
 class PlotFactoryHelper:
@@ -30,25 +33,7 @@ class PlotFactoryHelper:
     visualization logic is separate from data loading and layout concerns.
     """
 
-    # Declare expected attributes from the main class
-    butterfly_data: Optional[np.ndarray]
-    glass_brain_data: Optional[np.ndarray]
-    source_coords: Optional[np.ndarray]
-    time_values: Optional[np.ndarray]
-    show_max_only: bool
-    show_labels: bool
-    is_jupyter_mode: bool
-    layout_mode: str
-    brain_views: List[str]
-    view_ranges: Dict[str, Dict[str, List[float]]]
-    cmap: Union[str, List]
-    arrow_threshold: Optional[Union[float, str]]
-    arrow_scale: float
-    global_vmin: float
-    global_vmax: float
-    _current_layout_config: Optional[Dict[str, Any]]
-
-    def __init__(self, viz: Any):
+    def __init__(self, viz: "EelbrainPlotly2DViz"):
         """Initialize the plot factory helper.
 
         Parameters
@@ -57,17 +42,6 @@ class PlotFactoryHelper:
             The EelbrainPlotly2DViz instance this helper operates on.
         """
         self._viz = viz
-
-    def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the parent visualization instance."""
-        return getattr(self._viz, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Delegate state changes to the parent visualization instance."""
-        if name == "_viz":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._viz, name, value)
 
     def _create_butterfly_plot(
         self, selected_time_idx: int = 0, figure_height: Optional[int] = None
@@ -83,7 +57,7 @@ class PlotFactoryHelper:
         """
         fig = go.Figure()
 
-        if self.butterfly_data is None or self.time_values is None:
+        if self._viz.butterfly_data is None or self._viz.time_values is None:
             fig.add_annotation(
                 text="No data loaded",
                 xref="paper",
@@ -94,10 +68,10 @@ class PlotFactoryHelper:
             )
             return fig
 
-        n_sources, n_times = self.butterfly_data.shape
+        n_sources, n_times = self._viz.butterfly_data.shape
 
         # Auto-scale data for visibility
-        data_to_plot = self.butterfly_data.copy()
+        data_to_plot = self._viz.butterfly_data.copy()
         scale_factor = 1.0
         unit_suffix = ""
 
@@ -119,7 +93,7 @@ class PlotFactoryHelper:
         y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
 
         # Add individual source traces only if show_max_only is False
-        if not self.show_max_only:
+        if not self._viz.show_max_only:
             # Plot subset of traces for performance
             max_traces = 20
             step = max(1, n_sources // max_traces)
@@ -131,12 +105,12 @@ class PlotFactoryHelper:
 
                 fig.add_trace(
                     go.Scatter(
-                        x=self.time_values,
+                        x=self._viz.time_values,
                         y=trace_data,
                         mode="lines",
                         name=f"Source {i}",
                         customdata=[i] * n_times,
-                        showlegend=(idx < 3) and self.show_labels,
+                        showlegend=(idx < 3) and self._viz.show_labels,
                         opacity=0.6,
                         line=dict(width=1),
                         hoverinfo="skip",  # Don't show in hover
@@ -147,12 +121,12 @@ class PlotFactoryHelper:
         mean_activity = np.mean(data_to_plot, axis=0)
         fig.add_trace(
             go.Scatter(
-                x=self.time_values,
+                x=self._viz.time_values,
                 y=mean_activity,
                 mode="lines",
                 name="Mean Activity",
                 line=dict(color="red", width=3),
-                showlegend=self.show_labels,
+                showlegend=self._viz.show_labels,
                 hovertemplate="Mean: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
@@ -161,26 +135,26 @@ class PlotFactoryHelper:
         max_activity = np.max(data_to_plot, axis=0)
         fig.add_trace(
             go.Scatter(
-                x=self.time_values,
+                x=self._viz.time_values,
                 y=max_activity,
                 mode="lines",
                 name="Max Activity",
                 line=dict(color="darkblue", width=3),
-                showlegend=self.show_labels,
+                showlegend=self._viz.show_labels,
                 hovertemplate="Max: %{y:.2f}" + unit_suffix + "<extra></extra>",
             )
         )
 
         # Add vertical line for selected time
-        if 0 <= selected_time_idx < len(self.time_values):
-            selected_time = self.time_values[selected_time_idx]
+        if 0 <= selected_time_idx < len(self._viz.time_values):
+            selected_time = self._viz.time_values[selected_time_idx]
             fig.add_vline(
                 x=selected_time, line_width=2, line_dash="dash", line_color="blue"
             )
 
         # Update title based on display mode and show_labels
-        if self.show_labels:
-            if self.show_max_only:
+        if self._viz.show_labels:
+            if self._viz.show_max_only:
                 title_text = (
                     f"Source Activity Time Series - Mean & Max ({n_sources} sources)"
                 )
@@ -201,7 +175,7 @@ class PlotFactoryHelper:
             height = figure_height
         else:
             # Try to get height from current layout config
-            config = getattr(self, "_current_layout_config", None)
+            config = self._viz._current_layout_config
             if config and "butterfly_height" in config:
                 butterfly_height_str = config["butterfly_height"]
                 if isinstance(
@@ -211,14 +185,14 @@ class PlotFactoryHelper:
                         height = int(float(butterfly_height_str[:-2]))
                     except ValueError:
                         # Fall back to mode-based defaults
-                        height = 200 if self.is_jupyter_mode else 350
+                        height = 200 if self._viz.is_jupyter_mode else 350
                 else:
-                    height = 200 if self.is_jupyter_mode else 350
+                    height = 200 if self._viz.is_jupyter_mode else 350
             else:
                 # Fall back to mode-based defaults
-                height = 200 if self.is_jupyter_mode else 350
+                height = 200 if self._viz.is_jupyter_mode else 350
 
-        if self.is_jupyter_mode:
+        if self._viz.is_jupyter_mode:
             margin = dict(l=0, r=0, t=0, b=0)  # Tight margins for maximum space
         else:
             margin = dict(l=40, r=20, t=10, b=40)  # Moderate margins for browser
@@ -229,7 +203,7 @@ class PlotFactoryHelper:
             yaxis_title=yaxis_title,
             autosize=True,  # Enable autosize to fill container
             xaxis=dict(
-                range=[self.time_values[0], self.time_values[-1]],
+                range=[self._viz.time_values[0], self._viz.time_values[-1]],
                 showspikes=True,  # Show vertical spike line at cursor
                 spikemode="across",  # Spike goes across the plot
                 spikesnap="cursor",  # Spike follows cursor, not data points
@@ -239,7 +213,7 @@ class PlotFactoryHelper:
             hoverdistance=-1,  # Allow hover without nearby data points
             height=height,
             margin=margin,
-            showlegend=self.show_labels,  # Only show legend if show_labels is True
+            showlegend=self._viz.show_labels,  # Only show legend if show_labels is True
             # Enable clicking on the plot area
             clickmode="event+select",
         )
@@ -251,9 +225,9 @@ class PlotFactoryHelper:
     ) -> Dict[str, go.Figure]:
         """Create 2D brain projections using Plotly scatter plots (internal method)."""
         if (
-            self.glass_brain_data is None
-            or self.source_coords is None
-            or self.time_values is None
+            self._viz.glass_brain_data is None
+            or self._viz.source_coords is None
+            or self._viz.time_values is None
         ):
             placeholder_fig = go.Figure()
             placeholder_fig.add_annotation(
@@ -264,31 +238,31 @@ class PlotFactoryHelper:
                 y=0.5,
                 showarrow=False,
             )
-            return {view: placeholder_fig for view in self.brain_views}
+            return {view: placeholder_fig for view in self._viz.brain_views}
 
         try:
             # Get time slice of data
-            if time_idx >= len(self.time_values):
+            if time_idx >= len(self._viz.time_values):
                 time_idx = 0
 
-            time_value = self.time_values[time_idx]
+            time_value = self._viz.time_values[time_idx]
 
             # Get activity at this time point
-            if self.glass_brain_data.ndim == 3:  # (n_sources, 3, n_times)
-                time_activity = self.glass_brain_data[:, :, time_idx]  # (n_sources, 3)
+            if self._viz.glass_brain_data.ndim == 3:  # (n_sources, 3, n_times)
+                time_activity = self._viz.glass_brain_data[:, :, time_idx]  # (n_sources, 3)
                 activity_magnitude = np.linalg.norm(
                     time_activity, axis=1
                 )  # (n_sources,)
             else:  # (n_sources, n_times)
-                activity_magnitude = self.glass_brain_data[:, time_idx]
+                activity_magnitude = self._viz.glass_brain_data[:, time_idx]
 
             # Use global min/max for consistent colormap across all time points
             # This allows intuitive comparison of activity levels across time
-            global_min = self.global_vmin
-            global_max = self.global_vmax
+            global_min = self._viz.global_vmin
+            global_max = self._viz.global_vmax
 
             # Get figure height from current layout config
-            config = getattr(self, "_current_layout_config", None)
+            config = self._viz._current_layout_config
             figure_height = None
             if config and "plot_height" in config:
                 plot_height_str = config["plot_height"]
@@ -300,12 +274,12 @@ class PlotFactoryHelper:
 
             # Create brain projections
             brain_plots = {}
-            views = self.brain_views
+            views = self._viz.brain_views
 
             for i, view_name in enumerate(views):
                 try:
                     # Show colorbar on last view in vertical mode, hide in horizontal mode
-                    if self.layout_mode == "horizontal":
+                    if self._viz.layout_mode == "horizontal":
                         show_colorbar = False  # Horizontal has separate colorbar
                     else:
                         show_colorbar = (
@@ -314,7 +288,7 @@ class PlotFactoryHelper:
 
                     brain_fig = self._create_plotly_brain_projection(
                         view_name,
-                        self.source_coords,
+                        self._viz.source_coords,
                         activity_magnitude,
                         time_value,
                         source_idx,
@@ -381,12 +355,12 @@ class PlotFactoryHelper:
         fig = go.Figure()
 
         # Get time index for vector components
-        time_idx = np.argmin(np.abs(self.time_values - time_value))
+        time_idx = np.argmin(np.abs(self._viz.time_values - time_value))
 
         # Get vector components for active sources
-        if self.glass_brain_data is not None and len(active_indices) > 0:
+        if self._viz.glass_brain_data is not None and len(active_indices) > 0:
             # (n_active, 3) or (n_active, 1)
-            active_vectors = self.glass_brain_data[active_indices, :, time_idx]
+            active_vectors = self._viz.glass_brain_data[active_indices, :, time_idx]
         else:
             active_vectors = None
 
@@ -509,7 +483,7 @@ class PlotFactoryHelper:
                     x=x_centers,
                     y=y_centers,
                     z=H_display.T,  # Transpose to match Plotly orientation
-                    colorscale=self.cmap,
+                    colorscale=self._viz.cmap,
                     colorbar=(
                         dict(
                             title="",
@@ -536,22 +510,22 @@ class PlotFactoryHelper:
             if has_vector_data:
                 # Convert relative arrow_scale (user parameter, default=1.0) to absolute scale
                 # Base scale of 0.025 provides good default visualization
-                arrow_scale = self.arrow_scale * 0.025
+                arrow_scale = self._viz.arrow_scale * 0.025
 
                 # Calculate arrow magnitudes for filtering
                 arrow_magnitudes = np.linalg.norm(active_vectors, axis=1)
 
                 # Determine threshold for showing arrows
-                if self.arrow_threshold is None:
+                if self._viz.arrow_threshold is None:
                     # Show all arrows
                     show_arrow_mask = np.ones(len(active_vectors), dtype=bool)
-                elif self.arrow_threshold == "auto":
+                elif self._viz.arrow_threshold == "auto":
                     # Use 10% of maximum magnitude as threshold
                     threshold_value = 0.1 * np.max(arrow_magnitudes)
                     show_arrow_mask = arrow_magnitudes > threshold_value
                 else:
                     # Use specified threshold
-                    threshold_value = float(self.arrow_threshold)
+                    threshold_value = float(self._viz.arrow_threshold)
                     show_arrow_mask = arrow_magnitudes > threshold_value
 
                 # Group sources by 2D position and select the one with maximum ACTIVITY
@@ -632,13 +606,13 @@ class PlotFactoryHelper:
                         selected_arrow_magnitude = np.linalg.norm(active_vectors[pos])
                         show_selected_arrow = True
 
-                        if self.arrow_threshold is not None:
-                            if self.arrow_threshold == "auto":
+                        if self._viz.arrow_threshold is not None:
+                            if self._viz.arrow_threshold == "auto":
                                 threshold_value = 0.1 * np.max(
                                     np.linalg.norm(active_vectors, axis=1)
                                 )
                             else:
-                                threshold_value = float(self.arrow_threshold)
+                                threshold_value = float(self._viz.arrow_threshold)
                             show_selected_arrow = (
                                 selected_arrow_magnitude > threshold_value
                             )
@@ -675,12 +649,12 @@ class PlotFactoryHelper:
         if figure_height is not None:
             # Use provided height
             height = figure_height
-        elif self.is_jupyter_mode:
+        elif self._viz.is_jupyter_mode:
             height = 200
         else:
             height = 450  # Larger height for external browser mode
 
-        if self.is_jupyter_mode:
+        if self._viz.is_jupyter_mode:
             margin = dict(l=0, r=0, t=0, b=0)  # Zero margins for maximum space
         else:
             margin = dict(l=10, r=10, t=10, b=10)  # Small margins for better layout
@@ -689,7 +663,7 @@ class PlotFactoryHelper:
         # to ensure uniform brain plot sizes. Colorbar is positioned outside at x=1.15
 
         # Get fixed axis ranges for this view to prevent size changes across time
-        axis_ranges = self.view_ranges.get(view_name, {})
+        axis_ranges = self._viz.view_ranges.get(view_name, {})
         x_range = axis_ranges.get("x", None)
         y_range = axis_ranges.get("y", None)
 
@@ -877,10 +851,10 @@ class PlotFactoryHelper:
                 y=[None],
                 mode="markers",
                 marker=dict(
-                    colorscale=self.cmap,
+                    colorscale=self._viz.cmap,
                     showscale=True,
-                    cmin=self.global_vmin,
-                    cmax=self.global_vmax,
+                    cmin=self._viz.global_vmin,
+                    cmax=self._viz.global_vmax,
                     colorbar=dict(
                         thickness=20,
                         len=0.8,

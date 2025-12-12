@@ -12,7 +12,6 @@ def test_all_imports_together():
     """Test that all imports can be done in a single statement."""
     from eelbrain_plotly_viz import (
         EelbrainPlotly2DViz,
-        BrainPlotly2DViz,
         create_sample_brain_data,
         # Layout extension API
         LayoutBuilder,
@@ -21,7 +20,6 @@ def test_all_imports_together():
     )
 
     assert EelbrainPlotly2DViz is not None
-    assert BrainPlotly2DViz is not None
     assert create_sample_brain_data is not None
     # Test layout extension API imports
     assert LayoutBuilder is not None
@@ -33,7 +31,7 @@ def test_direct_module_imports():
     """Test that direct module imports work (internal consistency check)."""
     # Test that the main import still works after package installation
     try:
-        from eelbrain_plotly_viz.viz_2d import EelbrainPlotly2DViz as DirectImport
+        from eelbrain_plotly_viz._viz_2d import EelbrainPlotly2DViz as DirectImport
         from eelbrain_plotly_viz._sample_data import (
             create_sample_brain_data as DirectDataImport,
         )
@@ -62,7 +60,6 @@ def test_package_all_attribute():
     expected_items = {
         # Main class
         "EelbrainPlotly2DViz",
-        "BrainPlotly2DViz",
         # Sample data
         "create_sample_brain_data",
         # Layout extension API (Open/Closed Principle)

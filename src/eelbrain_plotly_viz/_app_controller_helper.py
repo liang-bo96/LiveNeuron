@@ -6,12 +6,15 @@ handling callbacks, hover/click events, and export functionality.
 """
 
 import random
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import dash
 import numpy as np
 import plotly.graph_objects as go
 from dash import Input, Output, State, html
+
+if TYPE_CHECKING:
+    from ._viz_2d import EelbrainPlotly2DViz
 
 
 # Check if we're running in a Jupyter environment
@@ -39,16 +42,7 @@ class AppControllerHelper:
     - Running the Dash application server
     """
 
-    # Declare expected attributes from the main class
-    app: dash.Dash
-    time_values: Optional[np.ndarray]
-    source_coords: Optional[np.ndarray]
-    brain_views: List[str]
-    is_jupyter_mode: bool
-    layout_mode: str
-    _current_layout_config: Optional[Dict[str, Any]]
-
-    def __init__(self, viz: Any):
+    def __init__(self, viz: "EelbrainPlotly2DViz"):
         """Initialize the app controller helper.
 
         Parameters
@@ -58,28 +52,17 @@ class AppControllerHelper:
         """
         self._viz = viz
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the parent visualization instance."""
-        return getattr(self._viz, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Delegate state changes to the parent visualization instance."""
-        if name == "_viz":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._viz, name, value)
-
     def _setup_callbacks(self) -> None:
         """Setup all Dash callbacks."""
 
-        @self.app.callback(
+        @self._viz.app.callback(
             Output("butterfly-plot", "figure"), Input("selected-time-idx", "data")
         )
         def update_butterfly(time_idx: int) -> go.Figure:
             if time_idx is None:
                 time_idx = 0
             # Get butterfly height from current config
-            config = getattr(self, "_current_layout_config", None)
+            config = self._viz._current_layout_config
             butterfly_height = None
             if config and "butterfly_height" in config:
                 butterfly_height_str = config["butterfly_height"]
@@ -90,17 +73,17 @@ class AppControllerHelper:
                         butterfly_height = int(float(butterfly_height_str[:-2]))
                     except ValueError:
                         pass
-            return self._plot_factory._create_butterfly_plot(
+            return self._viz._plot_factory._create_butterfly_plot(
                 time_idx, figure_height=butterfly_height
             )
 
         # Dynamic brain plot outputs based on display_mode
         brain_outputs = [
             Output(f"brain-{view_name}-plot", "figure")
-            for view_name in self.brain_views
+            for view_name in self._viz.brain_views
         ]
 
-        @self.app.callback(
+        @self._viz.app.callback(
             brain_outputs,
             Input("selected-time-idx", "data"),
             Input("selected-source-idx", "data"),
@@ -110,10 +93,10 @@ class AppControllerHelper:
                 time_idx = 0
 
             try:
-                brain_plots = self._plot_factory._create_2d_brain_projections_plotly(
+                brain_plots = self._viz._plot_factory._create_2d_brain_projections_plotly(
                     time_idx, source_idx
                 )
-                return tuple(brain_plots[view_name] for view_name in self.brain_views)
+                return tuple(brain_plots[view_name] for view_name in self._viz.brain_views)
             except Exception:
                 # Return empty plots on error
                 empty_fig = go.Figure()
@@ -125,9 +108,9 @@ class AppControllerHelper:
                     y=0.5,
                     showarrow=False,
                 )
-                return tuple(empty_fig for _ in self.brain_views)
+                return tuple(empty_fig for _ in self._viz.brain_views)
 
-        @self.app.callback(
+        @self._viz.app.callback(
             Output("selected-time-idx", "data"),
             Output("selected-source-idx", "data"),
             Output("realtime-mode-switch", "value"),
@@ -150,7 +133,7 @@ class AppControllerHelper:
             - Normal mode: Updates on click (explicit selection)
             """
             ctx = dash.callback_context
-            if not ctx.triggered or self.time_values is None:
+            if not ctx.triggered or self._viz.time_values is None:
                 return dash.no_update, dash.no_update, dash.no_update
 
             triggered_id = ctx.triggered[0]["prop_id"]
@@ -165,7 +148,7 @@ class AppControllerHelper:
                 try:
                     point = hover_data["points"][0]
                     hover_time = point["x"]  # Direct mouse x-coordinate from cursor
-                    time_idx = np.argmin(np.abs(self.time_values - hover_time))
+                    time_idx = np.argmin(np.abs(self._viz.time_values - hover_time))
                     # Do not update source index on hover to avoid frantic updates
                     return time_idx, dash.no_update, dash.no_update
                 except (KeyError, IndexError, TypeError):
@@ -179,7 +162,7 @@ class AppControllerHelper:
                 try:
                     point = click_data["points"][0]
                     clicked_time = point["x"]  # Time from clicked data point
-                    time_idx = np.argmin(np.abs(self.time_values - clicked_time))
+                    time_idx = np.argmin(np.abs(self._viz.time_values - clicked_time))
                     source_idx = point.get("customdata", None)
 
                     # If in real-time mode, a click will select the time and disable
@@ -192,7 +175,7 @@ class AppControllerHelper:
 
             return dash.no_update, dash.no_update, dash.no_update
 
-        @self.app.callback(
+        @self._viz.app.callback(
             Output("info-panel", "children"),
             Input("selected-time-idx", "data"),
             Input("selected-source-idx", "data"),
@@ -201,20 +184,20 @@ class AppControllerHelper:
             info = []
 
             if (
-                self.time_values is not None
+                self._viz.time_values is not None
                 and time_idx is not None
-                and 0 <= time_idx < len(self.time_values)
+                and 0 <= time_idx < len(self._viz.time_values)
             ):
                 info.append(
-                    f"Time: {self.time_values[time_idx]:.3f} s (index {time_idx})"
+                    f"Time: {self._viz.time_values[time_idx]:.3f} s (index {time_idx})"
                 )
 
             if (
                 source_idx is not None
-                and self.source_coords is not None
-                and 0 <= source_idx < len(self.source_coords)
+                and self._viz.source_coords is not None
+                and 0 <= source_idx < len(self._viz.source_coords)
             ):
-                coord = self.source_coords[source_idx]
+                coord = self._viz.source_coords[source_idx]
                 info.append(f"Selected source: {source_idx}")
                 info.append(
                     f"Coordinates: ({coord[0]:.3f}, {coord[1]:.3f}, {coord[2]:.3f}) m"
@@ -257,16 +240,16 @@ class AppControllerHelper:
 
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
             # Set Jupyter mode and rebuild layout with Jupyter-specific styles
-            self.is_jupyter_mode = True
+            self._viz.is_jupyter_mode = True
 
             # Unify view sizes for Jupyter mode to ensure consistent display
-            self._data_loader._unify_view_sizes_for_jupyter()
+            self._viz._data_loader._unify_view_sizes_for_jupyter()
 
             # Rebuild layout with Jupyter styles
-            self._layout_helper._setup_layout()
+            self._viz._layout_helper._setup_layout()
 
             # Auto-calculate height
-            iframe_height = self._layout_helper._estimate_jupyter_iframe_height()
+            iframe_height = self._viz._layout_helper._estimate_jupyter_iframe_height()
             if iframe_height is None:
                 iframe_height = 900  # Fallback default
 
@@ -276,7 +259,7 @@ class AppControllerHelper:
             print(f"Mode: {mode}, Auto height: {iframe_height}px")
 
             # Use modern Dash Jupyter integration
-            self.app.run(
+            self._viz.app.run(
                 debug=debug, port=port, jupyter_mode=mode, jupyter_height=iframe_height
             )
         else:
@@ -288,21 +271,15 @@ class AppControllerHelper:
                 )
             print()
 
-            self.app.run(debug=debug, port=port)
+            self._viz.app.run(debug=debug, port=port)
 
     def _show_in_jupyter(self, debug: bool = False) -> None:
-        """Convenience method to display the visualization inline in Jupyter notebooks (internal method).
+        """Convenience method to display the visualization inline in Jupyter notebooks.
 
         Parameters
         ----------
         debug
             Enable debug mode. Default is False for cleaner output.
-
-        Examples
-        --------
-        Basic usage in Jupyter:
-        >>> viz = EelbrainPlotly2DViz()
-        >>> viz._show_in_jupyter()
         """
         if not JUPYTER_AVAILABLE:
             print("Warning: Jupyter environment not detected.")
@@ -311,12 +288,12 @@ class AppControllerHelper:
             return
 
         # Set Jupyter mode and rebuild layout with Jupyter-specific styles
-        self.is_jupyter_mode = True
+        self._viz.is_jupyter_mode = True
 
         # Unify view sizes for Jupyter mode to ensure consistent display
-        self._data_loader._unify_view_sizes_for_jupyter()
+        self._viz._data_loader._unify_view_sizes_for_jupyter()
 
-        self._layout_helper._setup_layout()  # Rebuild layout with Jupyter styles
+        self._viz._layout_helper._setup_layout()  # Rebuild layout with Jupyter styles
 
         self.run(mode="inline", debug=debug)
 
@@ -359,7 +336,7 @@ class AppControllerHelper:
 
         try:
             # Export butterfly plot
-            butterfly_fig = self._plot_factory._create_butterfly_plot(time_idx)
+            butterfly_fig = self._viz._plot_factory._create_butterfly_plot(time_idx)
             butterfly_path = os.path.join(
                 output_dir, f"butterfly_plot_{timestamp}.{format}"
             )
@@ -367,7 +344,7 @@ class AppControllerHelper:
             exported_files["butterfly_plot"] = butterfly_path
 
             # Export brain projections
-            brain_plots = self._plot_factory._create_2d_brain_projections_plotly(
+            brain_plots = self._viz._plot_factory._create_2d_brain_projections_plotly(
                 time_idx
             )
 

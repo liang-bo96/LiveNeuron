@@ -19,7 +19,7 @@ __version__ = "1.0.0"
 __author__ = "LiveNeuron Team"
 
 # Main visualization class
-from .viz_2d import EelbrainPlotly2DViz
+from ._viz_2d import EelbrainPlotly2DViz
 
 # Sample data for testing (public function only, not internal classes)
 from ._sample_data import create_sample_brain_data
@@ -31,13 +31,9 @@ from ._layout_helper import (
     get_layout_builder,
 )
 
-# Create alias for backward compatibility
-BrainPlotly2DViz = EelbrainPlotly2DViz
-
 __all__ = [
     # Main class
     "EelbrainPlotly2DViz",
-    "BrainPlotly2DViz",  # Alias for compatibility
     # Sample data
     "create_sample_brain_data",
     # Layout extension API (Open/Closed Principle)

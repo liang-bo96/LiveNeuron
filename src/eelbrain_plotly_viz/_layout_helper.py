@@ -28,7 +28,7 @@ import plotly.graph_objects as go
 from dash import dcc, html
 
 if TYPE_CHECKING:
-    from .viz_2d import EelbrainPlotly2DViz
+    from ._viz_2d import EelbrainPlotly2DViz
 
 
 # =============================================================================
@@ -672,19 +672,7 @@ class LayoutBuilderHelper:
     3. Using the custom layout_mode in EelbrainPlotly2DViz
     """
 
-    # Declare expected attributes from the main class
-    app: Any  # dash.Dash
-    layout_mode: str
-    display_mode: str
-    is_jupyter_mode: bool
-    brain_views: List[str]
-    realtime_mode_default: List[str]
-    cmap: Any
-    global_vmin: float
-    global_vmax: float
-    _current_layout_config: Optional[Dict[str, Any]]
-
-    def __init__(self, viz: Any):
+    def __init__(self, viz: "EelbrainPlotly2DViz"):
         """Initialize the layout builder helper.
 
         Parameters
@@ -694,17 +682,6 @@ class LayoutBuilderHelper:
         """
         self._viz = viz
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the parent visualization instance."""
-        return getattr(self._viz, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Delegate state changes to the parent visualization instance."""
-        if name == "_viz":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._viz, name, value)
-
     def _setup_layout(self) -> None:
         """Setup the Dash app layout based on layout_mode.
 
@@ -712,7 +689,7 @@ class LayoutBuilderHelper:
         from the LAYOUTS registry.
         """
         # Get layout builder from registry
-        builder = get_layout_builder(self.layout_mode)
+        builder = get_layout_builder(self._viz.layout_mode)
         # Delegate layout construction to the builder using the parent viz
         builder.build(self._viz)
 
@@ -724,7 +701,7 @@ class LayoutBuilderHelper:
         Dict[str, Any]
             Configuration dictionary with layout parameters.
         """
-        num_views = len(self.brain_views)
+        num_views = len(self._viz.brain_views)
 
         layout_configs = {
             "vertical": {
@@ -747,8 +724,8 @@ class LayoutBuilderHelper:
             },
         }
 
-        base_config = layout_configs.get(self.layout_mode, layout_configs["vertical"])
-        env = "jupyter" if self.is_jupyter_mode else "browser"
+        base_config = layout_configs.get(self._viz.layout_mode, layout_configs["vertical"])
+        env = "jupyter" if self._viz.is_jupyter_mode else "browser"
 
         config = {
             "butterfly_width": base_config["butterfly_width"],
@@ -759,12 +736,12 @@ class LayoutBuilderHelper:
             "container_padding": base_config["container_padding"][env],
             "arrangement": base_config["arrangement"],
             "num_views": num_views,
-            "brain_views": self.brain_views,
+            "brain_views": self._viz.brain_views,
         }
 
         # Special adjustments for 4-view modes
-        if self.display_mode in ["lzry", "lyrz"] and num_views == 4:
-            if self.layout_mode == "vertical":
+        if self._viz.display_mode in ["lzry", "lyrz"] and num_views == 4:
+            if self._viz.layout_mode == "vertical":
                 config["brain_margin"] = "0.5%"
             else:
                 config["brain_margin"] = "0px"
@@ -774,10 +751,10 @@ class LayoutBuilderHelper:
 
     def _estimate_jupyter_iframe_height(self) -> Optional[int]:
         """Estimate iframe height so plots fill the cell without stretching."""
-        if not self.is_jupyter_mode:
+        if not self._viz.is_jupyter_mode:
             return None
 
-        config = getattr(self, "_current_layout_config", None)
+        config = self._viz._current_layout_config
         if not config:
             return None
 

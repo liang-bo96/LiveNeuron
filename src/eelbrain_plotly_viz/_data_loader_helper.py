@@ -7,10 +7,13 @@ Loading and normalization are both part of one cohesive responsibility:
 preparing data for visualization.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 from eelbrain import set_parc, NDVar, datasets
+
+if TYPE_CHECKING:
+    from ._viz_2d import EelbrainPlotly2DViz
 
 
 class DataLoaderHelper:
@@ -23,33 +26,9 @@ class DataLoaderHelper:
     - Normalizing data into a consistent internal format
     - Computing derived data (butterfly data from vector norms)
     - Parsing display modes and calculating view ranges
-
-    Attributes
-    ----------
-    glass_brain_data : np.ndarray
-        Brain data array with shape (n_sources, 3, n_times) for vector data
-        or (n_sources, 1, n_times) for scalar data.
-    butterfly_data : np.ndarray
-        Butterfly plot data with shape (n_sources, n_times).
-    source_coords : np.ndarray
-        Source coordinates with shape (n_sources, 3).
-    time_values : np.ndarray
-        Time values array with shape (n_times,).
-    region_of_brain : str
-        The brain region being visualized.
-    source_space : Any
-        The source space object from eelbrain.
-    parcellation : Any
-        The parcellation object if available.
-    view_ranges : Dict
-        Fixed axis ranges for each brain view.
-    global_vmin : float
-        Global minimum value for colormap.
-    global_vmax : float
-        Global maximum value for colormap.
     """
 
-    def __init__(self, viz: Any):
+    def __init__(self, viz: "EelbrainPlotly2DViz"):
         """Initialize the data loader helper.
 
         Parameters
@@ -58,17 +37,6 @@ class DataLoaderHelper:
             The EelbrainPlotly2DViz instance this helper operates on.
         """
         self._viz = viz
-
-    def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the parent visualization instance."""
-        return getattr(self._viz, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Delegate state changes to the parent visualization instance."""
-        if name == "_viz":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._viz, name, value)
 
     def _load_source_data(self, region: Optional[str] = None) -> None:
         """Load MNE sample data and prepare for 2D brain visualization.
@@ -86,31 +54,31 @@ class DataLoaderHelper:
         if region is not None:
             try:
                 data_ds["src"] = set_parc(data_ds["src"], region)
-                self.region_of_brain = region
+                self._viz.region_of_brain = region
             except Exception as e:
                 print(f"Failed to apply parcellation {region}: {e}")
                 print("Using full brain data instead")
-                self.region_of_brain = "Full Brain"
+                self._viz.region_of_brain = "Full Brain"
         else:
-            self.region_of_brain = "Full Brain"
+            self._viz.region_of_brain = "Full Brain"
 
         # Average over trials/cases
         src_ndvar = data_ds["src"].mean("case")
 
         # Extract coordinates and data
-        self.glass_brain_data = src_ndvar.get_data(("source", "space", "time"))
-        self.source_coords = src_ndvar.source.coordinates  # (n_sources, 3)
-        self.time_values = src_ndvar.time.times
+        self._viz.glass_brain_data = src_ndvar.get_data(("source", "space", "time"))
+        self._viz.source_coords = src_ndvar.source.coordinates  # (n_sources, 3)
+        self._viz.time_values = src_ndvar.time.times
 
         # Store source space info
-        self.source_space = src_ndvar.source
-        if hasattr(self.source_space, "parc"):
-            self.parcellation = self.source_space.parc
+        self._viz.source_space = src_ndvar.source
+        if hasattr(self._viz.source_space, "parc"):
+            self._viz.parcellation = self._viz.source_space.parc
         else:
-            self.parcellation = None
+            self._viz.parcellation = None
 
         # Compute norm for butterfly plot
-        self.butterfly_data = np.linalg.norm(self.glass_brain_data, axis=1)
+        self._viz.butterfly_data = np.linalg.norm(self._viz.glass_brain_data, axis=1)
 
     def _load_ndvar_data(self, y: NDVar) -> None:
         """Load data from NDVar directly.
@@ -125,35 +93,35 @@ class DataLoaderHelper:
 
         # Extract source dimension info
         source = y.get_dim("source")
-        self.source_coords = source.coordinates
-        self.time_values = y.time.times
+        self._viz.source_coords = source.coordinates
+        self._viz.time_values = y.time.times
 
         # Store source space info
-        self.source_space = source
-        if hasattr(self.source_space, "parc"):
-            self.parcellation = self.source_space.parc
-            self.region_of_brain = str(self.parcellation)
+        self._viz.source_space = source
+        if hasattr(self._viz.source_space, "parc"):
+            self._viz.parcellation = self._viz.source_space.parc
+            self._viz.region_of_brain = str(self._viz.parcellation)
         else:
-            self.parcellation = None
-            self.region_of_brain = "Full Brain"
+            self._viz.parcellation = None
+            self._viz.region_of_brain = "Full Brain"
 
         # Handle space dimension (vector data)
         if y.has_dim("space"):
             # Extract 3D vector data
-            self.glass_brain_data = y.get_data(
+            self._viz.glass_brain_data = y.get_data(
                 ("source", "space", "time")
             )  # (n_sources, 3, n_times)
             # Compute norm for butterfly plot
-            self.butterfly_data = np.linalg.norm(self.glass_brain_data, axis=1)
+            self._viz.butterfly_data = np.linalg.norm(self._viz.glass_brain_data, axis=1)
         else:
             # Scalar data - no space dimension
-            self.glass_brain_data = y.get_data(
+            self._viz.glass_brain_data = y.get_data(
                 ("source", "time")
             )  # (n_sources, n_times)
-            self.butterfly_data = self.glass_brain_data.copy()
+            self._viz.butterfly_data = self._viz.glass_brain_data.copy()
             # Expand to 3D for consistency (assuming scalar represents magnitude)
             # (n_sources, 1, n_times)
-            self.glass_brain_data = self.glass_brain_data[:, np.newaxis, :]
+            self._viz.glass_brain_data = self._viz.glass_brain_data[:, np.newaxis, :]
 
     def _parse_display_mode(self, mode: str) -> List[str]:
         """Parse display_mode string into list of required brain views.
@@ -213,14 +181,14 @@ class DataLoaderHelper:
 
         This ensures that brain plots maintain consistent size across all time points.
         """
-        if self.source_coords is None:
-            self.view_ranges = {}
+        if self._viz.source_coords is None:
+            self._viz.view_ranges = {}
             return
 
-        coords = self.source_coords
-        self.view_ranges = {}
+        coords = self._viz.source_coords
+        self._viz.view_ranges = {}
 
-        for view_name in self.brain_views:
+        for view_name in self._viz.brain_views:
             # Get the appropriate coordinate projections for each view
             if view_name == "axial":  # Z view (X vs Y)
                 x_coords = coords[:, 0]
@@ -256,7 +224,7 @@ class DataLoaderHelper:
             x_padding = x_range * 0.05 if x_range > 0 else 0.01
             y_padding = y_range * 0.05 if y_range > 0 else 0.01
 
-            self.view_ranges[view_name] = {
+            self._viz.view_ranges[view_name] = {
                 "x": [x_min - x_padding, x_max + x_padding],
                 "y": [y_min - y_padding, y_max + y_padding],
             }
@@ -268,38 +236,38 @@ class DataLoaderHelper:
         making them appear uniform in size when displayed in Jupyter notebooks.
         Only called when using show_in_jupyter().
         """
-        if not self.view_ranges:
+        if not self._viz.view_ranges:
             return
 
         # Calculate the maximum width and height across all views
         max_x_width = max(
-            ranges["x"][1] - ranges["x"][0] for ranges in self.view_ranges.values()
+            ranges["x"][1] - ranges["x"][0] for ranges in self._viz.view_ranges.values()
         )
         max_y_width = max(
-            ranges["y"][1] - ranges["y"][0] for ranges in self.view_ranges.values()
+            ranges["y"][1] - ranges["y"][0] for ranges in self._viz.view_ranges.values()
         )
 
         # Use the larger of the two to ensure square-ish plots with equal sizing
         max_width = max(max_x_width, max_y_width)
 
         # Update all views to use the unified maximum range
-        for view_name in self.view_ranges:
+        for view_name in self._viz.view_ranges:
             # Get current center
             x_center = (
-                self.view_ranges[view_name]["x"][0]
-                + self.view_ranges[view_name]["x"][1]
+                self._viz.view_ranges[view_name]["x"][0]
+                + self._viz.view_ranges[view_name]["x"][1]
             ) / 2
             y_center = (
-                self.view_ranges[view_name]["y"][0]
-                + self.view_ranges[view_name]["y"][1]
+                self._viz.view_ranges[view_name]["y"][0]
+                + self._viz.view_ranges[view_name]["y"][1]
             ) / 2
 
             # Set new range centered around the same point with max width
-            self.view_ranges[view_name]["x"] = [
+            self._viz.view_ranges[view_name]["x"] = [
                 x_center - max_width / 2,
                 x_center + max_width / 2,
             ]
-            self.view_ranges[view_name]["y"] = [
+            self._viz.view_ranges[view_name]["y"] = [
                 y_center - max_width / 2,
                 y_center + max_width / 2,
             ]
@@ -312,22 +280,22 @@ class DataLoaderHelper:
         """
         data_max = 1.0
 
-        if self.glass_brain_data is not None:
+        if self._viz.glass_brain_data is not None:
             # Calculate activity magnitude across all time points
-            if self.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+            if self._viz.glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
                 # Compute norm for each source at each time point
                 all_magnitudes = np.linalg.norm(
-                    self.glass_brain_data, axis=1
+                    self._viz.glass_brain_data, axis=1
                 )  # (n_sources, n_times)
             else:  # Scalar data (n_sources, n_times)
-                all_magnitudes = self.glass_brain_data
+                all_magnitudes = self._viz.glass_brain_data
 
             data_max = float(np.max(all_magnitudes))
 
         # Apply user overrides if provided
-        self.global_vmin = 0.0
-        self.global_vmax = data_max if self.user_vmax is None else self.user_vmax
+        self._viz.global_vmin = 0.0
+        self._viz.global_vmax = data_max if self._viz.user_vmax is None else self._viz.user_vmax
 
         # Ensure we have a valid range (avoid zero range)
-        if self.global_vmax - self.global_vmin < 1e-10:
-            self.global_vmax = self.global_vmin + 1.0
+        if self._viz.global_vmax - self._viz.global_vmin < 1e-10:
+            self._viz.global_vmax = self._viz.global_vmin + 1.0

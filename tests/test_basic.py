@@ -33,7 +33,6 @@ def test_package_import():
     import eelbrain_plotly_viz
 
     assert hasattr(eelbrain_plotly_viz, "EelbrainPlotly2DViz")
-    assert hasattr(eelbrain_plotly_viz, "BrainPlotly2DViz")  # Alias
     assert hasattr(eelbrain_plotly_viz, "create_sample_brain_data")
 
 
@@ -104,15 +103,12 @@ def test_viz_creation_with_options():
     assert viz.arrow_threshold == "auto"
 
 
-def test_alias_import():
-    """Test that the BrainPlotly2DViz alias works."""
-    from eelbrain_plotly_viz import BrainPlotly2DViz, EelbrainPlotly2DViz
+def test_main_class_import():
+    """Test that the main class can be imported and used."""
+    from eelbrain_plotly_viz import EelbrainPlotly2DViz
 
-    # The alias should be the same as the original class
-    assert BrainPlotly2DViz is EelbrainPlotly2DViz
-
-    # Should be able to create instance with alias
-    viz = BrainPlotly2DViz()
+    # Should be able to create instance
+    viz = EelbrainPlotly2DViz()
     assert viz.glass_brain_data is not None
 
 
