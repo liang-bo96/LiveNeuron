@@ -120,13 +120,19 @@ class EelbrainPlotly2DViz:
         # Add external CSS to remove ALL default margins/padding from Dash containers
         external_stylesheets = [
             {
-                "href": "data:text/css;charset=utf-8,"
-                + "*{box-sizing:border-box;}"
-                + "html{margin:0!important;padding:0!important;height:auto!important;overflow:hidden;}"
-                + "body{margin:0!important;padding:0!important;height:auto!important;overflow:hidden;}"
-                + "#react-entry-point{margin:0!important;padding:0!important;height:auto!important;}"
-                + "#_dash-app-content{margin:0!important;padding:0!important;height:auto!important;}"
-                + "._dash-loading{margin:0!important;padding:0!important;}",
+                "href": (
+                    "data:text/css;charset=utf-8,"
+                    + "*{box-sizing:border-box;}"
+                    + "html{margin:0!important;padding:0!important;"
+                    + "height:auto!important;overflow:hidden;}"
+                    + "body{margin:0!important;padding:0!important;"
+                    + "height:auto!important;overflow:hidden;}"
+                    + "#react-entry-point{margin:0!important;padding:0!important;"
+                    + "height:auto!important;}"
+                    + "#_dash-app-content{margin:0!important;padding:0!important;"
+                    + "height:auto!important;}"
+                    + "._dash-loading{margin:0!important;padding:0!important;}"
+                ),
                 "rel": "stylesheet",
             }
         ]
@@ -210,8 +216,10 @@ class EelbrainPlotly2DViz:
         )
 
         # Calculate global colormap range across all time points for consistent visualization
-        self.global_vmin, self.global_vmax = self._data_loader._calculate_global_colormap_range(
-            self.glass_brain_data, self.user_vmax
+        self.global_vmin, self.global_vmax = (
+            self._data_loader._calculate_global_colormap_range(
+                self.glass_brain_data, self.user_vmax
+            )
         )
 
         # Setup app layout and callbacks

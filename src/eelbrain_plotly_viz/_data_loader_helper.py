@@ -255,14 +255,8 @@ class DataLoaderHelper:
 
         for view_name, ranges in view_ranges.items():
             # Get current center
-            x_center = (
-                ranges["x"][0]
-                + ranges["x"][1]
-            ) / 2
-            y_center = (
-                ranges["y"][0]
-                + ranges["y"][1]
-            ) / 2
+            x_center = (ranges["x"][0] + ranges["x"][1]) / 2
+            y_center = (ranges["y"][0] + ranges["y"][1]) / 2
 
             # Set new range centered around the same point with max width
             unified_ranges[view_name] = {
