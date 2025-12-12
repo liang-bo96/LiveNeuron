@@ -95,7 +95,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🧪 Test the installation:"
     echo "   pip install git+https://github.com/liang-bo96/eelbrain-plotly-viz.git"
-    echo "   python -c \"from eelbrain_plotly_viz import BrainPlotly2DViz; print('✅ Package works!')\""
+    echo "   python -c \"from eelbrain_plotly_viz import EelbrainPlotly2DViz; print('✅ Package works!')\""
 else
     echo ""
     echo "❌ Push failed. Common solutions:"
