@@ -30,7 +30,7 @@ class PlotFactoryHelper:
     visualization logic is separate from data loading and layout concerns.
     """
 
-    # Declare expected attributes from other mixins/main class
+    # Declare expected attributes from the main class
     butterfly_data: Optional[np.ndarray]
     glass_brain_data: Optional[np.ndarray]
     source_coords: Optional[np.ndarray]

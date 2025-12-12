@@ -16,20 +16,19 @@ Main Class
 Sample Data Module
 ------------------
 
-.. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
+.. autofunction:: eelbrain_plotly_viz.create_sample_brain_data
 
 Layout System
 -------------
 
-Custom layouts can be created by inheriting from ``LayoutBuilder``:
+Custom layouts can be created by inheriting from :class:`~eelbrain_plotly_viz.LayoutBuilder`:
 
-.. autoclass:: eelbrain_plotly_viz.layout_builder_helper.LayoutBuilder
+.. autoclass:: eelbrain_plotly_viz.LayoutBuilder
    :members:
    :show-inheritance:
 
-.. autofunction:: eelbrain_plotly_viz.layout_builder_helper.register_layout
-.. autofunction:: eelbrain_plotly_viz.layout_builder_helper.get_layout_builder
-.. autodata:: eelbrain_plotly_viz.layout_builder_helper.LAYOUTS
+.. autofunction:: eelbrain_plotly_viz.register_layout
+.. autofunction:: eelbrain_plotly_viz.get_layout_builder
 
 Data Format
 -----------

@@ -39,7 +39,7 @@ def test_package_import():
 
 def test_sample_data_creation():
     """Test sample data creation."""
-    from eelbrain_plotly_viz.sample_data import create_sample_brain_data
+    from eelbrain_plotly_viz import create_sample_brain_data
 
     # Test vector data
     data_dict = create_sample_brain_data(
@@ -58,7 +58,7 @@ def test_sample_data_creation():
 
 def test_scalar_data_creation():
     """Test scalar data creation."""
-    from eelbrain_plotly_viz.sample_data import create_sample_brain_data
+    from eelbrain_plotly_viz import create_sample_brain_data
 
     # Test scalar data
     data_dict = create_sample_brain_data(

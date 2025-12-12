@@ -4,13 +4,6 @@ Eelbrain Plotly 2D Brain Visualization.
 This module provides the EelbrainPlotly2DViz class, an interactive 2D visualization
 interface for Eelbrain's NDVar data structures. It transforms neuroscience data
 into explorable brain maps and time-series plots.
-
-The class follows the Single Responsibility Principle by delegating to four
-internal helper components:
-- DataLoaderHelper: Handles data ingestion and normalization
-- PlotFactoryHelper: Constructs all visualization figures
-- LayoutBuilderHelper: Arranges UI components
-- AppControllerHelper: Controls user interaction and application behavior
 """
 
 from typing import Optional, Union, List, Dict, Any
@@ -19,10 +12,10 @@ import dash
 import numpy as np
 from eelbrain import NDVar
 
-from .data_loader_helper import DataLoaderHelper
-from .plot_factory_helper import PlotFactoryHelper
-from .layout_builder_helper import LayoutBuilderHelper, LAYOUTS
-from .app_controller_helper import AppControllerHelper
+from ._data_loader_helper import DataLoaderHelper
+from ._plot_factory_helper import PlotFactoryHelper
+from ._layout_helper import LayoutBuilderHelper, LAYOUTS
+from ._app_controller_helper import AppControllerHelper
 
 
 class EelbrainPlotly2DViz:
@@ -30,16 +23,6 @@ class EelbrainPlotly2DViz:
 
     Visualization for 3D vector field time series. Provides activity time course
     with interactive 2D projections of brain volume vector data.
-
-    This class demonstrates the Single Responsibility Principle by delegating
-    to four internal helper components:
-    - DataLoaderHelper: Responsible for all data ingestion logic
-    - PlotFactoryHelper: Responsible for constructing all visualization figures
-    - LayoutBuilderHelper: Responsible for arranging UI components
-    - AppControllerHelper: Responsible for user interaction logic
-
-    The main class orchestrates these helpers to provide a complete
-    visualization experience.
 
     Parameters
     ----------
@@ -183,7 +166,7 @@ class EelbrainPlotly2DViz:
         self.global_vmin: float = 0.0
         self.global_vmax: float = 1.0
 
-        # Internal helper components (composition instead of mixins)
+        # Internal helper components
         self._data_loader = DataLoaderHelper(self)
         self._plot_factory = PlotFactoryHelper(self)
         self._layout_helper = LayoutBuilderHelper(self)

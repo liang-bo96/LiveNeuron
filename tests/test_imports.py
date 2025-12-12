@@ -14,11 +14,8 @@ def test_all_imports_together():
         EelbrainPlotly2DViz,
         BrainPlotly2DViz,
         create_sample_brain_data,
-        # Layout strategy pattern
+        # Layout extension API
         LayoutBuilder,
-        VerticalLayout,
-        HorizontalLayout,
-        LAYOUTS,
         register_layout,
         get_layout_builder,
     )
@@ -26,11 +23,8 @@ def test_all_imports_together():
     assert EelbrainPlotly2DViz is not None
     assert BrainPlotly2DViz is not None
     assert create_sample_brain_data is not None
-    # Test layout strategy imports
+    # Test layout extension API imports
     assert LayoutBuilder is not None
-    assert VerticalLayout is not None
-    assert HorizontalLayout is not None
-    assert LAYOUTS is not None
     assert register_layout is not None
     assert get_layout_builder is not None
 
@@ -40,7 +34,7 @@ def test_direct_module_imports():
     # Test that the main import still works after package installation
     try:
         from eelbrain_plotly_viz.viz_2d import EelbrainPlotly2DViz as DirectImport
-        from eelbrain_plotly_viz.sample_data import (
+        from eelbrain_plotly_viz._sample_data import (
             create_sample_brain_data as DirectDataImport,
         )
 
@@ -71,11 +65,8 @@ def test_package_all_attribute():
         "BrainPlotly2DViz",
         # Sample data
         "create_sample_brain_data",
-        # Layout strategy pattern (Open/Closed Principle)
+        # Layout extension API (Open/Closed Principle)
         "LayoutBuilder",
-        "VerticalLayout",
-        "HorizontalLayout",
-        "LAYOUTS",
         "register_layout",
         "get_layout_builder",
     }

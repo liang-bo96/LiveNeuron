@@ -37,12 +37,9 @@ class AppControllerHelper:
     - Processing hover and click events on plots
     - Exporting visualizations as image files
     - Running the Dash application server
-
-    The mixin separates interaction logic from data loading, plot creation,
-    and layout concerns, ensuring each responsibility is handled independently.
     """
 
-    # Declare expected attributes from other mixins/main class
+    # Declare expected attributes from the main class
     app: dash.Dash
     time_values: Optional[np.ndarray]
     source_coords: Optional[np.ndarray]

@@ -18,14 +18,15 @@ them via register_layout; see the documentation for a complete example.
 __version__ = "1.0.0"
 __author__ = "LiveNeuron Team"
 
+# Main visualization class
 from .viz_2d import EelbrainPlotly2DViz
-from .sample_data import create_sample_brain_data
-from .layout_builder_helper import (
-    # Layout strategy classes and registry
+
+# Sample data for testing (public function only, not internal classes)
+from ._sample_data import create_sample_brain_data
+
+# Layout extension API (for users who want to create custom layouts)
+from ._layout_helper import (
     LayoutBuilder,
-    VerticalLayout,
-    HorizontalLayout,
-    LAYOUTS,
     register_layout,
     get_layout_builder,
 )
@@ -39,11 +40,8 @@ __all__ = [
     "BrainPlotly2DViz",  # Alias for compatibility
     # Sample data
     "create_sample_brain_data",
-    # Layout strategy pattern (Open/Closed Principle)
+    # Layout extension API (Open/Closed Principle)
     "LayoutBuilder",  # Abstract base class for custom layouts
-    "VerticalLayout",  # Built-in vertical layout
-    "HorizontalLayout",  # Built-in horizontal layout
-    "LAYOUTS",  # Layout registry dictionary
     "register_layout",  # Function to register custom layouts
     "get_layout_builder",  # Function to retrieve layout builders
 ]
