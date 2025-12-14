@@ -22,7 +22,7 @@ class _SampleSourceDim:
 
 class SampleDataNDVar(dict):
     """
-    Minimal NDVar-like wrapper around sample data to work with EelbrainPlotly2DViz.
+    Minimal NDVar-like wrapper around sample data to work with LiveNeuro.
 
     Behaves like a dict for backward compatibility and implements the subset of
     NDVar API that viz_2d consumes.
@@ -107,7 +107,7 @@ def create_sample_brain_data(
     Returns
     -------
     SampleDataNDVar
-        Minimal NDVar-like object with the fields EelbrainPlotly2DViz expects:
+        Minimal NDVar-like object with the fields LiveNeuro expects:
         ``data`` (array), ``coords`` (array), ``times`` (array),
         ``has_vector_data`` (bool), ``n_sources`` (int), ``n_times`` (int).
     """

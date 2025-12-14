@@ -1,9 +1,9 @@
 #!/bin/bash
-# Script to push eelbrain-plotly-viz package to GitHub
-# Repository: https://github.com/liang-bo96/eelbrain-plotly-viz
+# Script to push LiveNeuro package to GitHub
+# Repository: https://github.com/liang-bo96/LiveNeuro
 
-echo "🚀 PUSHING EELBRAIN-PLOTLY-VIZ TO GITHUB"
-echo "Repository: https://github.com/liang-bo96/eelbrain-plotly-viz"
+echo "🚀 PUSHING LIVENEURO TO GITHUB"
+echo "Repository: https://github.com/liang-bo96/LiveNeuro"
 echo "=" * 60
 
 # Check if we're in the right directory
@@ -24,7 +24,7 @@ fi
 # Add remote origin if not already added
 if ! git remote get-url origin >/dev/null 2>&1; then
     echo "🔗 Adding GitHub remote..."
-    git remote add origin https://github.com/liang-bo96/eelbrain-plotly-viz.git
+    git remote add origin https://github.com/liang-bo96/LiveNeuro.git
     echo "✅ Remote origin added"
 else
     echo "✅ Remote origin already configured"
@@ -84,18 +84,18 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🎉 SUCCESS! Package pushed to GitHub!"
     echo "=" * 60
-    echo "✅ Repository: https://github.com/liang-bo96/eelbrain-plotly-viz"
-    echo "✅ Installation: pip install git+https://github.com/liang-bo96/eelbrain-plotly-viz.git"
+    echo "✅ Repository: https://github.com/liang-bo96/LiveNeuro"
+    echo "✅ Installation: pip install git+https://github.com/liang-bo96/LiveNeuro.git"
     echo ""
     echo "📋 Next steps:"
-    echo "1. Visit: https://github.com/liang-bo96/eelbrain-plotly-viz"
+    echo "1. Visit: https://github.com/liang-bo96/LiveNeuro"
     echo "2. Add a description and topics to your repository"
-    echo "3. Test installation: pip install git+https://github.com/liang-bo96/eelbrain-plotly-viz.git"
+    echo "3. Test installation: pip install git+https://github.com/liang-bo96/LiveNeuro.git"
     echo "4. Share with others!"
     echo ""
     echo "🧪 Test the installation:"
-    echo "   pip install git+https://github.com/liang-bo96/eelbrain-plotly-viz.git"
-    echo "   python -c \"from eelbrain_plotly_viz import BrainPlotly2DViz; print('✅ Package works!')\""
+    echo "   pip install git+https://github.com/liang-bo96/LiveNeuro.git"
+    echo "   python -c \"from liveneuro import LiveNeuro; print('✅ Package works!')\""
 else
     echo ""
     echo "❌ Push failed. Common solutions:"

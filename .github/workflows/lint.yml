@@ -40,7 +40,7 @@ jobs:
     - name: Test package installation
       run: |
         # Test that the package can be imported after installation
-        python -c "from eelbrain_plotly_viz import EelbrainPlotly2DViz, BrainPlotly2DViz, create_sample_brain_data; print('Package imports successful!')"
+        python -c "from liveneuro import LiveNeuro, create_sample_brain_data; print('Package imports successful!')"
 
     - name: Lint with flake8
       run: |
