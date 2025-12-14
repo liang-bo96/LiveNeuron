@@ -1,10 +1,10 @@
 """
-Integration tests for eelbrain_plotly_viz package.
+Integration tests for liveneuro package.
 """
 
 import pytest
 import tempfile
-from eelbrain_plotly_viz import EelbrainPlotly2DViz
+from liveneuro import LiveNeuro
 
 
 def test_export_functionality():
@@ -12,7 +12,7 @@ def test_export_functionality():
     # Check for required dependencies upfront
     pytest.importorskip("kaleido", reason="kaleido required for image export testing")
 
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Test export functionality
@@ -25,7 +25,7 @@ def test_export_functionality():
 
 def test_jupyter_mode():
     """Test Jupyter mode functionality."""
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     # Simulate Jupyter mode and rebuild layout
     viz.is_jupyter_mode = True
@@ -38,8 +38,8 @@ def test_jupyter_mode():
 
 def test_multiple_visualizations():
     """Test creating multiple visualizations doesn't interfere."""
-    viz1 = EelbrainPlotly2DViz(cmap="Hot", show_max_only=False)
-    viz2 = EelbrainPlotly2DViz(cmap="Viridis", show_max_only=True)
+    viz1 = LiveNeuro(cmap="Hot", show_max_only=False)
+    viz2 = LiveNeuro(cmap="Viridis", show_max_only=True)
 
     # Each should maintain its own settings
     assert viz1.cmap == "Hot"
@@ -58,7 +58,7 @@ def test_multiple_visualizations():
 
 def test_error_handling():
     """Test error handling in various scenarios."""
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     # Test with invalid time index
     brain_plots = viz._plot_factory._create_2d_brain_projections_plotly(time_idx=999999)
@@ -68,7 +68,7 @@ def test_error_handling():
     assert len(brain_plots) == 3
 
     # Test with None data (edge case)
-    viz_empty = EelbrainPlotly2DViz()
+    viz_empty = LiveNeuro()
     viz_empty.glass_brain_data = None
     viz_empty.source_coords = None
     viz_empty.time_values = None
@@ -80,7 +80,7 @@ def test_error_handling():
 
 def test_callback_functionality():
     """Test that Dash callbacks are properly set up."""
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     # Check that the app has callbacks registered
     assert hasattr(viz.app, "callback_map")
@@ -92,7 +92,7 @@ def test_callback_functionality():
 
 def test_data_consistency():
     """Test data consistency across different methods."""
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     # All data arrays should have consistent shapes
     n_sources, n_space, n_times = viz.glass_brain_data.shape

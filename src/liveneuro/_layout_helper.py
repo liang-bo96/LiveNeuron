@@ -10,7 +10,7 @@ New layout strategies can be added by:
 
 Example
 -------
->>> from eelbrain_plotly_viz import LayoutBuilder, register_layout
+>>> from liveneuro import LayoutBuilder, register_layout
 >>>
 >>> class GridLayout(LayoutBuilder):
 ...     def build(self, app):
@@ -18,7 +18,7 @@ Example
 ...         pass
 >>>
 >>> register_layout("grid", GridLayout())
->>> viz = EelbrainPlotly2DViz(layout_mode="grid")
+>>> viz = LiveNeuro(layout_mode="grid")
 """
 
 from abc import ABC, abstractmethod
@@ -28,7 +28,7 @@ import plotly.graph_objects as go
 from dash import dcc, html
 
 if TYPE_CHECKING:
-    from ._viz_2d import EelbrainPlotly2DViz
+    from ._viz_2d import LiveNeuro
 
 
 # =============================================================================
@@ -47,7 +47,7 @@ class LayoutBuilder(ABC):
     1. Inherit from LayoutBuilder
     2. Implement the build(app) method
     3. Register with register_layout("name", YourLayout())
-    4. Use with EelbrainPlotly2DViz(layout_mode="name")
+    4. Use with LiveNeuro(layout_mode="name")
 
     Methods
     -------
@@ -65,13 +65,13 @@ class LayoutBuilder(ABC):
     """
 
     @abstractmethod
-    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def build(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Build layout configuration and Dash layout components.
 
         Parameters
         ----------
         app
-            The EelbrainPlotly2DViz instance to configure layout for.
+            The LiveNeuro instance to configure layout for.
 
         Returns
         -------
@@ -82,7 +82,7 @@ class LayoutBuilder(ABC):
         """
         raise NotImplementedError
 
-    def _get_layout_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def _get_layout_config(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Get base layout configuration.
 
         Parameters
@@ -101,7 +101,7 @@ class LayoutBuilder(ABC):
 
     def _create_brain_view_containers(
         self,
-        app: "EelbrainPlotly2DViz",
+        app: "LiveNeuro",
         brain_plots: Dict[str, go.Figure],
         brain_height: str,
         brain_width: str,
@@ -156,13 +156,13 @@ class VerticalLayout(LayoutBuilder):
     at the top and brain projections arranged horizontally below.
     """
 
-    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def build(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Build vertical layout for the visualization app.
 
         Parameters
         ----------
         app
-            The EelbrainPlotly2DViz instance to configure.
+            The LiveNeuro instance to configure.
 
         Returns
         -------
@@ -186,7 +186,7 @@ class VerticalLayout(LayoutBuilder):
         )
         return {"config": config, "layout": layout}
 
-    def _get_vertical_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def _get_vertical_config(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Get configuration for vertical layout."""
         base = self._get_layout_config(app)
         num_views = base["num_views"]
@@ -234,7 +234,7 @@ class VerticalLayout(LayoutBuilder):
 
     def _setup_vertical_layout(
         self,
-        app: "EelbrainPlotly2DViz",
+        app: "LiveNeuro",
         initial_butterfly: go.Figure,
         initial_brain_plots: Dict[str, go.Figure],
         config: Dict[str, Any],
@@ -325,13 +325,13 @@ class HorizontalLayout(LayoutBuilder):
     with brain projections arranged on the right side.
     """
 
-    def build(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def build(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Build horizontal layout for the visualization app.
 
         Parameters
         ----------
         app
-            The EelbrainPlotly2DViz instance to configure.
+            The LiveNeuro instance to configure.
 
         Returns
         -------
@@ -355,7 +355,7 @@ class HorizontalLayout(LayoutBuilder):
         )
         return {"config": config, "layout": layout}
 
-    def _get_horizontal_config(self, app: "EelbrainPlotly2DViz") -> Dict[str, Any]:
+    def _get_horizontal_config(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Get configuration for horizontal layout."""
         base = self._get_layout_config(app)
         num_views = base["num_views"]
@@ -399,7 +399,7 @@ class HorizontalLayout(LayoutBuilder):
                 return None
         return None
 
-    def _create_horizontal_colorbar(self, app: "EelbrainPlotly2DViz") -> go.Figure:
+    def _create_horizontal_colorbar(self, app: "LiveNeuro") -> go.Figure:
         """Create a standalone horizontal colorbar figure."""
         fig = go.Figure()
 
@@ -441,7 +441,7 @@ class HorizontalLayout(LayoutBuilder):
 
     def _create_brain_view_containers_horizontal(
         self,
-        app: "EelbrainPlotly2DViz",
+        app: "LiveNeuro",
         brain_plots: Dict[str, go.Figure],
         brain_height: str,
         brain_width: str,
@@ -489,7 +489,7 @@ class HorizontalLayout(LayoutBuilder):
 
     def _setup_horizontal_layout(
         self,
-        app: "EelbrainPlotly2DViz",
+        app: "LiveNeuro",
         initial_butterfly: go.Figure,
         initial_brain_plots: Dict[str, go.Figure],
         config: Dict[str, Any],
@@ -667,20 +667,20 @@ def get_layout_builder(layout_mode: str) -> LayoutBuilder:
 def register_layout(name: str, builder: LayoutBuilder) -> None:
     """Register a new layout strategy.
 
-    This allows extending the system with new layouts without modifying
-    existing code (Open/Closed Principle).
+        This allows extending the system with new layouts without modifying
+        existing code (Open/Closed Principle).
 
-    Parameters
-    ----------
-    name
-        Name to register the layout under.
-    builder
-        The LayoutBuilder instance to register.
+        Parameters
+        ----------
+        name
+            Name to register the layout under.
+        builder
+            The LayoutBuilder instance to register.
 
-    Example
-    -------
-    >>> register_layout("compact", CompactLayout())
-    >>> viz = EelbrainPlotly2DViz(layout_mode="compact")
+        Example
+        -------
+        >>> register_layout("compact", CompactLayout())
+    >>> viz = LiveNeuro(layout_mode="compact")
     """
     LAYOUTS[name] = builder
 
@@ -702,16 +702,16 @@ class LayoutBuilderHelper:
     Users can extend the layout system by:
     1. Creating a custom LayoutBuilder subclass
     2. Registering it with register_layout()
-    3. Using the custom layout_mode in EelbrainPlotly2DViz
+    3. Using the custom layout_mode in LiveNeuro
     """
 
-    def __init__(self, viz: "EelbrainPlotly2DViz"):
+    def __init__(self, viz: "LiveNeuro"):
         """Initialize the layout builder helper.
 
         Parameters
         ----------
         viz
-            The EelbrainPlotly2DViz instance this helper operates on.
+            The LiveNeuro instance this helper operates on.
         """
         self._viz = viz
 

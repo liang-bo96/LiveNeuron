@@ -1,7 +1,7 @@
 """
-Eelbrain Plotly 2D Brain Visualization.
+LiveNeuro 2D Brain Visualization.
 
-This module provides the EelbrainPlotly2DViz class, an interactive 2D visualization
+This module provides the core LiveNeuro class, an interactive 2D visualization
 interface for Eelbrain's NDVar data structures. It transforms neuroscience data
 into explorable brain maps and time-series plots.
 """
@@ -18,7 +18,7 @@ from ._layout_helper import LayoutBuilderHelper, LAYOUTS
 from ._app_controller_helper import AppControllerHelper
 
 
-class EelbrainPlotly2DViz:
+class LiveNeuro:
     """Interactive 2D brain visualization for brain data using Plotly and Dash.
 
     Visualization for 3D vector field time series. Provides activity time course
@@ -31,9 +31,8 @@ class EelbrainPlotly2DViz:
         If ``y`` has a case dimension, the mean is plotted.
         If ``y`` has a space dimension, the norm is plotted.
         If None, uses MNE sample data for demonstration.
-        pass an Eelbrain NDVar or the
-        :class:`~eelbrain_plotly_viz.sample_data.SampleDataNDVar` returned by
-        :func:`eelbrain_plotly_viz.sample_data.create_sample_brain_data`.
+        Pass an Eelbrain NDVar or the sample data object returned by
+        :func:`liveneuro.create_sample_brain_data`.
     cmap
         Plotly colorscale for heatmaps. Can be:
         - Built-in colorscale name (e.g., 'YlOrRd', 'OrRd', 'Reds', 'Viridis')
@@ -307,7 +306,7 @@ if __name__ == "__main__":
         # y = data_ds['src']  # NDVar with dimensions (case, time, source, space)
         #
         # # Create visualization with your data
-        # viz_2d = EelbrainPlotly2DViz(
+        # viz_2d = LiveNeuro(
         #     y=y,  # Pass NDVar directly - same format as plot.GlassBrain
         #     cmap=cmap,
         #     show_max_only=False,
@@ -315,7 +314,7 @@ if __name__ == "__main__":
         # )
 
         # Method 2: Use default MNE sample data with custom options
-        viz_2d = EelbrainPlotly2DViz(
+        viz_2d = LiveNeuro(
             cmap="Reds",
             show_max_only=False,
             arrow_threshold=None,  # Show all arrows

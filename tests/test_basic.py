@@ -1,5 +1,5 @@
 """
-Basic tests for eelbrain_plotly_viz package.
+Basic tests for liveneuro package.
 """
 
 import pytest
@@ -30,15 +30,15 @@ TEST_VIEW_CASES = [
 
 def test_package_import():
     """Test that the package can be imported."""
-    import eelbrain_plotly_viz
+    import liveneuro
 
-    assert hasattr(eelbrain_plotly_viz, "EelbrainPlotly2DViz")
-    assert hasattr(eelbrain_plotly_viz, "create_sample_brain_data")
+    assert hasattr(liveneuro, "LiveNeuro")
+    assert hasattr(liveneuro, "create_sample_brain_data")
 
 
 def test_sample_data_creation():
     """Test sample data creation."""
-    from eelbrain_plotly_viz import create_sample_brain_data
+    from liveneuro import create_sample_brain_data
 
     # Test vector data
     data_dict = create_sample_brain_data(
@@ -57,7 +57,7 @@ def test_sample_data_creation():
 
 def test_scalar_data_creation():
     """Test scalar data creation."""
-    from eelbrain_plotly_viz import create_sample_brain_data
+    from liveneuro import create_sample_brain_data
 
     # Test scalar data
     data_dict = create_sample_brain_data(
@@ -72,10 +72,10 @@ def test_scalar_data_creation():
 
 def test_viz_creation_with_sample_data():
     """Test creating visualization with default sample data."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # This should work without errors
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     assert viz.glass_brain_data is not None
     assert viz.source_coords is not None
@@ -87,12 +87,10 @@ def test_viz_creation_with_sample_data():
 
 def test_viz_creation_with_options():
     """Test creating visualization with different options."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test with different parameters
-    viz = EelbrainPlotly2DViz(
-        y=None, cmap="Viridis", show_max_only=True, arrow_threshold="auto"
-    )
+    viz = LiveNeuro(y=None, cmap="Viridis", show_max_only=True, arrow_threshold="auto")
 
     assert viz.glass_brain_data is not None
     assert viz.source_coords is not None
@@ -104,19 +102,19 @@ def test_viz_creation_with_options():
 
 def test_main_class_import():
     """Test that the main class can be imported and used."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Should be able to create instance
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
     assert viz.glass_brain_data is not None
 
 
 def test_brain_projections():
     """Test brain projection creation."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test with ortho display mode (3 orthogonal views)
-    viz = EelbrainPlotly2DViz(display_mode="ortho")
+    viz = LiveNeuro(display_mode="ortho")
     projections = viz._plot_factory._create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
@@ -130,7 +128,7 @@ def test_brain_projections():
         assert hasattr(fig, "layout")
 
     # Test with default display mode (lyr - hemisphere views)
-    viz_default = EelbrainPlotly2DViz()
+    viz_default = LiveNeuro()
     projections_default = viz_default._plot_factory._create_2d_brain_projections_plotly(
         time_idx=5
     )
@@ -143,9 +141,9 @@ def test_brain_projections():
 
 def test_butterfly_plot():
     """Test butterfly plot creation."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
     butterfly_fig = viz._plot_factory._create_butterfly_plot()
 
     assert hasattr(butterfly_fig, "data")
@@ -155,42 +153,42 @@ def test_butterfly_plot():
 
 def test_custom_colormap():
     """Test custom colormap functionality."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test custom colormap
     custom_cmap = [[0, "yellow"], [0.5, "orange"], [1, "red"]]
 
-    viz = EelbrainPlotly2DViz(cmap=custom_cmap)
+    viz = LiveNeuro(cmap=custom_cmap)
     assert viz.cmap == custom_cmap
 
 
 def test_different_arrow_thresholds():
     """Test different arrow threshold settings."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test None threshold
-    viz1 = EelbrainPlotly2DViz(arrow_threshold=None)
+    viz1 = LiveNeuro(arrow_threshold=None)
     assert viz1.arrow_threshold is None
 
     # Test auto threshold
-    viz2 = EelbrainPlotly2DViz(arrow_threshold="auto")
+    viz2 = LiveNeuro(arrow_threshold="auto")
     assert viz2.arrow_threshold == "auto"
 
     # Test numeric threshold
-    viz3 = EelbrainPlotly2DViz(arrow_threshold=0.5)
+    viz3 = LiveNeuro(arrow_threshold=0.5)
     assert viz3.arrow_threshold == 0.5
 
 
 def test_show_max_only_option():
     """Test show_max_only parameter."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test with show_max_only=True
-    viz1 = EelbrainPlotly2DViz(show_max_only=True)
+    viz1 = LiveNeuro(show_max_only=True)
     butterfly_fig1 = viz1._plot_factory._create_butterfly_plot()
 
     # Test with show_max_only=False
-    viz2 = EelbrainPlotly2DViz(show_max_only=False)
+    viz2 = LiveNeuro(show_max_only=False)
     butterfly_fig2 = viz2._plot_factory._create_butterfly_plot()
 
     # Both should create valid figures
@@ -209,9 +207,9 @@ def test_show_max_only_option():
 )
 def test_brain_view_counts(display_mode, layout_mode, expected_views):
     """Each display/layout combo should expose the correct brain view count."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
-    viz = EelbrainPlotly2DViz(display_mode=display_mode, layout_mode=layout_mode)
+    viz = LiveNeuro(display_mode=display_mode, layout_mode=layout_mode)
 
     assert viz.brain_views == expected_views
 
@@ -244,14 +242,14 @@ def test_eelbrain_integration():
     """Test integration with eelbrain (if available)."""
     try:
         from eelbrain import datasets
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz
+        from liveneuro import LiveNeuro
 
         # Load eelbrain data
         data_ds = datasets.get_mne_sample(src="vol", ori="vector")
         y = data_ds["src"]
 
         # Create visualization with eelbrain data
-        viz = EelbrainPlotly2DViz(y=y)
+        viz = LiveNeuro(y=y)
 
         assert viz.glass_brain_data is not None
         assert viz.source_coords is not None
@@ -263,9 +261,9 @@ def test_eelbrain_integration():
 
 def test_app_creation():
     """Test that the Dash app is created properly."""
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
 
     # Check that the app exists and has the expected attributes
     assert hasattr(viz, "app")

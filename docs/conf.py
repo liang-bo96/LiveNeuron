@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "LiveNeuron"
-copyright = "2025, LiveNeuron Team"
-author = "LiveNeuron Team"
+project = "LiveNeuro"
+copyright = "2025, LiveNeuro Team"
+author = "LiveNeuro Team"
 release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
@@ -119,4 +119,3 @@ myst_enable_extensions = [
     "substitution",
     "tasklist",
 ]
-

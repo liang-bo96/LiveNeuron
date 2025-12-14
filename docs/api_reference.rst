@@ -1,12 +1,12 @@
 API Reference
 =============
 
-This page contains the complete API reference for LiveNeuron.
+This page contains the complete API reference for LiveNeuro.
 
 Main Class
 ----------
 
-.. autoclass:: eelbrain_plotly_viz.viz_2d.EelbrainPlotly2DViz
+.. autoclass:: liveneuro.LiveNeuro
    :members: run, export_images
    :exclude-members: __init__
    :show-inheritance:
@@ -16,19 +16,19 @@ Main Class
 Sample Data Module
 ------------------
 
-.. autofunction:: eelbrain_plotly_viz.create_sample_brain_data
+.. autofunction:: liveneuro.create_sample_brain_data
 
 Layout System
 -------------
 
-Custom layouts can be created by inheriting from :class:`~eelbrain_plotly_viz.LayoutBuilder`:
+Custom layouts can be created by inheriting from :class:`~liveneuro.LayoutBuilder`:
 
-.. autoclass:: eelbrain_plotly_viz.LayoutBuilder
+.. autoclass:: liveneuro.LayoutBuilder
    :members:
    :show-inheritance:
 
-.. autofunction:: eelbrain_plotly_viz.register_layout
-.. autofunction:: eelbrain_plotly_viz.get_layout_builder
+.. autofunction:: liveneuro.register_layout
+.. autofunction:: liveneuro.get_layout_builder
 
 Data Format
 -----------

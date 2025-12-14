@@ -1,7 +1,7 @@
 User Guide
 ==========
 
-This comprehensive guide covers all features and configuration options of LiveNeuron based on the actual implementation.
+This comprehensive guide covers all features and configuration options of LiveNeuro based on the actual implementation.
 
 Getting Started
 ---------------
@@ -16,10 +16,10 @@ Basic Workflow
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+   from liveneuro import LiveNeuro
 
    # Step 1: Create
-   viz = EelbrainPlotly2DViz(display_mode="lyr")
+   viz = LiveNeuro(display_mode="lyr")
 
    # Step 2: Launch
    viz.run()  # Auto inline in Jupyter; external browser otherwise
@@ -160,7 +160,7 @@ Horizontal Layout
 Custom Layouts
 ^^^^^^^^^^^^^^
 
-Create custom layouts by inheriting from :class:`~eelbrain_plotly_viz.layout_builder_helper.LayoutBuilder` and registering them with :func:`~eelbrain_plotly_viz.layout_builder_helper.register_layout`.
+Create custom layouts by inheriting from :class:`~liveneuro.LayoutBuilder` and registering them with :func:`~liveneuro.register_layout`.
 See the *Layout System* section in the API reference for a complete example.
 
 Once registered, you can select your layout with ``layout_mode``:
@@ -250,7 +250,7 @@ Color Mapping
 Built-in Colormaps
 ^^^^^^^^^^^^^^^^^^
 
-LiveNeuron supports Plotly's built-in colorscales:
+LiveNeuro supports Plotly's built-in colorscales:
 
 .. code-block:: python
 
@@ -392,14 +392,14 @@ For your own data:
 .. code-block:: python
 
    from eelbrain import datasets
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+   from liveneuro import LiveNeuro
 
    # Load Eelbrain data
    data_ds = datasets.get_mne_sample(src='vol', ori='vector')
    y = data_ds['src']  # NDVar with dimensions (case, time, source, space)
 
    # Visualize
-   viz = EelbrainPlotly2DViz(y=y)
+   viz = LiveNeuro(y=y)
 
 **Expected Dimensions:**
 

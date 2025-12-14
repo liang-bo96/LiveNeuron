@@ -14,7 +14,7 @@ import numpy as np
 from eelbrain import NDVar, datasets
 
 if TYPE_CHECKING:
-    from ._viz_2d import EelbrainPlotly2DViz
+    from ._viz_2d import LiveNeuro
 
 
 @dataclass

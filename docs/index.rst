@@ -1,10 +1,10 @@
-Welcome to LiveNeuron's documentation!
+Welcome to LiveNeuro's documentation!
 ======================================
 
-**LiveNeuron** is an interactive 2D brain visualization library using Plotly and Dash, designed for real-time exploration of neural activity data.
+**LiveNeuro** is an interactive 2D brain visualization library using Plotly and Dash, designed for real-time exploration of neural activity data.
 
 .. image:: liveNeuron.png
-   :alt: LiveNeuron visualization overview
+   :alt: LiveNeuro visualization overview
    :align: center
    :width: 720px
 
@@ -42,17 +42,17 @@ Installation
 
 .. code-block:: bash
 
-   pip install https://github.com/liang-bo96/LiveNeuron/archive/refs/heads/main.zip
+   pip install https://github.com/liang-bo96/LiveNeuro/archive/refs/heads/main.zip
 
 Basic Usage
 ^^^^^^^^^^^
 
 .. code-block:: python
 
-   from eelbrain_plotly_viz import EelbrainPlotly2DViz
+   from liveneuro import LiveNeuro
 
    # Create visualization with built-in sample data
-   viz = EelbrainPlotly2DViz()
+   viz = LiveNeuro()
    
    # Launch in interactive plot
    viz.run()

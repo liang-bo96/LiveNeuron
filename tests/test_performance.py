@@ -1,11 +1,11 @@
 """
-Performance and stress tests for eelbrain_plotly_viz package.
+Performance and stress tests for liveneuro package.
 """
 
 import pytest
 import time
 import numpy as np
-from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
+from liveneuro import LiveNeuro, create_sample_brain_data
 
 
 def test_large_dataset_performance():
@@ -16,7 +16,7 @@ def test_large_dataset_performance():
     )
 
     start_time = time.time()
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
     # Override with larger data
     viz.glass_brain_data = data_dict["data"].transpose(
         0, 2, 1
@@ -49,7 +49,7 @@ def test_memory_usage():
 
     # Create multiple visualizations
     for i in range(5):
-        viz = EelbrainPlotly2DViz()
+        viz = LiveNeuro()
         _ = viz._plot_factory._create_butterfly_plot()
         _ = viz._plot_factory._create_2d_brain_projections_plotly(time_idx=i)
 

@@ -1,7 +1,7 @@
 Building Documentation
 ======================
 
-This directory contains the Sphinx documentation for LiveNeuron.
+This directory contains the Sphinx documentation for LiveNeuro.
 
 Local Build
 -----------
@@ -66,4 +66,3 @@ For other formats:
 
    make latexpdf  # PDF via LaTeX
    make epub      # EPUB ebook format
-

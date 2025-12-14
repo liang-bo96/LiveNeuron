@@ -17,7 +17,7 @@ import plotly.figure_factory as ff
 from scipy.stats import binned_statistic_2d
 
 if TYPE_CHECKING:
-    from ._viz_2d import EelbrainPlotly2DViz
+    from ._viz_2d import LiveNeuro
 
 
 class PlotFactoryHelper:
@@ -33,13 +33,13 @@ class PlotFactoryHelper:
     visualization logic is separate from data loading and layout concerns.
     """
 
-    def __init__(self, viz: "EelbrainPlotly2DViz"):
+    def __init__(self, viz: "LiveNeuro"):
         """Initialize the plot factory helper.
 
         Parameters
         ----------
         viz
-            The EelbrainPlotly2DViz instance this helper operates on.
+            The LiveNeuro instance this helper operates on.
         """
         self._viz = viz
 

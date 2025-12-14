@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Package validation script for LiveNeuron.
+Package validation script for LiveNeuro.
 
 This script tests that the package is properly structured and functional
 according to Python packaging standards.
@@ -21,13 +21,13 @@ def test_package_structure():
     
     required_files = [
         "pyproject.toml",
-        "README.md", 
+        "README.md",
         "LICENSE",
-        "src/eelbrain_plotly_viz/__init__.py",
-        "src/eelbrain_plotly_viz/viz_2D.py",  # Updated to match actual filename
-        "src/eelbrain_plotly_viz/sample_data.py",
+        "src/liveneuro/__init__.py",
+        "src/liveneuro/_viz_2d.py",
+        "src/liveneuro/_sample_data.py",
         "tests/test_basic.py",
-        "example.py"
+        "example.py",
     ]
     
     missing_files = []
@@ -48,17 +48,17 @@ def test_package_imports():
     print("\n📦 Testing package imports...")
     
     try:
-        # Test main package import
-        import eelbrain_plotly_viz
-        print("✅ Main package imports successfully")
+        # Test main package import via new public API
+        import liveneuro
+        print("✅ Main package imports successfully (liveneuro)")
         
         # Test specific imports
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
-        print("✅ Core classes import successfully")
+        from liveneuro import LiveNeuro, create_sample_brain_data
+        print("✅ Core classes import successfully (LiveNeuro)")
         
         # Test package metadata
-        if hasattr(eelbrain_plotly_viz, '__version__'):
-            print(f"✅ Package version: {eelbrain_plotly_viz.__version__}")
+        if hasattr(liveneuro, '__version__'):
+            print(f"✅ Package version: {liveneuro.__version__}")
         
         return True
         
@@ -72,7 +72,7 @@ def test_basic_functionality():
     print("\n🧠 Testing basic functionality...")
     
     try:
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz, create_sample_brain_data
+        from liveneuro import LiveNeuro, create_sample_brain_data
         import numpy as np
         
         # Test sample data creation
@@ -80,11 +80,11 @@ def test_basic_functionality():
         print("✅ Sample data creation works")
         
         # Test visualization creation with built-in sample data
-        viz1 = EelbrainPlotly2DViz()
+        viz1 = LiveNeuro()
         print("✅ Visualization with built-in data works")
         
         # Test different parameter combinations
-        viz2 = EelbrainPlotly2DViz(
+        viz2 = LiveNeuro(
             y=None,
             cmap='Viridis',
             show_max_only=True,
@@ -94,7 +94,7 @@ def test_basic_functionality():
         
         # Test custom colormap
         custom_cmap = [[0, 'blue'], [1, 'red']]
-        viz3 = EelbrainPlotly2DViz(cmap=custom_cmap)
+        viz3 = LiveNeuro(cmap=custom_cmap)
         print("✅ Visualization with custom colormap works")
         
         # Test brain projection creation
@@ -110,8 +110,8 @@ def test_basic_functionality():
         print("✅ Butterfly plot creation works")
         
         # Test different arrow thresholds
-        viz4 = EelbrainPlotly2DViz(arrow_threshold=None)
-        viz5 = EelbrainPlotly2DViz(arrow_threshold=0.5)
+        viz4 = LiveNeuro(arrow_threshold=None)
+        viz5 = LiveNeuro(arrow_threshold=0.5)
         print("✅ Different arrow threshold options work")
         
         return True
@@ -253,18 +253,18 @@ def test_eelbrain_integration():
     
     try:
         from eelbrain import datasets
-        from eelbrain_plotly_viz import EelbrainPlotly2DViz
+        from liveneuro import LiveNeuro
         
         # Load eelbrain data
         data_ds = datasets.get_mne_sample(src='vol', ori='vector')
         y = data_ds['src']
         
         # Create visualization with eelbrain data
-        viz = EelbrainPlotly2DViz(y=y)
+        viz = LiveNeuro(y=y)
         print("✅ Eelbrain NDVar integration works")
         
         # Additional visualization with different options
-        viz_parc = EelbrainPlotly2DViz(y=None, cmap='Viridis', show_max_only=True)
+        viz_parc = LiveNeuro(y=None, cmap='Viridis', show_max_only=True)
         print("✅ Additional visualization with eelbrain options works")
         
         return True
@@ -279,7 +279,7 @@ def test_eelbrain_integration():
 
 def main():
     """Run all validation tests."""
-    print("🔍 LIVENEURON PACKAGE VALIDATION")
+    print("🔍 LIVENEURO PACKAGE VALIDATION")
     print("=" * 60)
     
     tests = [
@@ -318,13 +318,13 @@ def main():
     print("\n" + "=" * 60)
     if passed == total:
         print(f"🎉 ALL TESTS PASSED! ({passed}/{total})")
-        print("✅ LiveNeuron package is ready for distribution!")
+        print("✅ LiveNeuro package is ready for distribution!")
         print("\nNext steps:")
         print("1. Update GitHub URLs in pyproject.toml and README.md")
         print("2. Create GitHub repository")
         print("3. Push code to GitHub")
-        print("4. Test installation: pip install git+https://github.com/your-username/LiveNeuron.git")
-        print("\n💡 Key LiveNeuron features validated:")
+        print("4. Test installation: pip install git+https://github.com/your-username/LiveNeuro.git")
+        print("\n💡 Key LiveNeuro features validated:")
         print("   • Interactive 2D brain visualization")
         print("   • Butterfly plot with source time series")
         print("   • Support for vector data with arrows")

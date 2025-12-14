@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 from dash import Input, Output, State, html
 
 if TYPE_CHECKING:
-    from ._viz_2d import EelbrainPlotly2DViz
+    from ._viz_2d import LiveNeuro
 
 
 # Check if we're running in a Jupyter environment
@@ -42,13 +42,13 @@ class AppControllerHelper:
     - Running the Dash application server
     """
 
-    def __init__(self, viz: "EelbrainPlotly2DViz"):
+    def __init__(self, viz: "LiveNeuro"):
         """Initialize the app controller helper.
 
         Parameters
         ----------
         viz
-            The EelbrainPlotly2DViz instance this helper operates on.
+            The LiveNeuro instance this helper operates on.
         """
         self._viz = viz
 
