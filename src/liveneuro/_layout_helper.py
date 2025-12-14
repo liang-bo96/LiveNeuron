@@ -28,7 +28,7 @@ import plotly.graph_objects as go
 from dash import dcc, html
 
 if TYPE_CHECKING:
-    from ._viz_2d import LiveNeuro
+    from ._liveneuro import LiveNeuro
 
 
 # =============================================================================
@@ -68,18 +68,30 @@ class LayoutBuilder(ABC):
     def build(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Build layout configuration and Dash layout components.
 
-        :param app: LiveNeuro instance to configure layout for.
-        :returns: Dictionary with ``config`` and ``layout`` keys.
-        :rtype: Dict[str, Any]
+        Parameters
+        ----------
+        app
+            LiveNeuro instance to configure layout for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary with ``config`` and ``layout`` keys.
         """
         raise NotImplementedError
 
     def _get_layout_config(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Get base layout configuration.
 
-        :param app: Visualization app instance.
-        :returns: Configuration dictionary with layout parameters.
-        :rtype: Dict[str, Any]
+        Parameters
+        ----------
+        app
+            Visualization app instance.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Configuration dictionary with layout parameters.
         """
         num_views = len(app.brain_views)
         env = "jupyter" if app.is_jupyter_mode else "browser"
@@ -95,13 +107,23 @@ class LayoutBuilder(ABC):
     ) -> List:
         """Create dynamic brain view containers based on display_mode.
 
-        :param app: Visualization app instance.
-        :param brain_plots: Mapping from view names to Plotly figures.
-        :param brain_height: CSS height string for brain plots.
-        :param brain_width: CSS width string for plot containers.
-        :param brain_margin: CSS margin string for plot containers.
-        :returns: List of Dash HTML Div components containing the brain plots.
-        :rtype: list
+        Parameters
+        ----------
+        app
+            Visualization app instance.
+        brain_plots
+            Mapping from view names to Plotly figures.
+        brain_height
+            CSS height string for brain plots.
+        brain_width
+            CSS width string for plot containers.
+        brain_margin
+            CSS margin string for plot containers.
+
+        Returns
+        -------
+        list
+            Dash HTML ``Div`` components containing the brain plots.
         """
         containers = []
 
@@ -819,3 +841,84 @@ class LayoutBuilderHelper:
             brain_width = available_for_brains / num_views
             brain_width_str = f"{brain_width:.2f}%"
             return {"jupyter": brain_width_str, "browser": brain_width_str}
+
+    def _parse_display_mode(self, mode: str) -> List[str]:
+        """Parse display_mode string into list of required brain views.
+
+        Parameters
+        ----------
+        mode
+            Display mode string (e.g., 'ortho', 'x', 'xz')
+
+        Returns
+        -------
+        List[str]
+            List of brain view types to generate
+        """
+        mode_mapping = {
+            "ortho": ["sagittal", "coronal", "axial"],  # Traditional 3-view
+            "x": ["sagittal"],
+            "y": ["coronal"],
+            "z": ["axial"],
+            "xz": ["sagittal", "axial"],
+            "yx": ["coronal", "sagittal"],
+            "yz": ["coronal", "axial"],
+            "l": ["left_hemisphere"],  # Left hemisphere view
+            "r": ["right_hemisphere"],  # Right hemisphere view
+            "lr": ["left_hemisphere", "right_hemisphere"],  # Both hemispheres
+            "lzr": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+            ],  # Left + Axial + Right
+            "lyr": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+            ],  # Left + Coronal + Right (GlassBrain default)
+            "lzry": [
+                "left_hemisphere",
+                "axial",
+                "right_hemisphere",
+                "coronal",
+            ],  # Left + Axial + Right + Coronal
+            "lyrz": [
+                "left_hemisphere",
+                "coronal",
+                "right_hemisphere",
+                "axial",
+            ],  # Left + Coronal + Right + Axial
+        }
+
+        if mode in mode_mapping:
+            return mode_mapping[mode]
+        raise ValueError(f"Unsupported display_mode: {mode}")
+
+    def _unify_view_sizes_for_jupyter(
+        self, view_ranges: Dict[str, Dict[str, List[float]]]
+    ) -> Dict[str, Dict[str, List[float]]]:
+        """Unify view sizes for Jupyter mode to ensure consistent display.
+
+        This method adjusts all brain view ranges to have the same width and height,
+        making them appear uniform in size when displayed in Jupyter notebooks.
+        """
+        if not view_ranges:
+            return {}
+
+        # Calculate the maximum width and height across all views
+        max_x_width = max(r["x"][1] - r["x"][0] for r in view_ranges.values())
+        max_y_width = max(r["y"][1] - r["y"][0] for r in view_ranges.values())
+
+        # Use the larger of the two to ensure square-ish plots with equal sizing
+        max_width = max(max_x_width, max_y_width)
+
+        unified_ranges: Dict[str, Dict[str, List[float]]] = {}
+        for view_name, ranges in view_ranges.items():
+            x_center = (ranges["x"][0] + ranges["x"][1]) / 2
+            y_center = (ranges["y"][0] + ranges["y"][1]) / 2
+            unified_ranges[view_name] = {
+                "x": [x_center - max_width / 2, x_center + max_width / 2],
+                "y": [y_center - max_width / 2, y_center + max_width / 2],
+            }
+
+        return unified_ranges

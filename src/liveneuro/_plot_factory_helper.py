@@ -8,7 +8,7 @@ creation.
 
 import base64
 import io
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,7 +17,7 @@ import plotly.figure_factory as ff
 from scipy.stats import binned_statistic_2d
 
 if TYPE_CHECKING:
-    from ._viz_2d import LiveNeuro
+    from ._liveneuro import LiveNeuro
 
 
 class PlotFactoryHelper:
@@ -42,6 +42,79 @@ class PlotFactoryHelper:
             The LiveNeuro instance this helper operates on.
         """
         self._viz = viz
+
+    def _calculate_view_ranges(
+        self, source_coords: Optional[np.ndarray], brain_views: List[str]
+    ) -> Dict[str, Dict[str, List[float]]]:
+        """Calculate fixed axis ranges for each brain view to prevent size changes."""
+        if source_coords is None:
+            return {}
+
+        coords = source_coords
+        view_ranges: Dict[str, Dict[str, List[float]]] = {}
+
+        for view_name in brain_views:
+            # Get the appropriate coordinate projections for each view
+            if view_name == "axial":  # Z view (X vs Y)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+            elif view_name == "sagittal":  # X view (Y vs Z)
+                x_coords = coords[:, 1]
+                y_coords = coords[:, 2]
+            elif view_name == "coronal":  # Y view (X vs Z)
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 2]
+            elif view_name == "left_hemisphere":  # Left hemisphere (Y vs Z)
+                # Calculate range using ALL coordinates (no masking) so left/right align
+                x_coords = -coords[:, 1]  # Flipped Y (all points)
+                y_coords = coords[:, 2]  # Z (all points)
+            elif view_name == "right_hemisphere":  # Right hemisphere (Y vs Z)
+                # Calculate range using ALL coordinates (no masking) so left/right align
+                x_coords = coords[:, 1]  # Y (all points)
+                y_coords = coords[:, 2]  # Z (all points)
+            else:
+                x_coords = coords[:, 0]
+                y_coords = coords[:, 1]
+
+            # Calculate ranges with some padding
+            x_min, x_max = x_coords.min(), x_coords.max()
+            y_min, y_max = y_coords.min(), y_coords.max()
+
+            # Add 5% padding on each side
+            x_range = x_max - x_min
+            y_range = y_max - y_min
+            x_padding = x_range * 0.05 if x_range > 0 else 0.01
+            y_padding = y_range * 0.05 if y_range > 0 else 0.01
+
+            view_ranges[view_name] = {
+                "x": [x_min - x_padding, x_max + x_padding],
+                "y": [y_min - y_padding, y_max + y_padding],
+            }
+
+        return view_ranges
+
+    def _calculate_global_colormap_range(
+        self, glass_brain_data: Optional[np.ndarray], user_vmax: Optional[float]
+    ) -> Tuple[float, float]:
+        """Calculate global min/max activity across all time points for fixed colormap."""
+        data_max = 1.0
+
+        if glass_brain_data is not None:
+            if glass_brain_data.ndim == 3:  # Vector data (n_sources, 3, n_times)
+                all_magnitudes = np.linalg.norm(glass_brain_data, axis=1)
+            else:  # Scalar data (n_sources, n_times)
+                all_magnitudes = glass_brain_data
+
+            data_max = float(np.max(all_magnitudes))
+
+        global_vmin = 0.0
+        global_vmax = data_max if user_vmax is None else float(user_vmax)
+
+        # Ensure we have a valid range (avoid zero range)
+        if global_vmax - global_vmin < 1e-10:
+            global_vmax = global_vmin + 1.0
+
+        return global_vmin, global_vmax
 
     def _create_butterfly_plot(
         self, selected_time_idx: int = 0, figure_height: Optional[int] = None

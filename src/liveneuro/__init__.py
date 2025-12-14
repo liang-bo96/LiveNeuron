@@ -9,7 +9,7 @@ Typical usage:
     viz = LiveNeuro(...)
 """
 
-from ._viz_2d import LiveNeuro
+from ._liveneuro import LiveNeuro
 from ._sample_data import create_sample_brain_data
 from ._layout_helper import LayoutBuilder, register_layout, get_layout_builder
 

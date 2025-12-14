@@ -24,7 +24,7 @@ def test_package_structure():
         "README.md",
         "LICENSE",
         "src/liveneuro/__init__.py",
-        "src/liveneuro/_viz_2d.py",
+        "src/liveneuro/_liveneuro.py",
         "src/liveneuro/_sample_data.py",
         "tests/test_basic.py",
         "example.py",

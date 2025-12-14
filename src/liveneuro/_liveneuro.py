@@ -1,5 +1,5 @@
 """
-LiveNeuro 2D Brain Visualization.
+LiveNeuro core module.
 
 This module provides the core LiveNeuro class, an interactive 2D visualization
 interface for Eelbrain's NDVar data structures. It transforms neuroscience data
@@ -41,8 +41,8 @@ class LiveNeuro:
         background and doesn't obscure arrows. See
         https://plotly.com/python/builtin-colorscales/ for all available options.
     vmin
-        Optional lower bound for the color range. If provided, locks the minimum
-        for all projections and time points. Always 0.
+        Lower bound for the color range. Currently ignored; the minimum is always
+        fixed at 0 for all projections and time points.
     vmax
         Optional upper bound for the color range. If provided, locks the maximum
         for all projections and time points.
@@ -63,9 +63,9 @@ class LiveNeuro:
         Default is 1.0. Typical range: 0.5 (short) to 2.0 (long).
     layout_mode
         Layout arrangement mode for the visualization interface. Options:
-        - 'vertical': Traditional layout with butterfly plot on top, brain views below (default)
-        - 'horizontal': Compact layout with butterfly plot on left, brain views on right
-        Default is 'vertical' for backward compatibility.
+        - 'vertical': Traditional layout with butterfly plot on top, brain views below
+        - 'horizontal': Compact layout with butterfly plot on left, brain views on right (default)
+        Default is 'horizontal'.
     display_mode
         Anatomical view mode for brain projections. Options:
         - 'ortho': Orthogonal views (sagittal + coronal + axial) - Default
@@ -110,7 +110,7 @@ class LiveNeuro:
         arrow_threshold: Optional[Union[float, str]] = None,
         arrow_scale: float = 1.0,
         realtime: bool = False,
-        layout_mode: str = "vertical",
+        layout_mode: str = "horizontal",
         display_mode: str = "lyr",
         show_labels: bool = False,
     ):
@@ -186,7 +186,7 @@ class LiveNeuro:
         # Set display mode and parse required views
         self.display_mode: str = display_mode
         # Parse display mode to determine required views (includes validation)
-        self.brain_views = self._data_loader._parse_display_mode(display_mode)
+        self.brain_views = self._layout_helper._parse_display_mode(display_mode)
 
         # Load data (data loader helper responsibility)
         if y is not None:
@@ -204,19 +204,19 @@ class LiveNeuro:
         self.parcellation = brain_data.parcellation
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
-        self.view_ranges = self._data_loader._calculate_view_ranges(
+        self.view_ranges = self._plot_factory._calculate_view_ranges(
             self.source_coords, self.brain_views
         )
 
         # Unify view sizes to ensure all brain plots have consistent display size
         # This is especially important in horizontal layout mode
-        self.view_ranges = self._data_loader._unify_view_sizes_for_jupyter(
+        self.view_ranges = self._layout_helper._unify_view_sizes_for_jupyter(
             self.view_ranges
         )
 
         # Calculate global colormap range across all time points for consistent visualization
         self.global_vmin, self.global_vmax = (
-            self._data_loader._calculate_global_colormap_range(
+            self._plot_factory._calculate_global_colormap_range(
                 self.glass_brain_data, self.user_vmax
             )
         )
@@ -239,7 +239,7 @@ class LiveNeuro:
         """Prepare visualization for Jupyter display (layout + sizing)."""
         self.is_jupyter_mode = True
         # Unify view sizes for Jupyter mode to ensure consistent display
-        self.view_ranges = self._data_loader._unify_view_sizes_for_jupyter(
+        self.view_ranges = self._layout_helper._unify_view_sizes_for_jupyter(
             self.view_ranges
         )
         # Rebuild layout with Jupyter-specific styles

@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 from dash import Input, Output, State, html
 
 if TYPE_CHECKING:
-    from ._viz_2d import LiveNeuro
+    from ._liveneuro import LiveNeuro
 
 
 # Check if we're running in a Jupyter environment

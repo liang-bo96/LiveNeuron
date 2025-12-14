@@ -31,7 +31,7 @@ def test_direct_module_imports():
     """Test that direct module imports work (internal consistency check)."""
     # Test that the main import still works after package installation
     try:
-        from liveneuro._viz_2d import LiveNeuro as DirectImport
+        from liveneuro._liveneuro import LiveNeuro as DirectImport
         from liveneuro._sample_data import (
             create_sample_brain_data as DirectDataImport,
         )
