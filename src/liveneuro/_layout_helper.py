@@ -68,32 +68,18 @@ class LayoutBuilder(ABC):
     def build(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Build layout configuration and Dash layout components.
 
-        Parameters
-        ----------
-        app
-            The LiveNeuro instance to configure layout for.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary containing:
-            - ``config``: layout configuration dict
-            - ``layout``: Dash layout component (e.g., html.Div)
+        :param app: LiveNeuro instance to configure layout for.
+        :returns: Dictionary with ``config`` and ``layout`` keys.
+        :rtype: Dict[str, Any]
         """
         raise NotImplementedError
 
     def _get_layout_config(self, app: "LiveNeuro") -> Dict[str, Any]:
         """Get base layout configuration.
 
-        Parameters
-        ----------
-        app
-            The visualization app instance.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Configuration dictionary with layout parameters.
+        :param app: Visualization app instance.
+        :returns: Configuration dictionary with layout parameters.
+        :rtype: Dict[str, Any]
         """
         num_views = len(app.brain_views)
         env = "jupyter" if app.is_jupyter_mode else "browser"
@@ -109,23 +95,13 @@ class LayoutBuilder(ABC):
     ) -> List:
         """Create dynamic brain view containers based on display_mode.
 
-        Parameters
-        ----------
-        app
-            The visualization app instance.
-        brain_plots
-            Dictionary mapping view names to Plotly figures.
-        brain_height
-            CSS height string for brain plots.
-        brain_width
-            CSS width string for brain plot containers.
-        brain_margin
-            CSS margin string for brain plot containers.
-
-        Returns
-        -------
-        List
-            List of Dash HTML Div components containing the brain plots.
+        :param app: Visualization app instance.
+        :param brain_plots: Mapping from view names to Plotly figures.
+        :param brain_height: CSS height string for brain plots.
+        :param brain_width: CSS width string for plot containers.
+        :param brain_margin: CSS margin string for plot containers.
+        :returns: List of Dash HTML Div components containing the brain plots.
+        :rtype: list
         """
         containers = []
 
