@@ -26,8 +26,8 @@ def test_large_dataset_performance():
     viz.butterfly_data = np.linalg.norm(viz.glass_brain_data, axis=1)
 
     # Test plotting functions
-    butterfly_fig = viz._plot_factory._create_butterfly_plot()
-    brain_plots = viz._plot_factory._create_2d_brain_projections_plotly(time_idx=10)
+    butterfly_fig = viz.create_butterfly_plot()
+    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=10)
 
     end_time = time.time()
     execution_time = end_time - start_time
@@ -50,8 +50,8 @@ def test_memory_usage():
     # Create multiple visualizations
     for i in range(5):
         viz = LiveNeuro()
-        _ = viz._plot_factory._create_butterfly_plot()
-        _ = viz._plot_factory._create_2d_brain_projections_plotly(time_idx=i)
+        _ = viz.create_butterfly_plot()
+        _ = viz.create_2d_brain_projections_plotly(time_idx=i)
 
     final_memory = process.memory_info().rss / 1024 / 1024  # MB
     memory_increase = final_memory - initial_memory
