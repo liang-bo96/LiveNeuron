@@ -59,8 +59,8 @@ class LayoutBuilder(ABC):
     >>> class CompactLayout(LayoutBuilder):
     ...     def build(self, app):
     ...         # Access app.app.layout to set Dash layout
-    ...         # Access app._plot_factory._create_butterfly_plot() for butterfly figure
-    ...         # Access app._plot_factory._create_2d_brain_projections_plotly() for brain figures
+    ...         # Access app.create_butterfly_plot() for butterfly figure
+    ...         # Access app.create_2d_brain_projections_plotly() for brain figures
     ...         pass
     """
 
@@ -173,10 +173,8 @@ class VerticalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._plot_factory._create_butterfly_plot(
-            0, figure_height=butterfly_height
-        )
-        initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
+        initial_butterfly = app.create_butterfly_plot(0, figure_height=butterfly_height)
+        initial_brain_plots = app.create_2d_brain_projections_plotly(0)
 
         # Build layout
         layout = self._setup_vertical_layout(
@@ -342,10 +340,8 @@ class HorizontalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app._plot_factory._create_butterfly_plot(
-            0, figure_height=butterfly_height
-        )
-        initial_brain_plots = app._plot_factory._create_2d_brain_projections_plotly(0)
+        initial_butterfly = app.create_butterfly_plot(0, figure_height=butterfly_height)
+        initial_brain_plots = app.create_2d_brain_projections_plotly(0)
 
         # Build layout
         layout = self._setup_horizontal_layout(
@@ -692,10 +688,12 @@ class LayoutBuilderHelper:
     the Strategy pattern and Open/Closed Principle.
 
     The helper provides:
-    - _setup_layout(): Delegates to the appropriate LayoutBuilder
+    - setup_layout(): Delegates to the appropriate LayoutBuilder
     - _get_layout_config(): Returns layout configuration for callbacks
-    - _estimate_jupyter_iframe_height(): Calculates Jupyter display height
+    - estimate_jupyter_iframe_height(): Calculates Jupyter display height
     - _get_brain_width_for_views(): Calculates brain view widths
+    - parse_display_mode(): Validates/parses display_mode
+    - unify_view_sizes_for_jupyter(): Unifies brain view axis ranges
 
     Users can extend the layout system by:
     1. Creating a custom LayoutBuilder subclass
@@ -713,7 +711,7 @@ class LayoutBuilderHelper:
         """
         self._viz = viz
 
-    def _setup_layout(self) -> Dict[str, Any]:
+    def setup_layout(self) -> Dict[str, Any]:
         """Setup the Dash app layout based on layout_mode.
 
         This method delegates to the appropriate LayoutBuilder strategy
@@ -783,12 +781,12 @@ class LayoutBuilderHelper:
 
         return config
 
-    def _estimate_jupyter_iframe_height(self) -> Optional[int]:
+    def estimate_jupyter_iframe_height(self) -> Optional[int]:
         """Estimate iframe height so plots fill the cell without stretching."""
         if not self._viz.is_jupyter_mode:
             return None
 
-        config = self._viz._current_layout_config
+        config = self._viz.current_layout_config
         if not config:
             return None
 
@@ -842,7 +840,7 @@ class LayoutBuilderHelper:
             brain_width_str = f"{brain_width:.2f}%"
             return {"jupyter": brain_width_str, "browser": brain_width_str}
 
-    def _parse_display_mode(self, mode: str) -> List[str]:
+    def parse_display_mode(self, mode: str) -> List[str]:
         """Parse display_mode string into list of required brain views.
 
         Parameters
@@ -894,7 +892,7 @@ class LayoutBuilderHelper:
             return mode_mapping[mode]
         raise ValueError(f"Unsupported display_mode: {mode}")
 
-    def _unify_view_sizes_for_jupyter(
+    def unify_view_sizes_for_jupyter(
         self, view_ranges: Dict[str, Dict[str, List[float]]]
     ) -> Dict[str, Dict[str, List[float]]]:
         """Unify view sizes for Jupyter mode to ensure consistent display.

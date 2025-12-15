@@ -157,18 +157,6 @@ Horizontal Layout
        layout_mode="horizontal"
    )
 
-Custom Layouts
-^^^^^^^^^^^^^^
-
-Create custom layouts by inheriting from :class:`~liveneuro.LayoutBuilder` and registering them with :func:`~liveneuro.register_layout`.
-See the *Layout System* section in the API reference for a complete example.
-
-Once registered, you can select your layout with ``layout_mode``:
-
-.. code-block:: python
-
-   viz = LiveNeuro(layout_mode="custom")
-
 Arrow Visualization
 -------------------
 

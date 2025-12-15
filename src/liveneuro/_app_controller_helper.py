@@ -52,7 +52,7 @@ class AppControllerHelper:
         """
         self._viz = viz
 
-    def _setup_callbacks(self) -> None:
+    def setup_callbacks(self) -> None:
         """Setup all Dash callbacks."""
 
         @self._viz.app.callback(
@@ -62,7 +62,7 @@ class AppControllerHelper:
             if time_idx is None:
                 time_idx = 0
             # Get butterfly height from current config
-            config = self._viz._current_layout_config
+            config = self._viz.current_layout_config
             butterfly_height = None
             if config and "butterfly_height" in config:
                 butterfly_height_str = config["butterfly_height"]
@@ -73,7 +73,7 @@ class AppControllerHelper:
                         butterfly_height = int(float(butterfly_height_str[:-2]))
                     except ValueError:
                         pass
-            return self._viz._plot_factory._create_butterfly_plot(
+            return self._viz.create_butterfly_plot(
                 time_idx, figure_height=butterfly_height
             )
 
@@ -94,7 +94,7 @@ class AppControllerHelper:
 
             try:
                 brain_plots = (
-                    self._viz._plot_factory._create_2d_brain_projections_plotly(
+                    self._viz.create_2d_brain_projections_plotly(
                         time_idx, source_idx
                     )
                 )
@@ -244,10 +244,10 @@ class AppControllerHelper:
 
         if JUPYTER_AVAILABLE and mode in ["inline", "jupyterlab"]:
             # Prepare visualization for Jupyter (layout + sizing)
-            self._viz._prepare_for_jupyter()
+            self._viz.prepare_for_jupyter()
 
             # Auto-calculate height
-            iframe_height = self._viz._layout_helper._estimate_jupyter_iframe_height()
+            iframe_height = self._viz.estimate_jupyter_iframe_height()
             if iframe_height is None:
                 iframe_height = 900  # Fallback default
 
@@ -271,7 +271,7 @@ class AppControllerHelper:
 
             self._viz.app.run(debug=debug, port=port)
 
-    def _show_in_jupyter(self, debug: bool = False) -> None:
+    def show_in_jupyter(self, debug: bool = False) -> None:
         """Convenience method to display the visualization inline in Jupyter notebooks.
 
         Parameters
@@ -286,7 +286,7 @@ class AppControllerHelper:
             return
 
         # Prepare visualization for Jupyter (layout + sizing)
-        self._viz._prepare_for_jupyter()
+        self._viz.prepare_for_jupyter()
 
         self.run(mode="inline", debug=debug)
 
@@ -329,7 +329,7 @@ class AppControllerHelper:
 
         try:
             # Export butterfly plot
-            butterfly_fig = self._viz._plot_factory._create_butterfly_plot(time_idx)
+            butterfly_fig = self._viz.create_butterfly_plot(time_idx)
             butterfly_path = os.path.join(
                 output_dir, f"butterfly_plot_{timestamp}.{format}"
             )
@@ -337,7 +337,7 @@ class AppControllerHelper:
             exported_files["butterfly_plot"] = butterfly_path
 
             # Export brain projections
-            brain_plots = self._viz._plot_factory._create_2d_brain_projections_plotly(
+            brain_plots = self._viz.create_2d_brain_projections_plotly(
                 time_idx
             )
 

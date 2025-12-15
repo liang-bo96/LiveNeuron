@@ -42,8 +42,58 @@ class PlotFactoryHelper:
             The LiveNeuro instance this helper operates on.
         """
         self._viz = viz
+        self._butterfly_cache: Optional[Dict[str, Any]] = None
 
-    def _calculate_view_ranges(
+    def _get_butterfly_plot_cache(self) -> Dict[str, Any]:
+        """Get cached butterfly plot computations derived from butterfly_data.
+
+        This caches computations that are independent of the selected time index,
+        such as unit scaling, scaled data, summary traces, and y-axis range.
+        """
+        butterfly_data = self._viz.butterfly_data
+        if butterfly_data is None:
+            return {}
+
+        cache = self._butterfly_cache or {}
+        cache_key = (id(butterfly_data), butterfly_data.shape)
+        if cache.get("key") == cache_key:
+            return cache
+
+        max_abs_val = float(np.max(np.abs(butterfly_data)))
+        scale_factor = 1.0
+        unit_suffix = ""
+
+        if max_abs_val < 1e-10:
+            scale_factor = 1e12
+            unit_suffix = " (pA)"
+        elif max_abs_val < 1e-6:
+            scale_factor = 1e9
+            unit_suffix = " (nA)"
+        elif max_abs_val < 1e-3:
+            scale_factor = 1e6
+            unit_suffix = " (µA)"
+
+        scaled_data = butterfly_data * scale_factor
+
+        y_min = float(np.min(scaled_data))
+        y_max = float(np.max(scaled_data))
+        y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1.0
+
+        cache = {
+            "key": cache_key,
+            "scale_factor": scale_factor,
+            "unit_suffix": unit_suffix,
+            "scaled_data": scaled_data,
+            "y_min": y_min,
+            "y_max": y_max,
+            "y_margin": y_margin,
+            "mean_activity": np.mean(scaled_data, axis=0),
+            "max_activity": np.max(scaled_data, axis=0),
+        }
+        self._butterfly_cache = cache
+        return cache
+
+    def calculate_view_ranges(
         self, source_coords: Optional[np.ndarray], brain_views: List[str]
     ) -> Dict[str, Dict[str, List[float]]]:
         """Calculate fixed axis ranges for each brain view to prevent size changes."""
@@ -93,7 +143,7 @@ class PlotFactoryHelper:
 
         return view_ranges
 
-    def _calculate_global_colormap_range(
+    def calculate_global_colormap_range(
         self, glass_brain_data: Optional[np.ndarray], user_vmax: Optional[float]
     ) -> Tuple[float, float]:
         """Calculate global min/max activity across all time points for fixed colormap."""
@@ -116,7 +166,7 @@ class PlotFactoryHelper:
 
         return global_vmin, global_vmax
 
-    def _create_butterfly_plot(
+    def create_butterfly_plot(
         self, selected_time_idx: int = 0, figure_height: Optional[int] = None
     ) -> go.Figure:
         """Create butterfly plot figure (internal method).
@@ -143,27 +193,12 @@ class PlotFactoryHelper:
 
         n_sources, n_times = self._viz.butterfly_data.shape
 
-        # Auto-scale data for visibility
-        data_to_plot = self._viz.butterfly_data.copy()
-        scale_factor = 1.0
-        unit_suffix = ""
-
-        max_abs_val = np.max(np.abs(data_to_plot))
-        if max_abs_val < 1e-10:
-            scale_factor = 1e12
-            unit_suffix = " (pA)"
-        elif max_abs_val < 1e-6:
-            scale_factor = 1e9
-            unit_suffix = " (nA)"
-        elif max_abs_val < 1e-3:
-            scale_factor = 1e6
-            unit_suffix = " (µA)"
-
-        data_to_plot = data_to_plot * scale_factor
-
-        # Calculate y-axis range for layout and clickable background
-        y_min, y_max = data_to_plot.min(), data_to_plot.max()
-        y_margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
+        cache = self._get_butterfly_plot_cache()
+        data_to_plot = cache["scaled_data"]
+        unit_suffix = cache["unit_suffix"]
+        y_min = cache["y_min"]
+        y_max = cache["y_max"]
+        y_margin = cache["y_margin"]
 
         # Add individual source traces only if show_max_only is False
         if not self._viz.show_max_only:
@@ -191,7 +226,7 @@ class PlotFactoryHelper:
                 )
 
         # Add mean trace (always shown)
-        mean_activity = np.mean(data_to_plot, axis=0)
+        mean_activity = cache["mean_activity"]
         fig.add_trace(
             go.Scatter(
                 x=self._viz.time_values,
@@ -205,7 +240,7 @@ class PlotFactoryHelper:
         )
 
         # Add max trace (always shown)
-        max_activity = np.max(data_to_plot, axis=0)
+        max_activity = cache["max_activity"]
         fig.add_trace(
             go.Scatter(
                 x=self._viz.time_values,
@@ -248,7 +283,7 @@ class PlotFactoryHelper:
             height = figure_height
         else:
             # Try to get height from current layout config
-            config = self._viz._current_layout_config
+            config = self._viz.current_layout_config
             if config and "butterfly_height" in config:
                 butterfly_height_str = config["butterfly_height"]
                 if isinstance(
@@ -293,7 +328,7 @@ class PlotFactoryHelper:
 
         return fig
 
-    def _create_2d_brain_projections_plotly(
+    def create_2d_brain_projections_plotly(
         self, time_idx: int = 0, source_idx: Optional[int] = None
     ) -> Dict[str, go.Figure]:
         """Create 2D brain projections using Plotly scatter plots (internal method)."""
@@ -337,7 +372,7 @@ class PlotFactoryHelper:
             global_max = self._viz.global_vmax
 
             # Get figure height from current layout config
-            config = self._viz._current_layout_config
+            config = self._viz.current_layout_config
             figure_height = None
             if config and "plot_height" in config:
                 plot_height_str = config["plot_height"]

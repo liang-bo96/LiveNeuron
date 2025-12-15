@@ -186,13 +186,13 @@ class LiveNeuro:
         # Set display mode and parse required views
         self.display_mode: str = display_mode
         # Parse display mode to determine required views (includes validation)
-        self.brain_views = self._layout_helper._parse_display_mode(display_mode)
+        self.brain_views = self._layout_helper.parse_display_mode(display_mode)
 
         # Load data (data loader helper responsibility)
         if y is not None:
-            brain_data = self._data_loader._load_ndvar_data(y)
+            brain_data = self._data_loader.load_ndvar_data(y)
         else:
-            brain_data = self._data_loader._load_source_data()
+            brain_data = self._data_loader.load_source_data()
 
         # Store data model and mirror key attributes for backward compatibility
         self._brain_data = brain_data
@@ -204,30 +204,30 @@ class LiveNeuro:
         self.parcellation = brain_data.parcellation
 
         # Calculate and store fixed axis ranges for each view to prevent size changes
-        self.view_ranges = self._plot_factory._calculate_view_ranges(
+        self.view_ranges = self._plot_factory.calculate_view_ranges(
             self.source_coords, self.brain_views
         )
 
         # Unify view sizes to ensure all brain plots have consistent display size
         # This is especially important in horizontal layout mode
-        self.view_ranges = self._layout_helper._unify_view_sizes_for_jupyter(
+        self.view_ranges = self._layout_helper.unify_view_sizes_for_jupyter(
             self.view_ranges
         )
 
         # Calculate global colormap range across all time points for consistent visualization
         self.global_vmin, self.global_vmax = (
-            self._plot_factory._calculate_global_colormap_range(
+            self._plot_factory.calculate_global_colormap_range(
                 self.glass_brain_data, self.user_vmax
             )
         )
 
         # Setup app layout and callbacks
         self._rebuild_layout()
-        self._app_controller._setup_callbacks()
+        self._app_controller.setup_callbacks()
 
     def _rebuild_layout(self) -> None:
         """Rebuild Dash layout and update current layout config."""
-        layout_info = self._layout_helper._setup_layout()
+        layout_info = self._layout_helper.setup_layout()
         config = layout_info.get("config")
         layout = layout_info.get("layout")
         if config is not None:
@@ -235,11 +235,32 @@ class LiveNeuro:
         if layout is not None:
             self.app.layout = layout
 
-    def _prepare_for_jupyter(self) -> None:
+    @property
+    def current_layout_config(self) -> Optional[Dict[str, Any]]:
+        return self._current_layout_config
+
+    def create_butterfly_plot(
+        self, selected_time_idx: int = 0, figure_height: Optional[int] = None
+    ):
+        return self._plot_factory.create_butterfly_plot(
+            selected_time_idx=selected_time_idx, figure_height=figure_height
+        )
+
+    def create_2d_brain_projections_plotly(
+        self, time_idx: int = 0, source_idx: Optional[int] = None
+    ):
+        return self._plot_factory.create_2d_brain_projections_plotly(
+            time_idx=time_idx, source_idx=source_idx
+        )
+
+    def estimate_jupyter_iframe_height(self) -> Optional[int]:
+        return self._layout_helper.estimate_jupyter_iframe_height()
+
+    def prepare_for_jupyter(self) -> None:
         """Prepare visualization for Jupyter display (layout + sizing)."""
         self.is_jupyter_mode = True
         # Unify view sizes for Jupyter mode to ensure consistent display
-        self.view_ranges = self._layout_helper._unify_view_sizes_for_jupyter(
+        self.view_ranges = self._layout_helper.unify_view_sizes_for_jupyter(
             self.view_ranges
         )
         # Rebuild layout with Jupyter-specific styles
@@ -254,7 +275,7 @@ class LiveNeuro:
         self._app_controller.run(port=port, debug=debug, mode=mode)
 
     def _show_in_jupyter(self, debug: bool = False) -> None:
-        self._app_controller._show_in_jupyter(debug=debug)
+        self._app_controller.show_in_jupyter(debug=debug)
 
     def export_images(
         self,

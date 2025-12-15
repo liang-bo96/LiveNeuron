@@ -18,18 +18,6 @@ Sample Data Module
 
 .. autofunction:: liveneuro.create_sample_brain_data
 
-Layout System
--------------
-
-Custom layouts can be created by inheriting from :class:`~liveneuro.LayoutBuilder`:
-
-.. autoclass:: liveneuro.LayoutBuilder
-   :members:
-   :show-inheritance:
-
-.. autofunction:: liveneuro.register_layout
-.. autofunction:: liveneuro.get_layout_builder
-
 Data Format
 -----------
 
