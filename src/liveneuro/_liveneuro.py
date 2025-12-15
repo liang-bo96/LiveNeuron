@@ -272,6 +272,18 @@ class LiveNeuro:
         debug: bool = False,
         mode: Optional[str] = None,
     ) -> None:
+        """Run the interactive visualization.
+
+        Parameters
+        ----------
+        port
+            Port number for the server. If None, uses a random port.
+        debug
+            Enable Dash debug mode.
+        mode
+            Display mode. If None, auto-selects based on environment.
+            Common values are ``"inline"``, ``"jupyterlab"``, and ``"external"``.
+        """
         self._app_controller.run(port=port, debug=debug, mode=mode)
 
     def _show_in_jupyter(self, debug: bool = False) -> None:
@@ -282,7 +294,23 @@ class LiveNeuro:
         output_dir: str = "./images",
         time_idx: Optional[int] = None,
         format: str = "png",
-    ):
+    ) -> Dict[str, Any]:
+        """Export plots as image files.
+
+        Parameters
+        ----------
+        output_dir
+            Directory to save image files.
+        time_idx
+            Time index to export. If None, uses 0.
+        format
+            Image format (e.g., ``"png"``, ``"jpg"``, ``"svg"``, ``"pdf"``).
+
+        Returns
+        -------
+        dict
+            Dictionary with export status and file paths.
+        """
         return self._app_controller.export_images(
             output_dir=output_dir, time_idx=time_idx, format=format
         )

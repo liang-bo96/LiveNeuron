@@ -87,13 +87,10 @@ napoleon_use_param = True
 napoleon_use_rtype = True
 
 # Autodoc settings
+# Keep defaults minimal so per-directive options in the RST files take effect.
 autodoc_default_options = {
-    "members": True,
     "member-order": "bysource",
-    "special-members": "",  # Don't show special members like __init__
-    "undoc-members": False,  # Only show documented members
-    "exclude-members": "__weakref__, __init__",  # Explicitly exclude __init__
-    "private-members": False,  # Don't show private methods (starting with _)
+    "exclude-members": "__weakref__, __init__",
 }
 
 # Intersphinx mapping
