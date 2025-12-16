@@ -40,7 +40,8 @@ class DataLoaderHelper:
     - Computing derived data (butterfly data from vector norms)
     """
 
-    def load_source_data(self) -> BrainData:
+    @staticmethod
+    def load_source_data() -> BrainData:
         """Load MNE sample data and prepare for 2D brain visualization.
 
         Returns
@@ -75,7 +76,8 @@ class DataLoaderHelper:
             parcellation=parcellation,
         )
 
-    def load_ndvar_data(self, y: NDVar) -> BrainData:
+    @staticmethod
+    def load_ndvar_data(y: NDVar) -> BrainData:
         """Load data from NDVar directly.
 
         Parameters

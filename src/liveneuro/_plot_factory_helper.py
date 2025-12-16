@@ -93,8 +93,9 @@ class PlotFactoryHelper:
         self._butterfly_cache = cache
         return cache
 
+    @staticmethod
     def calculate_view_ranges(
-        self, source_coords: Optional[np.ndarray], brain_views: List[str]
+        source_coords: Optional[np.ndarray], brain_views: List[str]
     ) -> Dict[str, Dict[str, List[float]]]:
         """Calculate fixed axis ranges for each brain view to prevent size changes."""
         if source_coords is None:
@@ -143,8 +144,9 @@ class PlotFactoryHelper:
 
         return view_ranges
 
+    @staticmethod
     def calculate_global_colormap_range(
-        self, glass_brain_data: Optional[np.ndarray], user_vmax: Optional[float]
+        glass_brain_data: Optional[np.ndarray], user_vmax: Optional[float]
     ) -> Tuple[float, float]:
         """Calculate global min/max activity across all time points for fixed colormap."""
         data_max = 1.0
@@ -880,8 +882,8 @@ class PlotFactoryHelper:
                 activity_values,
             )
 
+    @staticmethod
     def _create_batch_arrows(
-        self,
         fig: go.Figure,
         x_coords: np.ndarray,
         y_coords: np.ndarray,

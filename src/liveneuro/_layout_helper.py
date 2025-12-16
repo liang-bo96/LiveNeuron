@@ -80,7 +80,8 @@ class LayoutBuilder(ABC):
         """
         raise NotImplementedError
 
-    def _get_layout_config(self, app: "LiveNeuro") -> Dict[str, Any]:
+    @staticmethod
+    def _get_layout_config(app: "LiveNeuro") -> Dict[str, Any]:
         """Get base layout configuration.
 
         Parameters
@@ -97,8 +98,8 @@ class LayoutBuilder(ABC):
         env = "jupyter" if app.is_jupyter_mode else "browser"
         return {"num_views": num_views, "env": env, "brain_views": app.brain_views}
 
+    @staticmethod
     def _create_brain_view_containers(
-        self,
         app: "LiveNeuro",
         brain_plots: Dict[str, go.Figure],
         brain_height: str,
@@ -208,7 +209,8 @@ class VerticalLayout(LayoutBuilder):
 
         return config
 
-    def _get_brain_width_for_views(self, num_views: int) -> Dict[str, str]:
+    @staticmethod
+    def _get_brain_width_for_views(num_views: int) -> Dict[str, str]:
         """Calculate brain view width based on number of views."""
         if num_views == 1:
             return {"jupyter": "98%", "browser": "98%"}
@@ -219,7 +221,8 @@ class VerticalLayout(LayoutBuilder):
         else:  # 4 views
             return {"jupyter": "24%", "browser": "24%"}
 
-    def _parse_height(self, height_str: Any) -> Optional[int]:
+    @staticmethod
+    def _parse_height(height_str: Any) -> Optional[int]:
         """Parse height string to integer pixels."""
         if isinstance(height_str, str) and height_str.endswith("px"):
             try:
@@ -376,7 +379,8 @@ class HorizontalLayout(LayoutBuilder):
 
         return config
 
-    def _get_brain_width_for_views(self, num_views: int) -> Dict[str, str]:
+    @staticmethod
+    def _get_brain_width_for_views(num_views: int) -> Dict[str, str]:
         """Calculate brain view width for horizontal layout."""
         butterfly_width = 30
         available_for_brains = 100 - butterfly_width
@@ -384,7 +388,8 @@ class HorizontalLayout(LayoutBuilder):
         brain_width_str = f"{brain_width:.2f}%"
         return {"jupyter": brain_width_str, "browser": brain_width_str}
 
-    def _parse_height(self, height_str: Any) -> Optional[int]:
+    @staticmethod
+    def _parse_height(height_str: Any) -> Optional[int]:
         """Parse height string to integer pixels."""
         if isinstance(height_str, str) and height_str.endswith("px"):
             try:
@@ -393,7 +398,8 @@ class HorizontalLayout(LayoutBuilder):
                 return None
         return None
 
-    def _create_horizontal_colorbar(self, app: "LiveNeuro") -> go.Figure:
+    @staticmethod
+    def _create_horizontal_colorbar(app: "LiveNeuro") -> go.Figure:
         """Create a standalone horizontal colorbar figure."""
         fig = go.Figure()
 
@@ -433,8 +439,8 @@ class HorizontalLayout(LayoutBuilder):
 
         return fig
 
+    @staticmethod
     def _create_brain_view_containers_horizontal(
-        self,
         app: "LiveNeuro",
         brain_plots: Dict[str, go.Figure],
         brain_height: str,
@@ -820,9 +826,8 @@ class LayoutBuilderHelper:
 
         return max(total_height, 200)
 
-    def _get_brain_width_for_views(
-        self, num_views: int, layout_mode: str
-    ) -> Dict[str, str]:
+    @staticmethod
+    def _get_brain_width_for_views(num_views: int, layout_mode: str) -> Dict[str, str]:
         """Calculate brain view width based on number of views and layout mode."""
         if layout_mode == "vertical":
             if num_views == 1:
@@ -840,7 +845,8 @@ class LayoutBuilderHelper:
             brain_width_str = f"{brain_width:.2f}%"
             return {"jupyter": brain_width_str, "browser": brain_width_str}
 
-    def parse_display_mode(self, mode: str) -> List[str]:
+    @staticmethod
+    def parse_display_mode(mode: str) -> List[str]:
         """Parse display_mode string into list of required brain views.
 
         Parameters
@@ -892,8 +898,9 @@ class LayoutBuilderHelper:
             return mode_mapping[mode]
         raise ValueError(f"Unsupported display_mode: {mode}")
 
+    @staticmethod
     def unify_view_sizes_for_jupyter(
-        self, view_ranges: Dict[str, Dict[str, List[float]]]
+        view_ranges: Dict[str, Dict[str, List[float]]]
     ) -> Dict[str, Dict[str, List[float]]]:
         """Unify view sizes for Jupyter mode to ensure consistent display.
 
