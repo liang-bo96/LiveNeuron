@@ -900,7 +900,7 @@ class LayoutBuilderHelper:
 
     @staticmethod
     def unify_view_sizes_for_jupyter(
-        view_ranges: Dict[str, Dict[str, List[float]]]
+        view_ranges: Dict[str, Dict[str, List[float]]],
     ) -> Dict[str, Dict[str, List[float]]]:
         """Unify view sizes for Jupyter mode to ensure consistent display.
 
