@@ -1,12 +1,12 @@
 API Reference
 =============
 
-This page contains the complete API reference for LiveNeuron.
+This page contains the complete API reference for LiveNeuro.
 
 Main Class
 ----------
 
-.. autoclass:: eelbrain_plotly_viz.viz_2d.EelbrainPlotly2DViz
+.. autoclass:: liveneuro.LiveNeuro
    :members: run, export_images
    :exclude-members: __init__
    :show-inheritance:
@@ -16,7 +16,7 @@ Main Class
 Sample Data Module
 ------------------
 
-.. autofunction:: eelbrain_plotly_viz.sample_data.create_sample_brain_data
+.. autofunction:: liveneuro.create_sample_brain_data
 
 Data Format
 -----------
@@ -40,7 +40,6 @@ Input Data Expectations
 * 1589 sources in volumetric source space
 * 76 time points (-100ms to 400ms)
 * Vector data (3D current dipoles)
-* Optional brain region filtering
 
 Exceptions
 ----------
@@ -49,7 +48,7 @@ The library may raise the following exceptions:
 
 **ValueError**
   * Invalid ``display_mode`` string
-  * Invalid ``layout_mode`` (not "vertical" or "horizontal")
+  * Invalid ``layout_mode`` (not "vertical" or "horizontal" and not registered in LAYOUTS)
   * Invalid parameter values
 
 **ImportError**

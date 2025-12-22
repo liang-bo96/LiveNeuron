@@ -10,23 +10,29 @@ import pytest
 
 def test_all_imports_together():
     """Test that all imports can be done in a single statement."""
-    from eelbrain_plotly_viz import (
-        EelbrainPlotly2DViz,
-        BrainPlotly2DViz,
+    from liveneuro import (
+        LiveNeuro,
         create_sample_brain_data,
+        # Layout extension API
+        LayoutBuilder,
+        register_layout,
+        get_layout_builder,
     )
 
-    assert EelbrainPlotly2DViz is not None
-    assert BrainPlotly2DViz is not None
+    assert LiveNeuro is not None
     assert create_sample_brain_data is not None
+    # Test layout extension API imports
+    assert LayoutBuilder is not None
+    assert register_layout is not None
+    assert get_layout_builder is not None
 
 
 def test_direct_module_imports():
     """Test that direct module imports work (internal consistency check)."""
     # Test that the main import still works after package installation
     try:
-        from eelbrain_plotly_viz.viz_2d import EelbrainPlotly2DViz as DirectImport
-        from eelbrain_plotly_viz.sample_data import (
+        from liveneuro._liveneuro import LiveNeuro as DirectImport
+        from liveneuro._sample_data import (
             create_sample_brain_data as DirectDataImport,
         )
 
@@ -40,31 +46,36 @@ def test_direct_module_imports():
 
 def test_package_version():
     """Test that package version is accessible."""
-    import eelbrain_plotly_viz
+    import liveneuro
 
-    assert hasattr(eelbrain_plotly_viz, "__version__")
-    assert eelbrain_plotly_viz.__version__ == "1.0.0"
+    assert hasattr(liveneuro, "__version__")
+    assert liveneuro.__version__ == "1.0.0"
 
 
 def test_package_all_attribute():
     """Test that __all__ is properly defined."""
-    import eelbrain_plotly_viz
+    import liveneuro
 
-    assert hasattr(eelbrain_plotly_viz, "__all__")
+    assert hasattr(liveneuro, "__all__")
     expected_items = {
-        "EelbrainPlotly2DViz",
-        "BrainPlotly2DViz",
+        # Main class
+        "LiveNeuro",
+        # Sample data
         "create_sample_brain_data",
+        # Layout extension API (Open/Closed Principle)
+        "LayoutBuilder",
+        "register_layout",
+        "get_layout_builder",
     }
-    assert set(eelbrain_plotly_viz.__all__) == expected_items
+    assert set(liveneuro.__all__) == expected_items
 
 
 def test_no_import_errors():
     """Test that importing the package doesn't raise any exceptions."""
-    import eelbrain_plotly_viz
+    import liveneuro
 
     # Test basic instantiation to catch runtime import issues
-    viz = eelbrain_plotly_viz.EelbrainPlotly2DViz()
+    viz = liveneuro.LiveNeuro()
     assert viz is not None
 
 
@@ -74,14 +85,14 @@ def test_case_sensitive_filename_compliance():
     # we test that the imports work, which indicates the files are named correctly
 
     # This import will only work if the file is named correctly (viz_2d.py)
-    from eelbrain_plotly_viz import EelbrainPlotly2DViz
+    from liveneuro import LiveNeuro
 
     # Test that we can create an instance (ensures the import chain works)
-    viz = EelbrainPlotly2DViz()
+    viz = LiveNeuro()
     assert viz is not None
 
     # Test that the module follows the expected pattern
-    import eelbrain_plotly_viz
+    import liveneuro
 
-    module_file = eelbrain_plotly_viz.__file__
-    assert "eelbrain_plotly_viz" in module_file
+    module_file = liveneuro.__file__
+    assert "liveneuro" in module_file

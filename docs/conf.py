@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "LiveNeuron"
-copyright = "2025, LiveNeuron Team"
-author = "LiveNeuron Team"
+project = "LiveNeuro"
+copyright = "2025, LiveNeuro Team"
+author = "LiveNeuro Team"
 release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
@@ -26,7 +26,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
-    "sphinx_autodoc_typehints",
     "myst_parser",
 ]
 
@@ -88,13 +87,10 @@ napoleon_use_param = True
 napoleon_use_rtype = True
 
 # Autodoc settings
+# Keep defaults minimal so per-directive options in the RST files take effect.
 autodoc_default_options = {
-    "members": True,
     "member-order": "bysource",
-    "special-members": "",  # Don't show special members like __init__
-    "undoc-members": False,  # Only show documented members
-    "exclude-members": "__weakref__, __init__",  # Explicitly exclude __init__
-    "private-members": False,  # Don't show private methods (starting with _)
+    "exclude-members": "__weakref__, __init__",
 }
 
 # Intersphinx mapping
@@ -119,4 +115,3 @@ myst_enable_extensions = [
     "substitution",
     "tasklist",
 ]
-

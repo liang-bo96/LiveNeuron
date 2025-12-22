@@ -3,27 +3,27 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "LiveNeuron"
+name = "LiveNeuro"
 version = "1.0.0"
-description = "LiveNeuron: Interactive 2D brain visualization using Plotly and Dash"
+description = "LiveNeuro: Interactive 2D brain visualization using Plotly and Dash"
 readme = "README.md"
 license = "MIT"
 authors = [
-    {name = "LiveNeuron Team", email = "liveneuron@example.com"}
+    {name = "LiveNeuro Team", email = "liveneuro@example.com"}
 ]
 maintainers = [
-    {name = "LiveNeuron Team", email = "liveneuron@example.com"}
+    {name = "LiveNeuro Team", email = "liveneuro@example.com"}
 ]
 keywords = [
     "neuroscience",
-    "brain", 
+    "brain",
     "visualization",
     "plotly",
     "dash",
     "interactive",
     "2D",
     "projection",
-    "liveneuron"
+    "liveneuro"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,11 +41,12 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "dash>=2.0.0",
-    "plotly>=5.0.0", 
+    "plotly>=5.0.0",
     "numpy>=1.20.0",
     "matplotlib>=3.3.0",
     "scipy>=1.7.0",
     "eelbrain",
+    "kaleido>=0.2.0",  # Required for image export
 ]
 
 [project.optional-dependencies]
@@ -54,7 +55,7 @@ dev = [
     "pytest-cov",
     "pytest-xdist",
     "black",
-    "flake8", 
+    "flake8",
     "mypy",
     "build",
     "twine",
@@ -64,17 +65,17 @@ dev = [
 all = ["eelbrain"]
 
 [project.urls]
-Homepage = "https://github.com/liang-bo96/LiveNeuron"
-Documentation = "https://github.com/liang-bo96/LiveNeuron#readme"
-Repository = "https://github.com/liang-bo96/LiveNeuron.git"
-"Bug Tracker" = "https://github.com/liang-bo96/LiveNeuron/issues"
+Homepage = "https://github.com/liang-bo96/LiveNeuro"
+Documentation = "https://github.com/liang-bo96/LiveNeuro#readme"
+Repository = "https://github.com/liang-bo96/LiveNeuro.git"
+"Bug Tracker" = "https://github.com/liang-bo96/LiveNeuro/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["eelbrain_plotly_viz*"]
+include = ["liveneuro*"]
 
 [tool.setuptools.package-data]
-eelbrain_plotly_viz = ["data/*.npy", "data/*.json"]
+liveneuro = ["data/*.npy", "data/*.json"]
 
 [tool.black]
 line-length = 88
@@ -98,4 +99,4 @@ markers = [
 filterwarnings = [
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
-] 
+]
