@@ -157,7 +157,7 @@ class LiveNeuro:
             ["realtime"] if realtime else []
         )  # Default state for real-time mode
         self.show_labels: bool = show_labels  # Control titles and legends display
-        self._current_layout_config: Optional[Dict[str, Any]] = None
+        self.current_layout_config: Optional[Dict[str, Any]] = None
 
         # Initialize source space attributes
         self.source_space: Any = None
@@ -231,30 +231,9 @@ class LiveNeuro:
         config = layout_info.get("config")
         layout = layout_info.get("layout")
         if config is not None:
-            self._current_layout_config = config
+            self.current_layout_config = config
         if layout is not None:
             self.app.layout = layout
-
-    @property
-    def current_layout_config(self) -> Optional[Dict[str, Any]]:
-        return self._current_layout_config
-
-    def create_butterfly_plot(
-        self, selected_time_idx: int = 0, figure_height: Optional[int] = None
-    ):
-        return self._plot_factory.create_butterfly_plot(
-            selected_time_idx=selected_time_idx, figure_height=figure_height
-        )
-
-    def create_2d_brain_projections_plotly(
-        self, time_idx: int = 0, source_idx: Optional[int] = None
-    ):
-        return self._plot_factory.create_2d_brain_projections_plotly(
-            time_idx=time_idx, source_idx=source_idx
-        )
-
-    def estimate_jupyter_iframe_height(self) -> Optional[int]:
-        return self._layout_helper.estimate_jupyter_iframe_height()
 
     def prepare_for_jupyter(self) -> None:
         """Prepare visualization for Jupyter display (layout + sizing)."""

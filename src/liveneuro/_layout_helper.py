@@ -59,8 +59,8 @@ class LayoutBuilder(ABC):
     >>> class CompactLayout(LayoutBuilder):
     ...     def build(self, app):
     ...         # Access app.app.layout to set Dash layout
-    ...         # Access app.create_butterfly_plot() for butterfly figure
-    ...         # Access app.create_2d_brain_projections_plotly() for brain figures
+    ...         # Access app._plot_factory.create_butterfly_plot() for butterfly figure
+    ...         # Access app._plot_factory.create_2d_brain_projections_plotly() for brain figures
     ...         pass
     """
 
@@ -174,8 +174,10 @@ class VerticalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app.create_butterfly_plot(0, figure_height=butterfly_height)
-        initial_brain_plots = app.create_2d_brain_projections_plotly(0)
+        initial_butterfly = app._plot_factory.create_butterfly_plot(
+            selected_time_idx=0, figure_height=butterfly_height
+        )
+        initial_brain_plots = app._plot_factory.create_2d_brain_projections_plotly(0)
 
         # Build layout
         layout = self._setup_vertical_layout(
@@ -343,8 +345,10 @@ class HorizontalLayout(LayoutBuilder):
         butterfly_height = self._parse_height(config.get("butterfly_height"))
 
         # Create initial figures with configured height
-        initial_butterfly = app.create_butterfly_plot(0, figure_height=butterfly_height)
-        initial_brain_plots = app.create_2d_brain_projections_plotly(0)
+        initial_butterfly = app._plot_factory.create_butterfly_plot(
+            selected_time_idx=0, figure_height=butterfly_height
+        )
+        initial_brain_plots = app._plot_factory.create_2d_brain_projections_plotly(0)
 
         # Build layout
         layout = self._setup_horizontal_layout(

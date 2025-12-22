@@ -47,8 +47,8 @@ def test_multiple_visualizations():
     assert viz2.show_max_only is True
 
     # Both should create independent plots
-    fig1 = viz1.create_butterfly_plot()
-    fig2 = viz2.create_butterfly_plot()
+    fig1 = viz1._plot_factory.create_butterfly_plot()
+    fig2 = viz2._plot_factory.create_butterfly_plot()
 
     assert fig1 is not fig2
     assert hasattr(fig1, "data")
@@ -60,7 +60,7 @@ def test_error_handling():
     viz = LiveNeuro()
 
     # Test with invalid time index
-    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=999999)
+    brain_plots = viz._plot_factory.create_2d_brain_projections_plotly(time_idx=999999)
 
     # Should still return a valid dictionary (with error handling)
     assert isinstance(brain_plots, dict)
@@ -73,7 +73,7 @@ def test_error_handling():
     viz_empty.time_values = None
 
     # Should handle gracefully
-    brain_plots_empty = viz_empty.create_2d_brain_projections_plotly()
+    brain_plots_empty = viz_empty._plot_factory.create_2d_brain_projections_plotly()
     assert isinstance(brain_plots_empty, dict)
 
 
@@ -102,7 +102,7 @@ def test_data_consistency():
     assert len(viz.time_values) == n_times
 
     # Test that projections use consistent data
-    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=5)
+    brain_plots = viz._plot_factory.create_2d_brain_projections_plotly(time_idx=5)
 
     for view_name, fig in brain_plots.items():
         assert hasattr(fig, "data")

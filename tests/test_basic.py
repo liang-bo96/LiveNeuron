@@ -115,7 +115,7 @@ def test_brain_projections():
 
     # Test with ortho display mode (3 orthogonal views)
     viz = LiveNeuro(display_mode="ortho")
-    projections = viz.create_2d_brain_projections_plotly(time_idx=5)
+    projections = viz._plot_factory.create_2d_brain_projections_plotly(time_idx=5)
 
     assert isinstance(projections, dict)
     assert "axial" in projections
@@ -129,7 +129,9 @@ def test_brain_projections():
 
     # Test with default display mode (lyr - hemisphere views)
     viz_default = LiveNeuro()
-    projections_default = viz_default.create_2d_brain_projections_plotly(time_idx=5)
+    projections_default = viz_default._plot_factory.create_2d_brain_projections_plotly(
+        time_idx=5
+    )
 
     assert isinstance(projections_default, dict)
     assert "left_hemisphere" in projections_default
@@ -142,7 +144,7 @@ def test_butterfly_plot():
     from liveneuro import LiveNeuro
 
     viz = LiveNeuro()
-    butterfly_fig = viz.create_butterfly_plot()
+    butterfly_fig = viz._plot_factory.create_butterfly_plot()
 
     assert hasattr(butterfly_fig, "data")
     assert hasattr(butterfly_fig, "layout")
@@ -183,11 +185,11 @@ def test_show_max_only_option():
 
     # Test with show_max_only=True
     viz1 = LiveNeuro(show_max_only=True)
-    butterfly_fig1 = viz1.create_butterfly_plot()
+    butterfly_fig1 = viz1._plot_factory.create_butterfly_plot()
 
     # Test with show_max_only=False
     viz2 = LiveNeuro(show_max_only=False)
-    butterfly_fig2 = viz2.create_butterfly_plot()
+    butterfly_fig2 = viz2._plot_factory.create_butterfly_plot()
 
     # Both should create valid figures
     assert hasattr(butterfly_fig1, "data")
@@ -215,7 +217,7 @@ def test_brain_view_counts(display_mode, layout_mode, expected_views):
     assert layout_config["num_views"] == len(expected_views)
     assert layout_config["brain_views"] == expected_views
 
-    brain_plots = viz.create_2d_brain_projections_plotly(time_idx=0)
+    brain_plots = viz._plot_factory.create_2d_brain_projections_plotly(time_idx=0)
     assert set(brain_plots.keys()) == set(expected_views)
     assert len(brain_plots) == len(expected_views)
 

@@ -73,8 +73,8 @@ class AppControllerHelper:
                         butterfly_height = int(float(butterfly_height_str[:-2]))
                     except ValueError:
                         pass
-            return self._viz.create_butterfly_plot(
-                time_idx, figure_height=butterfly_height
+            return self._viz._plot_factory.create_butterfly_plot(
+                selected_time_idx=time_idx, figure_height=butterfly_height
             )
 
         # Dynamic brain plot outputs based on display_mode
@@ -93,8 +93,10 @@ class AppControllerHelper:
                 time_idx = 0
 
             try:
-                brain_plots = self._viz.create_2d_brain_projections_plotly(
-                    time_idx, source_idx
+                brain_plots = (
+                    self._viz._plot_factory.create_2d_brain_projections_plotly(
+                        time_idx=time_idx, source_idx=source_idx
+                    )
                 )
                 return tuple(
                     brain_plots[view_name] for view_name in self._viz.brain_views
@@ -245,7 +247,7 @@ class AppControllerHelper:
             self._viz.prepare_for_jupyter()
 
             # Auto-calculate height
-            iframe_height = self._viz.estimate_jupyter_iframe_height()
+            iframe_height = self._viz._layout_helper.estimate_jupyter_iframe_height()
             if iframe_height is None:
                 iframe_height = 900  # Fallback default
 
@@ -327,7 +329,9 @@ class AppControllerHelper:
 
         try:
             # Export butterfly plot
-            butterfly_fig = self._viz.create_butterfly_plot(time_idx)
+            butterfly_fig = self._viz._plot_factory.create_butterfly_plot(
+                selected_time_idx=time_idx
+            )
             butterfly_path = os.path.join(
                 output_dir, f"butterfly_plot_{timestamp}.{format}"
             )
@@ -335,7 +339,9 @@ class AppControllerHelper:
             exported_files["butterfly_plot"] = butterfly_path
 
             # Export brain projections
-            brain_plots = self._viz.create_2d_brain_projections_plotly(time_idx)
+            brain_plots = self._viz._plot_factory.create_2d_brain_projections_plotly(
+                time_idx=time_idx
+            )
 
             for view_name, fig in brain_plots.items():
                 brain_path = os.path.join(
